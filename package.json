@@ -1,0 +1,23 @@
+{
+  "name": "graphql-data-proxy",
+  "version": "0.0.0",
+  "description": "Graphql Client",
+  "main": "index.ts",
+  "author": "Harry Kightlinger <kightlingerh@gmail.com>",
+  "license": "MIT",
+  "private": false,
+  "sideEffects": false,
+  "scripts": {
+    "prettier": "prettier --no-semi --single-quote --print-width 120 --parser typescript --list-different \"{src,test}/**/*.ts\"",
+    "prettier-write": "prettier --no-semi --single-quote --print-width 120 --parser typescript --write \"{src,test,examples,exercises}/**/*.ts\""
+  },
+  "peerDependencies": {
+    "fp-ts": "^2.0.0",
+    "io-ts": "^2.2.1"
+  },
+  "devDependencies": {
+    "prettier": "^2.0.5",
+    "ts-node": "^8.9.1",
+    "typescript": "^3.8.3"
+  }
+}

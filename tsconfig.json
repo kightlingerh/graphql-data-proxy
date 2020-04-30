@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "outDir": "./lib",
+    "declaration": true,
+    "module": "commonjs",
+    "noImplicitReturns": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmitOnError": false,
+    "strict": true,
+    "target": "es5",
+    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true,
+    "stripInternal": true,
+    "lib": ["ESNext", "ESNext.BigInt"],
+    "downlevelIteration": true
+  },
+  "include": ["./src/**/*"]
+}

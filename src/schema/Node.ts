@@ -1,0 +1,166 @@
+import * as m from './Model'
+import { Model } from './Model'
+
+export type Schema<T extends { [K in keyof T]: Node }> = {
+	readonly members: T
+	readonly tag: 'Schema'
+}
+
+export type Node<V extends VariablesNode | undefined = undefined> =
+	| StringNode<V>
+	| BooleanNode<V>
+	| NumberNode<V>
+	| InterfaceNode<object, V>
+	| ArrayNode<any, V>
+	| MapNode<any, any, V>
+	| OptionNode<any, V>
+	| NonEmptyArrayNode<any, V>
+
+export type LiteralNode = StringNode | BooleanNode | NumberNode
+
+export type StringNode<V extends VariablesNode | undefined = undefined> = {
+	readonly tag: 'String'
+	readonly model: Model<string>
+} & Variables<V>
+
+export type BooleanNode<V extends VariablesNode | undefined = undefined> = {
+	readonly tag: 'Boolean'
+	readonly model: Model<boolean>
+} & Variables<V>
+
+export type NumberNode<V extends VariablesNode | undefined = undefined> = {
+	readonly tag: 'Number'
+	readonly model: Model<number>
+} & Variables<V>
+
+export type InterfaceNode<T extends { [K in keyof T]: Node }, V extends VariablesNode | undefined = undefined> = {
+	readonly tag: 'Interface'
+	readonly members: T
+} & Variables<V>
+
+export type BoxedNode<T extends Node> = ArrayNode<T> | MapNode<T> | OptionNode<T> | NonEmptyArrayNode<T>
+
+export type ArrayNode<T extends Node, V extends VariablesNode | undefined = undefined> = {
+	readonly tag: 'Array'
+	readonly boxed: T
+} & Variables<V>
+
+type MapKey = Model<string> | Model<number>
+
+export type MapNode<T extends Node, K extends Model<any> = MapKey, V extends VariablesNode | undefined = undefined> = {
+	readonly tag: 'Map'
+	readonly key: K
+	readonly boxed: T
+} & Variables<V>
+
+export type OptionNode<T extends Node, V extends VariablesNode | undefined = undefined> = {
+	readonly tag: 'Option'
+	readonly boxed: T
+} & Variables<V>
+
+export type NonEmptyArrayNode<T extends Node, V extends VariablesNode | undefined = undefined> = {
+	readonly tag: 'NonEmptyArray'
+	readonly boxed: T
+} & Variables<V>
+
+type Variables<V extends VariablesNode | undefined = undefined> = V extends undefined ? {} : { readonly variables: V }
+
+export interface VariablesNode {
+	readonly [K: string]: Model<any>
+}
+
+export function schema<T extends { [K in keyof T]: Node }>(members: T): Schema<T> {
+	return {
+		tag: 'Schema',
+		members
+	}
+}
+
+export function number(): NumberNode
+export function number<V extends VariablesNode>(variables: V): NumberNode<V>
+export function number<V extends VariablesNode | undefined = undefined>(variables?: V): any {
+	return variables === undefined ? { tag: 'Number', model: m.number } : { tag: 'Number', variables, model: m.number }
+}
+
+export const staticNumberNode = number()
+
+export function isNumberNode(u: Node): u is NumberNode {
+	return u.tag === 'Number'
+}
+
+export function stringNode(): StringNode
+export function stringNode<V extends VariablesNode>(variables: V): StringNode<V>
+export function stringNode<V extends VariablesNode | undefined = undefined>(variables?: V): any {
+	return variables === undefined ? { tag: 'String', model: m.string } : { tag: 'String', variables, model: m.string }
+}
+
+export const staticStringNode = stringNode()
+
+export function isStringNode(u: Node): u is StringNode {
+	return u.tag === 'String'
+}
+
+export function booleanNode(): BooleanNode
+export function booleanNode<V extends VariablesNode>(variables: V): BooleanNode<V>
+export function booleanNode<V extends VariablesNode | undefined = undefined>(variables?: V): any {
+	return variables === undefined
+		? { tag: 'Boolean', model: m.boolean }
+		: { tag: 'Boolean', variables, model: m.boolean }
+}
+
+export const staticBooleanNode = booleanNode()
+
+export function isBooleanNode(u: Node): u is BooleanNode {
+	return u.tag === 'Boolean'
+}
+
+export function isLiteralNode(u: Node): u is LiteralNode {
+	return isNumberNode(u) || isStringNode(u) || isBooleanNode(u)
+}
+
+export function mapNode<K extends Model<any>, T extends Node>(key: K, value: T): MapNode<T, K>
+export function mapNode<K extends Model<any>, T extends Node, V extends VariablesNode>(
+	key: K,
+	value: T,
+	variables: V
+): MapNode<T, K, V>
+export function mapNode<K extends Model<any>, T extends Node, V extends VariablesNode | undefined = undefined>(
+	key: K,
+	value: T,
+	variables?: V
+): any {
+	return variables === undefined ? { tag: 'Map', key, boxed: value } : { tag: 'Map', key, boxed: value, variables }
+}
+
+export function isMapNode(u: Node): u is MapNode<any, any> {
+	return u.tag === 'Map'
+}
+
+export function interfaceNode<T extends { [K in keyof T]: Node }>(members: T): InterfaceNode<T>
+export function interfaceNode<T extends { [K in keyof T]: Node }, V extends VariablesNode>(
+	members: T,
+	variables: V
+): InterfaceNode<T, V>
+export function interfaceNode<T extends { [K in keyof T]: Node }, V extends VariablesNode | undefined = undefined>(
+	members: T,
+	variables?: V
+): any {
+	return variables === undefined ? { tag: 'Interface', members } : { tag: 'Interface', variables, members }
+}
+
+export function isInterfaceNode(u: Node): u is InterfaceNode<any> {
+	return u.tag === 'Interface'
+}
+
+export function arrayNode<T extends Node>(node: T): ArrayNode<T>
+export function arrayNode<T extends Node, V extends VariablesNode>(node: T): ArrayNode<T, V>
+export function arrayNode<T extends Node, V extends VariablesNode | undefined = undefined>(
+	node: T,
+	variables?: V
+): any {
+	return variables === undefined ? { tag: 'Array', boxed: node } : { tag: 'Array', variables, boxed: node }
+}
+
+export function isArrayNode(u: Node): u is ArrayNode<any> {
+	return u.tag === 'Array'
+}
