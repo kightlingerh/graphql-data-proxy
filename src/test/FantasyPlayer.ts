@@ -21,7 +21,7 @@ const FantasyPlayerStatisticsQueryVariables: VariablesNode = {
 
 const FantasyPlayerStatistics = mapNode(number, FantasyPlayerPersonalInfo)
 
-const FantasyPlayerStatisticsMap = mapNode(number, FantasyPlayerStatistics, FantasyPlayerStatisticsQueryVariables)
+const FantasyPlayerStatisticsMap = mapNode(number, staticNumberNode, FantasyPlayerStatisticsQueryVariables)
 
 const FantasyPlayer = schema({
 	id: FantasyPlayerId,
@@ -41,7 +41,5 @@ const query: Query<typeof FantasyPlayer> = {
 		firstName: true,
 		dob: true
 	},
-	statistics: {
-		pictureUrl: true
-	}
+	statistics: undefined
 }
