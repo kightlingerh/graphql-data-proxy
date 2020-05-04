@@ -125,12 +125,12 @@ export function isLiteralNode(u: Node): u is LiteralNode {
 	return isNumberNode(u) || isStringNode(u) || isBooleanNode(u)
 }
 
-export function mapNode<K extends Model<any>, T extends Node>(key: K, value: T): MapNode<T, K>
+export function mapNode<K extends Model<any>, T extends Node>(key: K, value: T): MapNode<T, undefined, K>
 export function mapNode<K extends Model<any>, T extends Node, V extends VariablesNode>(
 	key: K,
 	value: T,
 	variables: V
-): MapNode<T, K, V>
+): MapNode<T, V, K>
 export function mapNode<K extends Model<any>, T extends Node, V extends VariablesNode | undefined = undefined>(
 	key: K,
 	value: T,

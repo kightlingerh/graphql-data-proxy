@@ -1,6 +1,6 @@
 import { Query } from '../request/Query'
 import { array, number, string } from '../schema/Model'
-import { interfaceNode, mapNode, schema, staticNumberNode, staticStringNode, VariablesNode } from '../schema/Node'
+import { interfaceNode, mapNode, schema, staticNumberNode, staticStringNode } from '../schema/Node'
 
 const FantasyPlayerId = staticStringNode
 
@@ -15,13 +15,13 @@ const FantasyPlayerPersonalInfo = interfaceNode({
 	weight: staticStringNode
 })
 
-const FantasyPlayerStatisticsQueryVariables: VariablesNode = {
+const FantasyPlayerStatisticsQueryVariables = {
 	statisticIds: array(string)
 }
 
 const FantasyPlayerStatistics = mapNode(number, FantasyPlayerPersonalInfo)
 
-const FantasyPlayerStatisticsMap = mapNode(number, staticNumberNode, FantasyPlayerStatisticsQueryVariables)
+const FantasyPlayerStatisticsMap = mapNode(number, FantasyPlayerStatistics, FantasyPlayerStatisticsQueryVariables)
 
 const FantasyPlayer = schema({
 	id: FantasyPlayerId,
@@ -41,5 +41,10 @@ const query: Query<typeof FantasyPlayer> = {
 		firstName: true,
 		dob: true
 	},
-	statistics: undefined
+	statistics: {
+		__variables: {
+			statisticIds: [1]
+		},
+		dob: true
+	}
 }

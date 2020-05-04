@@ -1,35 +1,64 @@
-import {BoxedNode, InterfaceNode, LiteralNode, Schema} from '../schema/Node'
+import { TypeOf } from '../schema/Model'
+import { BoxedNode, InterfaceNode, LiteralNode, Node, Schema, VariablesNode } from '../schema/Node'
 
 export type Query<S extends Schema<any> | InterfaceNode<any>> = {
-	[K in keyof S['members']]?: S['members'][K] extends LiteralNode ? boolean : ExtractNode<S['members'][K]>
+	[K in keyof S['members']]?: ExtractNode<S['members'][K]>
 }
 
-type ExtractNode<T> = T extends BoxedNode<infer A>
+type ExtractNode<T> = T extends LiteralNode
+	? ExtractLiteralNode<T>
+	: T extends BoxedNode<any>
+	? ExtractBoxedNode<T>
+	: T extends InterfaceNode<any>
+	? ExtractInterfaceNode<T>
+	: never
+
+type ExtractInterfaceNode<T> = T extends InterfaceNode<any>
+	? { [K in keyof T['members']]?: ExtractNode<T['members'][K]> } & ExtractInterfaceNodeVariables<T>
+	: never
+
+type ExtractLiteralNode<T> = T extends LiteralNode<infer V>
+	? V extends VariablesNode
+		? ExtractVariables<V>
+		: boolean
+	: never
+
+type ExtractBoxedNode<T> = T extends BoxedNode<infer A>
 	? A extends InterfaceNode<any>
-		? Query<A>
+		? Query<A> & ExtractBoxedNodeLiteralVariables<T>
 		: A extends LiteralNode
-		? boolean
+		? ExtractBoxedNodeLiteralVariables<T>
 		: A extends BoxedNode<infer B>
 		? B extends InterfaceNode<any>
-			? Query<B>
+			? Query<B> & ExtractBoxedNodeLiteralVariables<T>
 			: B extends LiteralNode
-			? boolean
+			? ExtractBoxedNodeLiteralVariables<T>
 			: B extends BoxedNode<infer C>
 			? C extends InterfaceNode<any>
-				? Query<C>
+				? Query<C> & ExtractBoxedNodeLiteralVariables<T>
 				: C extends LiteralNode
-				? boolean
+				? ExtractBoxedNodeLiteralVariables<T>
 				: C extends BoxedNode<infer D>
 				? D extends InterfaceNode<any>
-					? Query<D>
+					? Query<D> & ExtractBoxedNodeLiteralVariables<T>
 					: D extends LiteralNode
-					? boolean
+					? ExtractBoxedNodeLiteralVariables<T>
 					: never
 				: never
 			: never
 		: never
-	: T extends InterfaceNode<any>
-	? Query<T>
-	: boolean
+	: never
 
-type ENode<T> = T extends BoxedNode<infer A> ? ENode<A> : T extends InterfaceNode<any> ? Query<T> : boolean;
+type ExtractInterfaceNodeVariables<T> = T extends Node<infer V>
+	? V extends VariablesNode
+		? { readonly __variables: ExtractVariables<V> }
+		: {}
+	: {}
+
+type ExtractBoxedNodeLiteralVariables<T> = T extends Node<infer V>
+	? V extends VariablesNode
+		? { readonly __variables: ExtractVariables<V> }
+		: boolean
+	: never
+
+type ExtractVariables<V> = V extends VariablesNode ? { [K in keyof V]: TypeOf<V[K]> } : never

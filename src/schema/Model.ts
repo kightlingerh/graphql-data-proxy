@@ -1,9 +1,9 @@
 import { getStructEq } from 'fp-ts/lib/Eq'
-import * as eq from 'fp-ts/lib/Eq'
+import * as EQ from 'fp-ts/lib/Eq'
 import { constNull, Lazy } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { pipe } from 'fp-ts/lib/pipeable'
-import * as a from 'fp-ts/lib/array'
+import * as A from 'fp-ts/lib/array'
 import { Tree } from 'fp-ts/lib/Tree'
 import * as C from 'io-ts/lib/Codec'
 import * as E from 'io-ts/lib/Encoder'
@@ -12,25 +12,27 @@ import * as O from 'fp-ts/lib/Option'
 import * as EITHER from 'fp-ts/lib/Either'
 import * as M from 'fp-ts/lib/Map'
 import * as D from 'io-ts/lib/Decoder'
+import * as NE from 'fp-ts/lib/NonEmptyArray'
+import { Literal } from 'io-ts/lib/Schemable'
 
-export interface Model<T> extends C.Codec<T>, G.Guard<T>, E.Encoder<T>, eq.Eq<T> {}
+export interface Model<T> extends C.Codec<T>, G.Guard<T>, EQ.Eq<T> {}
 
 export type TypeOf<M> = M extends Model<infer T> ? T : never
 
 export const string: Model<string> = {
-	equals: eq.eqString.equals,
+	equals: EQ.eqString.equals,
 	is: G.string.is,
 	...C.string
 }
 
 export const number: Model<number> = {
-	equals: eq.eqNumber.equals,
+	equals: EQ.eqNumber.equals,
 	is: G.number.is,
 	...C.number
 }
 
 export const boolean: Model<boolean> = {
-	equals: eq.eqBoolean.equals,
+	equals: EQ.eqBoolean.equals,
 	is: G.boolean.is,
 	...C.boolean
 }
@@ -43,11 +45,42 @@ export function type<T>(properties: { [K in keyof T]: Model<T[K]> }): Model<T> {
 	}
 }
 
+export function typeWithUniqueIdentifier<T, K extends keyof T>(
+	properties: { [K in keyof T]: Model<T[K]> },
+	key: K
+): Model<T> {
+	const keyModel = properties[key]
+	return {
+		...type(properties),
+		equals: (x, y) => keyModel.equals(x[key], y[key])
+	}
+}
+
+export function nonEmptyArray<T>(val: Model<T>): Model<NE.NonEmptyArray<T>> {
+	const a = array(val)
+	return {
+		encode: a.encode,
+		equals: NE.getEq(val).equals,
+		is: (u: unknown): u is NE.NonEmptyArray<T> => a.is(u) && u.length > 0,
+		decode: (u) => {
+			const arr = a.decode(u)
+			if (EITHER.isLeft(arr)) {
+				return arr
+			} else {
+				const r = arr.right
+				return isNotEmpty(r)
+					? D.success(r)
+					: D.failure(`expected non empty array but received ${JSON.stringify(u)}`)
+			}
+		}
+	}
+}
+
 export const ARRAY_TAG = 'Array' as const
 
 export function array<T>(val: Model<T>): Model<T[]> {
 	return {
-		equals: a.getEq(val).equals,
+		equals: A.getEq(val).equals,
 		...C.array(val),
 		...G.array(val)
 	}
@@ -165,3 +198,35 @@ export const optionString = option(string)
 export const optionNumber = option(number)
 
 export const optionBoolean = option(boolean)
+
+export function sum<T extends string>(
+	tag: T
+): <A>(members: { [K in keyof A]: Model<A[K] & Record<T, K>> }) => Model<A[keyof A]> {
+	return (members) => {
+		const equals = (a: any, b: any): boolean => {
+			for (const key in members) {
+				const m = members[key]
+				if (m.is(a) && m.is(b)) {
+					return m.equals(a, b)
+				}
+			}
+			return false
+		}
+
+		return {
+			equals,
+			encode: E.sum(tag)(members).encode,
+			is: G.sum(tag)(members).is,
+			decode: D.sum(tag)(members).decode
+		}
+	}
+}
+
+export function literal<A extends ReadonlyArray<Literal>>(...values: A): Model<A[number]> {
+	return {
+		equals: EQ.eqStrict.equals,
+		is: G.literal(...values).is,
+		decode: D.literal(...values).decode,
+		encode: E.id.encode
+	}
+}
