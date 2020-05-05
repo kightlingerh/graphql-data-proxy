@@ -1,8 +1,8 @@
 import * as M from '../model/Model'
-import { Model } from '../model/Model'
 
 export type Node<V extends VariablesNode | undefined = undefined> =
 	| LiteralNode<V>
+	| ScalarNode<string, any, V>
 	| TypeNode<string, any, V>
 	| ArrayNode<any, V>
 	| MapNode<any, V, any>
@@ -12,8 +12,8 @@ export type Node<V extends VariablesNode | undefined = undefined> =
 	| SumNode<object, V>
 
 export type SchemaNode<T extends { [K in keyof T]: Node }> = {
-	readonly members: T
 	readonly tag: 'Schema'
+	readonly members: T
 }
 
 export type LiteralNode<V extends VariablesNode | undefined = undefined> =
@@ -23,17 +23,18 @@ export type LiteralNode<V extends VariablesNode | undefined = undefined> =
 
 export type StringNode<V extends VariablesNode | undefined = undefined> = {
 	readonly tag: 'String'
-	readonly model: Model<string>
+	readonly model: M.Model<string>
 } & Variables<V>
 
 export type BooleanNode<V extends VariablesNode | undefined = undefined> = {
 	readonly tag: 'Boolean'
-	readonly model: Model<boolean>
+	readonly model: M.Model<boolean>
+	readonly cache?: any
 } & Variables<V>
 
 export type NumberNode<V extends VariablesNode | undefined = undefined> = {
 	readonly tag: 'Number'
-	readonly model: Model<number>
+	readonly model: M.Model<number>
 } & Variables<V>
 
 export type TypeNode<
@@ -57,9 +58,13 @@ export type ArrayNode<T extends Node, V extends VariablesNode | undefined = unde
 	readonly boxed: T
 } & Variables<V>
 
-type MapKey = Model<string> | Model<number>
+type MapKey = M.Model<string> | M.Model<number>
 
-export type MapNode<T extends Node, V extends VariablesNode | undefined = undefined, K extends Model<any> = MapKey> = {
+export type MapNode<
+	T extends Node,
+	V extends VariablesNode | undefined = undefined,
+	K extends M.Model<any> = MapKey
+> = {
 	readonly tag: 'Map'
 	readonly key: K
 	readonly boxed: T
@@ -83,10 +88,16 @@ export type SumNode<
 	readonly members: T
 } & Variables<V>
 
+export type ScalarNode<N extends string, M, V extends VariablesNode | undefined = undefined> = {
+	readonly tag: 'Scalar'
+	readonly name: N
+	readonly model: M.Model<M>
+} & Variables<V>
+
 type Variables<V extends VariablesNode | undefined = undefined> = V extends undefined ? {} : { readonly variables: V }
 
 export interface VariablesNode {
-	readonly [K: string]: Model<any>
+	readonly [K: string]: M.Model<any>
 }
 
 export function schema<T extends { [K in keyof T]: Node }>(members: T): SchemaNode<T> {
@@ -138,13 +149,13 @@ export function isLiteralNode(u: Node): u is LiteralNode {
 	return isNumberNode(u) || isStringNode(u) || isBooleanNode(u)
 }
 
-export function mapNode<K extends Model<any>, T extends Node>(key: K, value: T): MapNode<T, undefined, K>
-export function mapNode<K extends Model<any>, T extends Node, V extends VariablesNode>(
+export function mapNode<K extends M.Model<any>, T extends Node>(key: K, value: T): MapNode<T, undefined, K>
+export function mapNode<K extends M.Model<any>, T extends Node, V extends VariablesNode>(
 	key: K,
 	value: T,
 	variables: V
 ): MapNode<T, V, K>
-export function mapNode<K extends Model<any>, T extends Node, V extends VariablesNode | undefined = undefined>(
+export function mapNode<K extends M.Model<any>, T extends Node, V extends VariablesNode | undefined = undefined>(
 	key: K,
 	value: T,
 	variables?: V
@@ -157,11 +168,11 @@ export function isMapNode(u: Node): u is MapNode<any> {
 }
 
 export function typeNode<N extends string, T extends { [K in keyof T]: Node }>(
-	__typename: Model<N>,
+	__typename: M.Model<N>,
 	members: T
 ): TypeNode<N, T>
 export function typeNode<N extends string, T extends { [K in keyof T]: Node }, V extends VariablesNode>(
-	__typename: Model<N>,
+	__typename: M.Model<N>,
 	members: T,
 	variables: V
 ): TypeNode<N, T, V>
@@ -169,7 +180,7 @@ export function typeNode<
 	N extends string,
 	T extends { [K in keyof T]: Node },
 	V extends VariablesNode | undefined = undefined
->(__typename: Model<N>, members: T, variables?: V): any {
+>(__typename: M.Model<N>, members: T, variables?: V): any {
 	return variables === undefined
 		? { __typename, tag: 'Type', members }
 		: { __typename, tag: 'Type', variables, members }

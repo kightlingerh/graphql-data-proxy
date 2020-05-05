@@ -32,11 +32,7 @@ const info = sumNode({
 
 const FantasyPlayerStatistics = mapNode(number, FantasyPlayerPersonalInfo)
 
-const FantasyPlayerStatisticsMap = mapNode(
-	number,
-	FantasyPlayerPersonalInfo,
-	FantasyPlayerStatisticsQueryVariables
-)
+const FantasyPlayerStatisticsMap = mapNode(number, FantasyPlayerPersonalInfo, FantasyPlayerStatisticsQueryVariables)
 
 const FantasyPlayer = schema({
 	id: FantasyPlayerId,
