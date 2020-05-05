@@ -1,4 +1,5 @@
 import { FunctionN } from 'fp-ts/lib/function'
+import { IO } from 'fp-ts/lib/IO'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
 import { TypeOf } from '../model'
@@ -11,10 +12,10 @@ import {
 	NonEmptyArrayNode,
 	OptionNode,
 	SchemaNode,
+	SumNode,
 	TypeNode,
 	VariablesNode
 } from '../schema/Node'
-
 
 
 export type Cache<S extends SchemaNode<any> | TypeNode<string, any>> = {
@@ -27,10 +28,26 @@ export type ExtractCacheType<T> = T extends TypeNode<any, any>
 	? ExtractLiteralNode<T>
 	: T extends BoxedNode<any>
 	? ExtractBoxedNode<T>
+	: T extends SumNode<any>
+	? ExtractSumNode<T>
 	: never
 
 type ExtractTypeNode<T> = T extends TypeNode<any, any, infer V>
-	? NodeRef<{ [K in keyof T['members']]: ExtractCacheType<T['members'][K]> }, V>
+	? V extends VariablesNode
+		? FunctionN<[ExtractVariables<V>], { [K in keyof T['members']]: ExtractCacheType<T['members'][K]> }>
+		:
+				| { [K in keyof T['members']]: ExtractCacheType<T['members'][K]> }
+				| IO<{ [K in keyof T['members']]: ExtractCacheType<T['members'][K]> }>
+	: never
+
+type ExtractSumNode<T> = T extends SumNode<infer A, infer V>
+	? V extends VariablesNode
+		? FunctionN<[ExtractVariables<V>], ExtractSumNodeMembers<A>>
+		: ExtractSumNodeMembers<A> | IO<ExtractSumNodeMembers<A>>
+	: never
+
+type ExtractSumNodeMembers<T> = T extends { [K in keyof T]: TypeNode<string, object> }
+	? { [K in keyof T]: { [M in keyof T[K]['members']]: ExtractCacheType<T[K]['members'][M]> } }[keyof T]
 	: never
 
 type ExtractLiteralNode<T> = T extends LiteralNode<infer V> ? NodeRef<TypeOf<T['model']>, V> : never
@@ -156,7 +173,7 @@ type ExtractMapNode<T> = T extends Node<infer V>
 				? NodeRef<Map<TypeOf<K>, Cache<A>>, V>
 				: A extends ArrayNode<infer Arr1>
 				? Arr1 extends LiteralNode
-					? NodeRef<Map<TypeOf<K>,TypeOf<Arr1['model']>[]>, V>
+					? NodeRef<Map<TypeOf<K>, TypeOf<Arr1['model']>[]>, V>
 					: Arr1 extends TypeNode<string, any>
 					? NodeRef<Map<TypeOf<K>, Cache<Arr1>[]>, V>
 					: never
@@ -183,11 +200,11 @@ type ExtractMapNode<T> = T extends Node<infer V>
 		: never
 	: never
 
-type NodeRef<T, V> = V extends VariablesNode ? VariableRef<V, T> : Ref<T>
+type NodeRef<T, V> = V extends VariablesNode ? VariableRef<V, T> : Ref<T> | IO<Ref<T>>
 
 export interface Ref<T> {
-	value: T
+	value: Option<T>
 }
-type VariableRef<V, T> = V extends VariablesNode ? FunctionN<[ExtractVariables<V>], Ref<T>> : never
+type VariableRef<V, T> = V extends undefined ? never : FunctionN<[ExtractVariables<V>], Ref<T>>;
 
 type ExtractVariables<V> = V extends VariablesNode ? { [K in keyof V]: TypeOf<V[K]> } : never

@@ -1,7 +1,8 @@
-import {Cache} from '../cache/Cache';
+import { some } from 'fp-ts/lib/Option'
+import { Cache } from '../cache/Cache'
 import { Query } from '../request/Query'
-import { array, literal, number, string } from '../model/Model'
-import { typeNode, mapNode, schema, staticNumberNode, staticStringNode } from '../schema/Node'
+import { array, literal, number, optionString, string, sum, type } from '../model/Model'
+import { typeNode, mapNode, schema, staticNumberNode, staticStringNode, sumNode } from '../schema/Node'
 
 const FantasyPlayerId = staticStringNode
 
@@ -16,19 +17,33 @@ const FantasyPlayerPersonalInfo = typeNode(literal('FantasyPlayerPersonalInfo'),
 	weight: staticNumberNode
 })
 
+const FantasyPlayerFantasyInfo = typeNode(literal('FantasyPlayerFantasyInfo'), {
+	ownerFantasyTeamId: staticStringNode
+})
+
 const FantasyPlayerStatisticsQueryVariables = {
 	statisticIds: array(string)
 }
 
+const info = sumNode({
+	fantasyPlayerFantasyInfo: FantasyPlayerFantasyInfo,
+	fantasyPlayerPersonalInfo: FantasyPlayerPersonalInfo
+})
+
 const FantasyPlayerStatistics = mapNode(number, FantasyPlayerPersonalInfo)
 
-const FantasyPlayerStatisticsMap = mapNode(number, mapNode(number, staticNumberNode), FantasyPlayerStatisticsQueryVariables)
+const FantasyPlayerStatisticsMap = mapNode(
+	number,
+	FantasyPlayerPersonalInfo,
+	FantasyPlayerStatisticsQueryVariables
+)
 
 const FantasyPlayer = schema({
 	id: FantasyPlayerId,
 	number: staticNumberNode,
 	personalInfo: FantasyPlayerPersonalInfo,
-	statistics: FantasyPlayerStatisticsMap
+	statistics: FantasyPlayerStatisticsMap,
+	info
 })
 
 const tag = FantasyPlayer.tag
@@ -37,6 +52,16 @@ const members = FantasyPlayer.members
 
 const query: Query<typeof FantasyPlayer> = {
 	id: true,
+	info: {
+		fantasyPlayerFantasyInfo: {
+			__typename: true,
+			ownerFantasyTeamId: true
+		},
+		fantasyPlayerPersonalInfo: {
+			__typename: true,
+			pictureUrl: true
+		}
+	},
 	personalInfo: {
 		__typename: true,
 		pictureUrl: true,
@@ -52,31 +77,69 @@ const query: Query<typeof FantasyPlayer> = {
 }
 
 const cache: Cache<typeof FantasyPlayer> = {
-	id: { value: 'fantasy-player-id-1' },
-	number: { value: 1 },
+	id: { value: some('fantasy-player-id-1') },
+	info: {
+		pictureUrl: {
+			value: some('test')
+		},
+		firstName: {
+			value: some('Harry')
+		},
+		lastName: {
+			value: some('Kightlinger')
+		},
+		dob: {
+			value: some('11-17-1991')
+		},
+		height: {
+			value: some(67)
+		},
+		weight: {
+			value: some(150)
+		}
+	},
+	number: { value: some(1) },
 	personalInfo: {
-		value: {
-			pictureUrl: {
-				value: 'test'
-			},
-			firstName: {
-				value: 'Harry',
-			},
-			lastName: {
-				value: 'Kightlinger'
-			},
-			dob: {
-				value: '11-17-1991',
-			},
-			height: {
-				value: 67
-			},
-			weight: {
-				value: 150
-			}
+		pictureUrl: {
+			value: some('test')
+		},
+		firstName: {
+			value: some('Harry')
+		},
+		lastName: {
+			value: some('Kightlinger')
+		},
+		dob: {
+			value: some('11-17-1991')
+		},
+		height: {
+			value: some(67)
+		},
+		weight: {
+			value: some(150)
 		}
 	},
 	statistics: () => ({
-		value: new Map<number, Map<number, number>>()
+		value: some(new Map())
 	})
-};
+}
+
+const FantasyPlayerPersonalInfoModel = type({
+	__typename: literal('FantasyPlayerPersonalInfo'),
+	pictureUrl: string,
+	firstName: string,
+	lastName: string,
+	dob: string,
+	height: number,
+	weight: number
+})
+
+const FantasyPlayerFantasyInfoModel = type({
+	__typename: literal('FantasyPlayerFantasyInfo'),
+	ownerFantasyTeamId: optionString
+})
+
+const sumInfo = sum('__typename')({
+	FantasyPlayerPersonalInfo: FantasyPlayerPersonalInfoModel,
+	FantasyPlayerFantasyInfo: FantasyPlayerFantasyInfoModel
+})

@@ -1,4 +1,4 @@
-import * as m from '../model/Model'
+import * as M from '../model/Model'
 import { Model } from '../model/Model'
 
 export type Node<V extends VariablesNode | undefined = undefined> =
@@ -9,6 +9,7 @@ export type Node<V extends VariablesNode | undefined = undefined> =
 	| OptionNode<any, V>
 	| NonEmptyArrayNode<any, V>
 	| SchemaNode<object>
+	| SumNode<object, V>
 
 export type SchemaNode<T extends { [K in keyof T]: Node }> = {
 	readonly members: T
@@ -74,6 +75,14 @@ export type NonEmptyArrayNode<T extends Node, V extends VariablesNode | undefine
 	readonly boxed: T
 } & Variables<V>
 
+export type SumNode<
+	T extends { [K in keyof T]: TypeNode<string, object> },
+	V extends VariablesNode | undefined = undefined
+> = {
+	readonly tag: 'Sum'
+	readonly members: T
+} & Variables<V>
+
 type Variables<V extends VariablesNode | undefined = undefined> = V extends undefined ? {} : { readonly variables: V }
 
 export interface VariablesNode {
@@ -90,7 +99,7 @@ export function schema<T extends { [K in keyof T]: Node }>(members: T): SchemaNo
 export function number(): NumberNode
 export function number<V extends VariablesNode>(variables: V): NumberNode<V>
 export function number<V extends VariablesNode | undefined = undefined>(variables?: V): any {
-	return variables === undefined ? { tag: 'Number', model: m.number } : { tag: 'Number', variables, model: m.number }
+	return variables === undefined ? { tag: 'Number', model: M.number } : { tag: 'Number', variables, model: M.number }
 }
 
 export const staticNumberNode = number()
@@ -102,7 +111,7 @@ export function isNumberNode(u: Node): u is NumberNode {
 export function stringNode(): StringNode
 export function stringNode<V extends VariablesNode>(variables: V): StringNode<V>
 export function stringNode<V extends VariablesNode | undefined = undefined>(variables?: V): any {
-	return variables === undefined ? { tag: 'String', model: m.string } : { tag: 'String', variables, model: m.string }
+	return variables === undefined ? { tag: 'String', model: M.string } : { tag: 'String', variables, model: M.string }
 }
 
 export const staticStringNode = stringNode()
@@ -115,8 +124,8 @@ export function booleanNode(): BooleanNode
 export function booleanNode<V extends VariablesNode>(variables: V): BooleanNode<V>
 export function booleanNode<V extends VariablesNode | undefined = undefined>(variables?: V): any {
 	return variables === undefined
-		? { tag: 'Boolean', model: m.boolean }
-		: { tag: 'Boolean', variables, model: m.boolean }
+		? { tag: 'Boolean', model: M.boolean }
+		: { tag: 'Boolean', variables, model: M.boolean }
 }
 
 export const staticBooleanNode = booleanNode()
@@ -181,4 +190,16 @@ export function arrayNode<T extends Node, V extends VariablesNode | undefined = 
 
 export function isArrayNode(u: Node): u is ArrayNode<any> {
 	return u.tag === 'Array'
+}
+
+export function sumNode<T extends { [K in keyof T]: TypeNode<string, object> }>(members: T): SumNode<T>
+export function sumNode<T extends { [K in keyof T]: TypeNode<string, object> }, V extends VariablesNode>(
+	members: T,
+	variables: V
+): SumNode<T, V>
+export function sumNode<
+	T extends { [K in keyof T]: TypeNode<string, object> },
+	V extends VariablesNode | undefined = undefined
+>(members: T, variables?: V): any {
+	return variables === undefined ? { tag: 'Sum', members } : { variables, tag: 'Sum', members }
 }

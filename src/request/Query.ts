@@ -1,5 +1,5 @@
 import { TypeOf } from '../model/Model'
-import { BoxedNode, TypeNode, LiteralNode, Node, SchemaNode, VariablesNode } from '../schema/Node'
+import { BoxedNode, TypeNode, LiteralNode, Node, SchemaNode, VariablesNode, SumNode } from '../schema/Node'
 
 export type Query<S extends SchemaNode<any> | TypeNode<string, any>> = {
 	[K in keyof S['members']]?: ExtractQueryType<S['members'][K]>
@@ -11,6 +11,12 @@ type ExtractQueryType<T> = T extends LiteralNode
 	? ExtractBoxedNode<T>
 	: T extends TypeNode<string, any>
 	? ExtractInterfaceNode<T>
+	: T extends SumNode<any>
+	? ExtractSumNode<T>
+	: never
+
+type ExtractSumNode<T> = T extends SumNode<any>
+	? { [K in keyof T['members']]: ExtractInterfaceNode<T['members'][K]> } & ExtractInterfaceNodeVariables<T>
 	: never
 
 type ExtractInterfaceNode<T> = T extends TypeNode<any, any>
