@@ -1,9 +1,13 @@
-import { IO } from 'fp-ts/lib/IO'
-import { Option } from 'fp-ts/lib/Option'
+import {SchemaNode} from '../schema/Node';
 
-export interface Cache<T> {
-	write(data: T, isOptimistic: boolean): IO<Evict>
-	read(includeOptimistic: boolean): IO<Option<T>>
+interface ofRef<T> {
+	(a: T): Ref<T>;
 }
 
-export type Evict = IO<void>
+interface Ref<T> {
+	value: T;
+}
+
+export function make<S extends SchemaNode<any>, R extends ofRef<any>>(schema: S, of: R) {
+
+}

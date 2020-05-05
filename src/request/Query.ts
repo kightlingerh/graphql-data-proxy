@@ -1,20 +1,21 @@
-import { TypeOf } from '../schema/Model'
-import { BoxedNode, InterfaceNode, LiteralNode, Node, Schema, VariablesNode } from '../schema/Node'
+import { TypeOf } from '../model/Model'
+import { BoxedNode, TypeNode, LiteralNode, Node, SchemaNode, VariablesNode } from '../schema/Node'
 
-export type Query<S extends Schema<any> | InterfaceNode<any>> = {
-	[K in keyof S['members']]?: ExtractNode<S['members'][K]>
+export type Query<S extends SchemaNode<any> | TypeNode<string, any>> = {
+	[K in keyof S['members']]?: ExtractQueryType<S['members'][K]>
 }
 
-type ExtractNode<T> = T extends LiteralNode
+type ExtractQueryType<T> = T extends LiteralNode
 	? ExtractLiteralNode<T>
 	: T extends BoxedNode<any>
 	? ExtractBoxedNode<T>
-	: T extends InterfaceNode<any>
+	: T extends TypeNode<string, any>
 	? ExtractInterfaceNode<T>
 	: never
 
-type ExtractInterfaceNode<T> = T extends InterfaceNode<any>
-	? { [K in keyof T['members']]?: ExtractNode<T['members'][K]> } & ExtractInterfaceNodeVariables<T>
+type ExtractInterfaceNode<T> = T extends TypeNode<any, any>
+	? { [K in keyof T['members']]?: ExtractQueryType<T['members'][K]> } &
+			ExtractInterfaceNodeVariables<T> & { __typename?: boolean }
 	: never
 
 type ExtractLiteralNode<T> = T extends LiteralNode<infer V>
@@ -24,22 +25,22 @@ type ExtractLiteralNode<T> = T extends LiteralNode<infer V>
 	: never
 
 type ExtractBoxedNode<T> = T extends BoxedNode<infer A>
-	? A extends InterfaceNode<any>
+	? A extends TypeNode<string, any>
 		? Query<A> & ExtractBoxedNodeLiteralVariables<T>
 		: A extends LiteralNode
 		? ExtractBoxedNodeLiteralVariables<T>
 		: A extends BoxedNode<infer B>
-		? B extends InterfaceNode<any>
+		? B extends TypeNode<string, any>
 			? Query<B> & ExtractBoxedNodeLiteralVariables<T>
 			: B extends LiteralNode
 			? ExtractBoxedNodeLiteralVariables<T>
 			: B extends BoxedNode<infer C>
-			? C extends InterfaceNode<any>
+			? C extends TypeNode<string, any>
 				? Query<C> & ExtractBoxedNodeLiteralVariables<T>
 				: C extends LiteralNode
 				? ExtractBoxedNodeLiteralVariables<T>
 				: C extends BoxedNode<infer D>
-				? D extends InterfaceNode<any>
+				? D extends TypeNode<string, any>
 					? Query<D> & ExtractBoxedNodeLiteralVariables<T>
 					: D extends LiteralNode
 					? ExtractBoxedNodeLiteralVariables<T>
