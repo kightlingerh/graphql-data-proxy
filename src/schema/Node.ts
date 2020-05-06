@@ -32,9 +32,10 @@ type Tag =
 	| 'Sum'
 	| 'Scalar'
 
-export interface SchemaNode<T extends { [K in keyof T]: Node }>
+export interface Schema<T extends { [K in keyof T]: Node }>
 	extends DocumentNode<
 		{ [K in keyof T]: ExtractModelType<T[K]> },
+		{},
 		{} & Intersection<Values<{ [K in keyof T]: Exclude<T[K]['__mergedVariables'], undefined> }>>
 	> {
 	readonly tag: 'Schema'
@@ -252,7 +253,7 @@ export function scalarNode<N extends string, T, V extends VariablesNode | undefi
 	return variables === undefined ? { name, tag: 'Scalar', model } : { name, tag: 'Type', variables, model }
 }
 
-export function schema<T extends { [K in keyof T]: Node }>(members: T): SchemaNode<T> {
+export function schema<T extends { [K in keyof T]: Node }>(members: T): Schema<T> {
 	return {
 		tag: 'Schema',
 		members

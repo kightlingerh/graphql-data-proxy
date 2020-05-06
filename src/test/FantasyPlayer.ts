@@ -1,7 +1,7 @@
 import { some } from 'fp-ts/lib/Option'
 import { Cache } from '../cache/Cache'
 import { Query } from '../request/Query'
-import { array, literal, number, optionString, string, sum, type } from '../model/Model'
+import {array, literal, number, optionString, string, sum, type, TypeOf} from '../model/Model'
 import {
 	typeNode,
 	mapNode,
@@ -49,102 +49,7 @@ const FantasyPlayer = schema({
 	statistics: FantasyPlayerStatisticsMap
 })
 
-type FantasyPlayerVariables = (typeof FantasyPlayer)['variables'];
+type Response = TypeOf<(typeof FantasyPlayer)['model']>
 
-type FantasyPlayerCache = ExtractCacheType<typeof FantasyPlayer>
+type Store = Exclude<(typeof FantasyPlayer)['store'], undefined>
 
-type FantasyPlayerRequest = ExtractRequestType<typeof FantasyPlayer>
-
-const query: Query<typeof FantasyPlayer> = {
-	id: true,
-	info: {
-		fantasyPlayerFantasyInfo: {
-			__typename: true,
-			ownerFantasyTeamId: true
-		},
-		fantasyPlayerPersonalInfo: {
-			__typename: true,
-			pictureUrl: true
-		}
-	},
-	personalInfo: {
-		__typename: true,
-		pictureUrl: true,
-		firstName: true,
-		dob: true
-	},
-	statistics: {
-		__variables: {
-			statisticIds: [1]
-		},
-		dob: true
-	}
-}
-
-const cache: Cache<typeof FantasyPlayer> = {
-	id: { value: some('fantasy-player-id-1') },
-	info: {
-		pictureUrl: {
-			value: some('test')
-		},
-		firstName: {
-			value: some('Harry')
-		},
-		lastName: {
-			value: some('Kightlinger')
-		},
-		dob: {
-			value: some('11-17-1991')
-		},
-		height: {
-			value: some(67)
-		},
-		weight: {
-			value: some(150)
-		}
-	},
-	number: { value: some(1) },
-	personalInfo: {
-		pictureUrl: {
-			value: some('test')
-		},
-		firstName: {
-			value: some('Harry')
-		},
-		lastName: {
-			value: some('Kightlinger')
-		},
-		dob: {
-			value: some('11-17-1991')
-		},
-		height: {
-			value: some(67)
-		},
-		weight: {
-			value: some(150)
-		}
-	},
-	statistics: () => ({
-		value: some(new Map())
-	})
-}
-
-const FantasyPlayerPersonalInfoModel = type({
-	__typename: literal('FantasyPlayerPersonalInfo'),
-	pictureUrl: string,
-	firstName: string,
-	lastName: string,
-	dob: string,
-	height: number,
-	weight: number
-})
-
-const FantasyPlayerFantasyInfoModel = type({
-	__typename: literal('FantasyPlayerFantasyInfo'),
-	ownerFantasyTeamId: optionString
-})
-
-const sumInfo = sum('__typename')({
-	FantasyPlayerPersonalInfo: FantasyPlayerPersonalInfoModel,
-	FantasyPlayerFantasyInfo: FantasyPlayerFantasyInfoModel
-})
