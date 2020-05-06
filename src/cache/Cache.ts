@@ -2,16 +2,17 @@ import { FunctionN } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
-import {Reader} from 'fp-ts/lib/Reader';
+import { Reader } from 'fp-ts/lib/Reader'
 import { TypeOf } from '../model'
 import {
 	ArrayNode,
-	BoxedNode,
+	WrappedNode,
 	LiteralNode,
 	MapNode,
 	Node,
 	NonEmptyArrayNode,
-	OptionNode, ScalarNode,
+	OptionNode,
+	ScalarNode,
 	SchemaNode,
 	SumNode,
 	TypeNode,
@@ -26,7 +27,7 @@ export type ExtractCacheType<T> = T extends TypeNode<any, any>
 	? ExtractTypeNode<T>
 	: T extends LiteralNode
 	? ExtractLiteralNode<T>
-	: T extends BoxedNode<any>
+	: T extends WrappedNode<any>
 	? ExtractBoxedNode<T>
 	: T extends SumNode<any>
 	? ExtractSumNode<T>
@@ -169,7 +170,7 @@ type ExtractNonEmptyArrayNode<T> = T extends Node<infer V>
 	: never
 
 type ExtractMapNode<T> = T extends Node<infer V>
-	? T extends BoxedNode<infer A>
+	? T extends WrappedNode<infer A>
 		? T extends MapNode<any, any, infer K>
 			? A extends LiteralNode
 				? NodeRef<Map<TypeOf<K>, TypeOf<A['model']>>, V>
@@ -214,7 +215,7 @@ type VariableRef<V, T> = V extends undefined ? never : FunctionN<[ExtractVariabl
 type ExtractVariables<V> = V extends VariablesNode ? { [K in keyof V]: TypeOf<V[K]> } : never
 
 interface OfRef {
-	<T>(value?: T): Ref<T>;
+	<T>(value?: T): Ref<T>
 }
 
 export function cache<T extends Node>(node: T): Reader<OfRef, ExtractCacheType<T>> {

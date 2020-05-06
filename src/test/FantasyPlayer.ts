@@ -1,5 +1,5 @@
 import { some } from 'fp-ts/lib/Option'
-import {Cache} from '../cache/Cache'
+import { Cache } from '../cache/Cache'
 import { Query } from '../request/Query'
 import { array, literal, number, optionString, string, sum, type } from '../model/Model'
 import {
@@ -8,9 +8,7 @@ import {
 	schema,
 	staticNumberNode,
 	staticStringNode,
-	sumNode,
-	ExtractCacheType,
-	ExtractRequestType
+	sumNode, arrayNode, scalarNode
 } from '../schema/Node'
 
 const FantasyPlayerId = staticStringNode
@@ -19,18 +17,20 @@ const Date = staticStringNode
 
 const FantasyPlayerPersonalInfo = typeNode(literal('FantasyPlayerPersonalInfo'), {
 	pictureUrl: staticStringNode,
-	firstName: staticStringNode,
+	firstName: staticStringNode
 })
+
+type Info = (typeof FantasyPlayerPersonalInfo)['model'];
 
 const FantasyPlayerFantasyInfo = typeNode(literal('FantasyPlayerFantasyInfo'), {
 	ownerFantasyTeamId: staticStringNode
-})
+}, { fantasyLeagueIds: arrayNode(scalarNode('FantasyLeagueId', string)) })
 
 const FantasyPlayerStatisticsQueryVariables = {
-	statisticIds: array(string)
+	statisticIds: arrayNode(staticStringNode)
 }
 
-const info = sumNode({
+const FantasyPlayerInfoUnion = sumNode({
 	fantasyPlayerFantasyInfo: FantasyPlayerFantasyInfo,
 	fantasyPlayerPersonalInfo: FantasyPlayerPersonalInfo
 })
@@ -39,19 +39,21 @@ const FantasyPlayerStatistics = mapNode(number, FantasyPlayerPersonalInfo)
 
 const FantasyPlayerStatisticsMap = mapNode(number, FantasyPlayerPersonalInfo, FantasyPlayerStatisticsQueryVariables)
 
-type FantasyPlayerStatisticsRequest = ExtractCacheType<typeof FantasyPlayerStatisticsMap>
+type FantasyPlayerStatisticsMapModel = (typeof FantasyPlayerStatisticsMap);
 
 const FantasyPlayer = schema({
 	id: FantasyPlayerId,
 	number: staticNumberNode,
+	fantasyInfo: FantasyPlayerFantasyInfo,
 	personalInfo: FantasyPlayerPersonalInfo,
-	statistics: FantasyPlayerStatisticsMap,
-
+	statistics: FantasyPlayerStatisticsMap
 })
+
+type FantasyPlayerVariables = (typeof FantasyPlayer)['variables'];
 
 type FantasyPlayerCache = ExtractCacheType<typeof FantasyPlayer>
 
-type FantasyPlayerRequest = ExtractRequestType<typeof FantasyPlayer>;
+type FantasyPlayerRequest = ExtractRequestType<typeof FantasyPlayer>
 
 const query: Query<typeof FantasyPlayer> = {
 	id: true,

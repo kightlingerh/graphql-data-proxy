@@ -1,5 +1,5 @@
 import { TypeOf } from '../model/Model'
-import { BoxedNode, TypeNode, LiteralNode, Node, SchemaNode, VariablesNode, SumNode, ScalarNode } from '../schema/Node'
+import { WrappedNode, TypeNode, LiteralNode, Node, SchemaNode, VariablesNode, SumNode, ScalarNode } from '../schema/Node'
 
 export type Query<S extends SchemaNode<any> | TypeNode<string, any>> = {
 	[K in keyof S['members']]?: ExtractQueryType<S['members'][K]>
@@ -7,7 +7,7 @@ export type Query<S extends SchemaNode<any> | TypeNode<string, any>> = {
 
 type ExtractQueryType<T> = T extends LiteralNode
 	? ExtractLiteralNode<T>
-	: T extends BoxedNode<any>
+	: T extends WrappedNode<any>
 	? ExtractBoxedNode<T>
 	: T extends TypeNode<string, any>
 	? ExtractInterfaceNode<T>
@@ -38,22 +38,22 @@ type ExtractScalarNode<T> = T extends ScalarNode<string, any, infer V>
 		: boolean
 	: never
 
-type ExtractBoxedNode<T> = T extends BoxedNode<infer A>
+type ExtractBoxedNode<T> = T extends WrappedNode<infer A>
 	? A extends TypeNode<string, any>
 		? Query<A> & ExtractBoxedNodeLiteralVariables<T>
 		: A extends LiteralNode
 		? ExtractBoxedNodeLiteralVariables<T>
-		: A extends BoxedNode<infer B>
+		: A extends WrappedNode<infer B>
 		? B extends TypeNode<string, any>
 			? Query<B> & ExtractBoxedNodeLiteralVariables<T>
 			: B extends LiteralNode
 			? ExtractBoxedNodeLiteralVariables<T>
-			: B extends BoxedNode<infer C>
+			: B extends WrappedNode<infer C>
 			? C extends TypeNode<string, any>
 				? Query<C> & ExtractBoxedNodeLiteralVariables<T>
 				: C extends LiteralNode
 				? ExtractBoxedNodeLiteralVariables<T>
-				: C extends BoxedNode<infer D>
+				: C extends WrappedNode<infer D>
 				? D extends TypeNode<string, any>
 					? Query<D> & ExtractBoxedNodeLiteralVariables<T>
 					: D extends LiteralNode

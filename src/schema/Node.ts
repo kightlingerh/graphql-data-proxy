@@ -1,155 +1,133 @@
-import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray';
-import {Option} from 'fp-ts/lib/Option';
-import {TypeOf} from '../model/Model';
+import { FunctionN } from 'fp-ts/lib/function'
+import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
+import { Option } from 'fp-ts/lib/Option'
 import * as M from '../model/Model'
 
-export type Node<V extends VariablesNode | undefined = undefined> =
-	| LiteralNode<V>
-	| ScalarNode<string, any, V>
-	| TypeNode<string, any, V>
-	| ArrayNode<any, V>
-	| MapNode<any, V, any>
-	| OptionNode<any, V>
-	| NonEmptyArrayNode<any, V>
-	| SumNode<object, V>
-	| SchemaNode<object>;
+interface DocumentNode<T, V extends VariablesNode = {}, MV extends VariablesNode = {}> {
+	readonly __mergedVariables?: MV
+	readonly tag: Tag
+	readonly model: M.Model<T>
+	readonly gql: string
+	readonly variables: V
+	readonly store?: Store<T, V>
+}
 
-export type SchemaNode<T extends { [K in keyof T]: Node }> = {
-	readonly __responseType?: { [K in keyof T]: ExtractResponseType<T[K]> }
-	readonly __requestType?: { [K in keyof T]: ExtractRequestType<T[K]> }
-	readonly __cacheType?: { [K in keyof T]: ExtractCacheType<T[K]> }
+export type Node =
+	| LiteralNode<any>
+	| TypeNode<string, any, any>
+	| WrappedNode<any>
+	| SumNode<any, any>
+	| ScalarNode<string, any, any>
+
+type Tag =
+	| 'Schema'
+	| 'String'
+	| 'Boolean'
+	| 'Number'
+	| 'Type'
+	| 'Array'
+	| 'Map'
+	| 'Option'
+	| 'NonEmptyArray'
+	| 'Sum'
+	| 'Scalar'
+
+export interface SchemaNode<T extends { [K in keyof T]: Node }>
+	extends DocumentNode<
+		{ [K in keyof T]: ExtractModelType<T[K]> },
+		{} & Intersection<Values<{ [K in keyof T]: Exclude<T[K]['__mergedVariables'], undefined> }>>
+	> {
 	readonly tag: 'Schema'
 	readonly members: T
 }
 
-export type LiteralNode<V extends VariablesNode | undefined = undefined> =
-	| StringNode<V>
-	| BooleanNode<V>
-	| NumberNode<V>
+export type LiteralNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
 
-export type StringNode<V extends VariablesNode | undefined = undefined> = {
-	readonly __responseType?: string;
-	readonly __requestType?: boolean;
-	readonly __cacheType?: Ref<string>;
+export interface StringNode<V extends VariablesNode = {}> extends DocumentNode<string, V> {
 	readonly tag: 'String'
-	readonly model: M.Model<string>
-} & Variables<V>
+}
 
-export type BooleanNode<V extends VariablesNode | undefined = undefined> = {
-	readonly __responseType?: boolean;
-	readonly __requestType?: boolean;
-	readonly __cacheType?: Ref<boolean>;
+export interface BooleanNode<V extends VariablesNode = {}> extends DocumentNode<boolean, V> {
 	readonly tag: 'Boolean'
-	readonly model: M.Model<boolean>
-} & Variables<V>
+}
 
-export type NumberNode<V extends VariablesNode | undefined = undefined> = {
-	readonly __responseType?: number;
-	readonly __requestType?: boolean;
-	readonly __cacheType?: Ref<number>;
+export interface NumberNode<V extends VariablesNode = {}> extends DocumentNode<number, V> {
 	readonly tag: 'Number'
-	readonly model: M.Model<number>
-} & Variables<V>
+}
 
-export type TypeNode<
-	N extends string,
-	T extends { [K in keyof T]: Node },
-	V extends VariablesNode | undefined = undefined
-> = {
-	readonly __responseType?: { [K in keyof T]: ExtractResponseType<T[K]> }
-	readonly __requestType?: { [K in keyof T]: ExtractRequestType<T[K]> };
-	readonly __cacheType?: { [K in keyof T]: ExtractCacheType<T[K]> }
+export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, V extends VariablesNode = {}>
+	extends DocumentNode<
+		{ [K in keyof T]: ExtractModelType<T[K]> },
+		V,
+		V & Intersection<Values<{ [K in keyof T]: Exclude<T[K]['__mergedVariables'], undefined> }>>
+	> {
 	readonly __typename: N
 	readonly tag: 'Type'
 	readonly members: T
-} & Variables<V>
+}
 
-export type BoxedNode<T extends Node, V extends VariablesNode | undefined = undefined> =
-	| ArrayNode<T, V>
-	| MapNode<T, V>
-	| OptionNode<T, V>
-	| NonEmptyArrayNode<T, V>
+export type WrappedNode<T extends Node> =
+	| ArrayNode<T, any>
+	| MapNode<T, any, any>
+	| OptionNode<T, any>
+	| NonEmptyArrayNode<T, any>
 
-export type ArrayNode<T extends Node, V extends VariablesNode | undefined = undefined> = {
-	readonly __responseType?: ExtractResponseType<T>[];
-	readonly __requestType?: ExtractRequestType<T>;
-	readonly __cacheType?: Ref<ExtractCacheType<T>[]>;
+export interface ArrayNode<T extends Node, V extends VariablesNode = {}>
+	extends DocumentNode<ExtractModelType<T>[], V, V & Exclude<T['__mergedVariables'], undefined>> {
 	readonly tag: 'Array'
-	readonly boxed: T
-} & Variables<V>
+	readonly wrapped: T
+}
 
-type MapKey = M.Model<string> | M.Model<number>
-
-export type MapNode<
-	T extends Node,
-	V extends VariablesNode | undefined = undefined,
-	K extends M.Model<any> = MapKey
-> = {
-	readonly __responseType?: Map<TypeOf<K>, ExtractResponseType<T>>;
-	readonly __requestType?: ExtractRequestType<T>;
-	readonly __cacheType?: Ref<Map<TypeOf<K>, ExtractCacheType<T>>>
+export interface MapNode<T extends Node, V extends VariablesNode = {}, K extends string | number = string | number>
+	extends DocumentNode<Map<K, ExtractModelType<T>>, V, V & Exclude<T['__mergedVariables'], undefined>> {
 	readonly tag: 'Map'
 	readonly key: K
-	readonly boxed: T
-} & Variables<V>
+	readonly wrapped: T
+}
 
-export type OptionNode<T extends Node, V extends VariablesNode | undefined = undefined> = {
-	readonly __responseType?: Option<ExtractResponseType<T>>;
-	readonly __requestType?: ExtractRequestType<T>;
-	readonly __cacheType?: Ref<Option<ExtractCacheType<T>>>
+export interface OptionNode<T extends Node, V extends VariablesNode = {}>
+	extends DocumentNode<Option<ExtractModelType<T>>, V, V & Exclude<T['__mergedVariables'], undefined>> {
 	readonly tag: 'Option'
-	readonly boxed: T
-} & Variables<V>
+	readonly wrapped: T
+}
 
-export type NonEmptyArrayNode<T extends Node, V extends VariablesNode | undefined = undefined> = {
-	readonly __responseType?: NonEmptyArray<ExtractResponseType<T>>;
-	readonly __requestType?: ExtractRequestType<T>;
-	readonly __cacheType?: Ref<NonEmptyArray<ExtractCacheType<T>>>
+export interface NonEmptyArrayNode<T extends Node, V extends VariablesNode = {}>
+	extends DocumentNode<NonEmptyArray<ExtractModelType<T>>, V, V & Exclude<T['__mergedVariables'], undefined>> {
 	readonly tag: 'NonEmptyArray'
-	readonly boxed: T
-} & Variables<V>
+	readonly wrapped: T
+}
 
-export type SumNode<
-	T extends { [K in keyof T]: TypeNode<string, object> },
-	V extends VariablesNode | undefined = undefined
-> = {
-	readonly __responseType?: { [K in keyof T]: ExtractResponseType<T[K]> }[keyof T];
-	readonly __requestType?: { [K in keyof T]: ExtractRequestType<T[K]> }[keyof T];
-	readonly __cacheType?: { [K in keyof T]: ExtractCacheType<T[K]> }[keyof T];
-	readonly tag: any // typescript is bugging out here, should be 'Sum'
+export interface SumNode<T extends { [K in keyof T]: TypeNode<string, any> }, V extends VariablesNode = {}>
+	extends DocumentNode<
+		{ [K in keyof T]: ExtractModelType<T[K]> }[keyof T],
+		V,
+		V & Intersection<Values<{ [K in keyof T]: Exclude<T[K]['__mergedVariables'], undefined> }>>
+	> {
+	readonly tag: 'Sum'
 	readonly members: T
-} & Variables<V>
+}
 
-export type ScalarNode<N extends string, T, V extends VariablesNode | undefined = undefined> = {
-	readonly __responseType?: T;
-	readonly __requestType?: boolean;
-	readonly __cacheType?: Ref<T>
+export interface ScalarNode<N extends string, T, V extends VariablesNode = {}> extends DocumentNode<T, V> {
 	readonly tag: 'Scalar'
 	readonly name: N
-	readonly model: M.Model<T>
-} & Variables<V>
+}
 
-export type ExtractResponseType<T> = T extends Node ? Exclude<T['__responseType'], undefined> : never;
+type ExtractModelType<T> = T extends { readonly model: M.Model<infer A> } ? A : never
 
-export type ExtractCacheType<T> = T extends Node ? Exclude<T['__cacheType'], undefined> : never
+type Store<T, V extends VariablesNode = {}> = keyof V extends never
+	? Ref<T>
+	: FunctionN<[{ [K in keyof V]: ExtractModelType<V[K]> }], Ref<T>>
 
-export type ExtractRequestType<T> = T extends Node ? Exclude<T['__requestType'], undefined>: never;
+type Values<T> = T[keyof T]
 
-type Variables<V extends VariablesNode | undefined = undefined> = V extends undefined ? {} : { readonly variables: V }
+type Intersection<T> = (T extends unknown ? (x: T) => 0 : never) extends (x: infer R) => 0 ? R : never
 
-export interface VariablesNode {
-	readonly [K: string]: M.Model<any>
+interface VariablesNode {
+	[K: string]: Node
 }
 
 interface Ref<T> {
-	value: Option<T>;
-}
-
-export function schema<T extends { [K in keyof T]: Node }>(members: T): SchemaNode<T> {
-	return {
-		tag: 'Schema',
-		members
-	}
+	value: Option<T>
 }
 
 export function number(): NumberNode
@@ -194,14 +172,14 @@ export function isLiteralNode(u: Node): u is LiteralNode {
 	return isNumberNode(u) || isStringNode(u) || isBooleanNode(u)
 }
 
-export function mapNode<K extends M.Model<any>, T extends Node>(key: K, value: T): MapNode<T, undefined, K>
-export function mapNode<K extends M.Model<any>, T extends Node, V extends VariablesNode>(
-	key: K,
+export function mapNode<K extends string | number, T extends Node>(key: M.Model<K>, value: T): MapNode<T, {}, K>
+export function mapNode<K extends string | number, T extends Node, V extends VariablesNode>(
+	key: M.Model<K>,
 	value: T,
 	variables: V
 ): MapNode<T, V, K>
-export function mapNode<K extends M.Model<any>, T extends Node, V extends VariablesNode | undefined = undefined>(
-	key: K,
+export function mapNode<K extends string | number, T extends Node, V extends VariablesNode | undefined = undefined>(
+	key: M.Model<K>,
 	value: T,
 	variables?: V
 ): any {
@@ -224,7 +202,7 @@ export function typeNode<N extends string, T extends { [K in keyof T]: Node }, V
 export function typeNode<
 	N extends string,
 	T extends { [K in keyof T]: Node },
-	V extends VariablesNode | undefined = undefined
+	V extends VariablesNode = {}
 >(__typename: M.Model<N>, members: T, variables?: V): any {
 	return variables === undefined
 		? { __typename, tag: 'Type', members }
@@ -248,33 +226,35 @@ export function isArrayNode(u: Node): u is ArrayNode<any> {
 	return u.tag === 'Array'
 }
 
-export function sumNode<T extends { [K in keyof T]: TypeNode<string, object> }>(members: T): SumNode<T>
-export function sumNode<T extends { [K in keyof T]: TypeNode<string, object> }, V extends VariablesNode>(
+export function sumNode<T extends { [K in keyof T]: TypeNode<string, any> }>(members: T): SumNode<T>
+export function sumNode<T extends { [K in keyof T]: TypeNode<string, any> }, V extends VariablesNode>(
 	members: T,
 	variables: V
 ): SumNode<T, V>
 export function sumNode<
-	T extends { [K in keyof T]: TypeNode<string, object> },
+	T extends { [K in keyof T]: TypeNode<string, any> },
 	V extends VariablesNode | undefined = undefined
 >(members: T, variables?: V): any {
 	return variables === undefined ? { tag: 'Sum', members } : { variables, tag: 'Sum', members }
 }
 
-export function scalarNode<N extends string, T>(
-	name: N,
-	model: M.Model<T>
-): ScalarNode<N, T>
+export function scalarNode<N extends string, T>(name: N, model: M.Model<T>): ScalarNode<N, T>
 export function scalarNode<N extends string, T, V extends VariablesNode>(
 	name: N,
 	model: M.Model<T>,
 	variables: V
 ): ScalarNode<N, T, V>
-export function scalarNode<
-	N extends string,
-	T,
-	V extends VariablesNode | undefined = undefined
-	>(name: N, model: M.Model<T>, variables?: V): any {
-	return variables === undefined
-		? { name, tag: 'Scalar', model }
-		: { name, tag: 'Type', variables, model }
+export function scalarNode<N extends string, T, V extends VariablesNode | undefined = undefined>(
+	name: N,
+	model: M.Model<T>,
+	variables?: V
+): any {
+	return variables === undefined ? { name, tag: 'Scalar', model } : { name, tag: 'Type', variables, model }
+}
+
+export function schema<T extends { [K in keyof T]: Node }>(members: T): SchemaNode<T> {
+	return {
+		tag: 'Schema',
+		members
+	}
 }
