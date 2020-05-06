@@ -77,3 +77,6 @@ type ExtractBoxedNodeLiteralVariables<T> = T extends Node<infer V>
 	: never
 
 type ExtractVariables<V> = V extends VariablesNode ? { [K in keyof V]: TypeOf<V[K]> } : never
+
+type ExtractMeta
+
