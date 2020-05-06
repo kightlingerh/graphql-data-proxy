@@ -2,6 +2,7 @@ import { FunctionN } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
+import {Reader} from 'fp-ts/lib/Reader';
 import { TypeOf } from '../model'
 import {
 	ArrayNode,
@@ -211,3 +212,17 @@ export interface Ref<T> {
 type VariableRef<V, T> = V extends undefined ? never : FunctionN<[ExtractVariables<V>], Ref<T>>
 
 type ExtractVariables<V> = V extends VariablesNode ? { [K in keyof V]: TypeOf<V[K]> } : never
+
+interface OfRef {
+	<T>(value?: T): Ref<T>;
+}
+
+export function cache<T extends Node>(node: T): Reader<OfRef, ExtractCacheType<T>> {
+	return (of) => {}
+}
+
+interface Test {
+	field?: string
+}
+
+type TestField = Exclude<Test['field'], undefined>

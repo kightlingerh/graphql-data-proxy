@@ -29,7 +29,6 @@ export type StringNode<V extends VariablesNode | undefined = undefined> = {
 export type BooleanNode<V extends VariablesNode | undefined = undefined> = {
 	readonly tag: 'Boolean'
 	readonly model: M.Model<boolean>
-	readonly cache?: any
 } & Variables<V>
 
 export type NumberNode<V extends VariablesNode | undefined = undefined> = {
@@ -213,4 +212,23 @@ export function sumNode<
 	V extends VariablesNode | undefined = undefined
 >(members: T, variables?: V): any {
 	return variables === undefined ? { tag: 'Sum', members } : { variables, tag: 'Sum', members }
+}
+
+export function scalarNode<N extends string, T>(
+	name: N,
+	model: M.Model<T>
+): ScalarNode<N, T>
+export function scalarNode<N extends string, T, V extends VariablesNode>(
+	name: N,
+	model: M.Model<T>,
+	variables: V
+): ScalarNode<N, T, V>
+export function scalarNode<
+	N extends string,
+	T,
+	V extends VariablesNode | undefined = undefined
+	>(name: N, model: M.Model<T>, variables?: V): any {
+	return variables === undefined
+		? { name, tag: 'Scalar', model }
+		: { name, tag: 'Type', variables, model }
 }
