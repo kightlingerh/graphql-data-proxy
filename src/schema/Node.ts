@@ -1,3 +1,6 @@
+import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray';
+import {Option} from 'fp-ts/lib/Option';
+import {TypeOf} from '../model/Model';
 import * as M from '../model/Model'
 
 export type Node<V extends VariablesNode | undefined = undefined> =
@@ -8,10 +11,13 @@ export type Node<V extends VariablesNode | undefined = undefined> =
 	| MapNode<any, V, any>
 	| OptionNode<any, V>
 	| NonEmptyArrayNode<any, V>
-	| SchemaNode<object>
 	| SumNode<object, V>
+	| SchemaNode<object>;
 
 export type SchemaNode<T extends { [K in keyof T]: Node }> = {
+	readonly __responseType?: { [K in keyof T]: ExtractResponseType<T[K]> }
+	readonly __requestType?: { [K in keyof T]: ExtractRequestType<T[K]> }
+	readonly __cacheType?: { [K in keyof T]: ExtractCacheType<T[K]> }
 	readonly tag: 'Schema'
 	readonly members: T
 }
@@ -22,16 +28,25 @@ export type LiteralNode<V extends VariablesNode | undefined = undefined> =
 	| NumberNode<V>
 
 export type StringNode<V extends VariablesNode | undefined = undefined> = {
+	readonly __responseType?: string;
+	readonly __requestType?: boolean;
+	readonly __cacheType?: Ref<string>;
 	readonly tag: 'String'
 	readonly model: M.Model<string>
 } & Variables<V>
 
 export type BooleanNode<V extends VariablesNode | undefined = undefined> = {
+	readonly __responseType?: boolean;
+	readonly __requestType?: boolean;
+	readonly __cacheType?: Ref<boolean>;
 	readonly tag: 'Boolean'
 	readonly model: M.Model<boolean>
 } & Variables<V>
 
 export type NumberNode<V extends VariablesNode | undefined = undefined> = {
+	readonly __responseType?: number;
+	readonly __requestType?: boolean;
+	readonly __cacheType?: Ref<number>;
 	readonly tag: 'Number'
 	readonly model: M.Model<number>
 } & Variables<V>
@@ -41,6 +56,9 @@ export type TypeNode<
 	T extends { [K in keyof T]: Node },
 	V extends VariablesNode | undefined = undefined
 > = {
+	readonly __responseType?: { [K in keyof T]: ExtractResponseType<T[K]> }
+	readonly __requestType?: { [K in keyof T]: ExtractRequestType<T[K]> };
+	readonly __cacheType?: { [K in keyof T]: ExtractCacheType<T[K]> }
 	readonly __typename: N
 	readonly tag: 'Type'
 	readonly members: T
@@ -53,6 +71,9 @@ export type BoxedNode<T extends Node, V extends VariablesNode | undefined = unde
 	| NonEmptyArrayNode<T, V>
 
 export type ArrayNode<T extends Node, V extends VariablesNode | undefined = undefined> = {
+	readonly __responseType?: ExtractResponseType<T>[];
+	readonly __requestType?: ExtractRequestType<T>;
+	readonly __cacheType?: Ref<ExtractCacheType<T>[]>;
 	readonly tag: 'Array'
 	readonly boxed: T
 } & Variables<V>
@@ -64,17 +85,26 @@ export type MapNode<
 	V extends VariablesNode | undefined = undefined,
 	K extends M.Model<any> = MapKey
 > = {
+	readonly __responseType?: Map<TypeOf<K>, ExtractResponseType<T>>;
+	readonly __requestType?: ExtractRequestType<T>;
+	readonly __cacheType?: Ref<Map<TypeOf<K>, ExtractCacheType<T>>>
 	readonly tag: 'Map'
 	readonly key: K
 	readonly boxed: T
 } & Variables<V>
 
 export type OptionNode<T extends Node, V extends VariablesNode | undefined = undefined> = {
+	readonly __responseType?: Option<ExtractResponseType<T>>;
+	readonly __requestType?: ExtractRequestType<T>;
+	readonly __cacheType?: Ref<Option<ExtractCacheType<T>>>
 	readonly tag: 'Option'
 	readonly boxed: T
 } & Variables<V>
 
 export type NonEmptyArrayNode<T extends Node, V extends VariablesNode | undefined = undefined> = {
+	readonly __responseType?: NonEmptyArray<ExtractResponseType<T>>;
+	readonly __requestType?: ExtractRequestType<T>;
+	readonly __cacheType?: Ref<NonEmptyArray<ExtractCacheType<T>>>
 	readonly tag: 'NonEmptyArray'
 	readonly boxed: T
 } & Variables<V>
@@ -83,20 +113,36 @@ export type SumNode<
 	T extends { [K in keyof T]: TypeNode<string, object> },
 	V extends VariablesNode | undefined = undefined
 > = {
-	readonly tag: 'Sum'
+	readonly __responseType?: { [K in keyof T]: ExtractResponseType<T[K]> }[keyof T];
+	readonly __requestType?: { [K in keyof T]: ExtractRequestType<T[K]> }[keyof T];
+	readonly __cacheType?: { [K in keyof T]: ExtractCacheType<T[K]> }[keyof T];
+	readonly tag: any // typescript is bugging out here, should be 'Sum'
 	readonly members: T
 } & Variables<V>
 
-export type ScalarNode<N extends string, M, V extends VariablesNode | undefined = undefined> = {
+export type ScalarNode<N extends string, T, V extends VariablesNode | undefined = undefined> = {
+	readonly __responseType?: T;
+	readonly __requestType?: boolean;
+	readonly __cacheType?: Ref<T>
 	readonly tag: 'Scalar'
 	readonly name: N
-	readonly model: M.Model<M>
+	readonly model: M.Model<T>
 } & Variables<V>
+
+export type ExtractResponseType<T> = T extends Node ? Exclude<T['__responseType'], undefined> : never;
+
+export type ExtractCacheType<T> = T extends Node ? Exclude<T['__cacheType'], undefined> : never
+
+export type ExtractRequestType<T> = T extends Node ? Exclude<T['__requestType'], undefined>: never;
 
 type Variables<V extends VariablesNode | undefined = undefined> = V extends undefined ? {} : { readonly variables: V }
 
 export interface VariablesNode {
 	readonly [K: string]: M.Model<any>
+}
+
+interface Ref<T> {
+	value: Option<T>;
 }
 
 export function schema<T extends { [K in keyof T]: Node }>(members: T): SchemaNode<T> {

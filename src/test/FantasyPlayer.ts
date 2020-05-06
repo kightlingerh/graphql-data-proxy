@@ -1,8 +1,17 @@
 import { some } from 'fp-ts/lib/Option'
-import { Cache } from '../cache/Cache'
+import {Cache} from '../cache/Cache'
 import { Query } from '../request/Query'
 import { array, literal, number, optionString, string, sum, type } from '../model/Model'
-import { typeNode, mapNode, schema, staticNumberNode, staticStringNode, sumNode } from '../schema/Node'
+import {
+	typeNode,
+	mapNode,
+	schema,
+	staticNumberNode,
+	staticStringNode,
+	sumNode,
+	ExtractCacheType,
+	ExtractRequestType
+} from '../schema/Node'
 
 const FantasyPlayerId = staticStringNode
 
@@ -11,10 +20,6 @@ const Date = staticStringNode
 const FantasyPlayerPersonalInfo = typeNode(literal('FantasyPlayerPersonalInfo'), {
 	pictureUrl: staticStringNode,
 	firstName: staticStringNode,
-	lastName: staticStringNode,
-	dob: Date,
-	height: staticNumberNode,
-	weight: staticNumberNode
 })
 
 const FantasyPlayerFantasyInfo = typeNode(literal('FantasyPlayerFantasyInfo'), {
@@ -34,17 +39,19 @@ const FantasyPlayerStatistics = mapNode(number, FantasyPlayerPersonalInfo)
 
 const FantasyPlayerStatisticsMap = mapNode(number, FantasyPlayerPersonalInfo, FantasyPlayerStatisticsQueryVariables)
 
+type FantasyPlayerStatisticsRequest = ExtractCacheType<typeof FantasyPlayerStatisticsMap>
+
 const FantasyPlayer = schema({
 	id: FantasyPlayerId,
 	number: staticNumberNode,
 	personalInfo: FantasyPlayerPersonalInfo,
 	statistics: FantasyPlayerStatisticsMap,
-	info
+
 })
 
-const tag = FantasyPlayer.tag
+type FantasyPlayerCache = ExtractCacheType<typeof FantasyPlayer>
 
-const members = FantasyPlayer.members
+type FantasyPlayerRequest = ExtractRequestType<typeof FantasyPlayer>;
 
 const query: Query<typeof FantasyPlayer> = {
 	id: true,
