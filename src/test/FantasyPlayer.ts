@@ -1,51 +1,49 @@
-import { some } from 'fp-ts/lib/Option'
-import { Cache } from '../cache/Cache'
-import { Query } from '../request/Query'
-import { array, literal, number, optionString, string, sum, type, TypeOf } from '../model/Model'
-import { typeNode, mapNode, schema, staticNumberNode, staticStringNode, sum, array, scalar } from '../schema/Node'
+import * as M from '../model/Model';
+import * as N from '../schema/Node'
 
-const FantasyPlayerId = staticStringNode
+const FantasyPlayerId = N.scalar('FantasyPlayerId', M.string)
 
-const Date = staticStringNode
+const Date = N.scalar('SerialDate', M.string)
 
-const FantasyPlayerPersonalInfo = typeNode(literal('FantasyPlayerPersonalInfo'), {
-	pictureUrl: staticStringNode,
-	firstName: staticStringNode
+const FantasyPlayerPersonalInfo = N.type('FantasyPlayerPersonalInfo', {
+	pictureUrl: N.option(N.staticString),
+	firstName: N.staticString
 })
 
-const FantasyPlayerFantasyInfo = typeNode(
-	literal('FantasyPlayerFantasyInfo'),
+const FantasyPlayerFantasyInfo = N.type(
+	'FantasyPlayerFantasyInfo',
 	{
-		ownerFantasyTeamId: staticStringNode
-	},
-	{ fantasyLeagueIds: array(scalar('FantasyLeagueId', string)) }
+		ownerFantasyTeamId: N.staticString
+	}
 )
 
 type FantasyPlayerFantasyInfoStore = typeof FantasyPlayerFantasyInfo['store']
 
 const FantasyPlayerStatisticsQueryVariables = {
-	statisticIds: array(staticStringNode)
+	statisticIds: N.array(N.staticString)
 }
 
-const FantasyPlayerInfoUnion = sum({
+const FantasyPlayerInfoUnion = N.sum({
 	fantasyPlayerFantasyInfo: FantasyPlayerFantasyInfo,
 	fantasyPlayerPersonalInfo: FantasyPlayerPersonalInfo
 })
 
-const FantasyPlayerStatistics = mapNode(number, FantasyPlayerPersonalInfo)
+const FantasyPlayerStatistics = N.map(N.staticNumber, FantasyPlayerPersonalInfo)
 
-const FantasyPlayerStatisticsMap = mapNode(number, FantasyPlayerPersonalInfo, FantasyPlayerStatisticsQueryVariables)
+const FantasyPlayerStatisticsMap = N.map(N.staticNumber, N.staticNumber, FantasyPlayerStatisticsQueryVariables)
 
 type FantasyPlayerStatisticsMapModel = typeof FantasyPlayerStatisticsMap
 
-const FantasyPlayer = typeNode(literal('FantasyPlayer'), {
+const FantasyPlayer = N.type('FantasyPlayer', {
 	id: FantasyPlayerId,
-	number: staticNumberNode,
+	number: N.staticNumber,
 	fantasyInfo: FantasyPlayerFantasyInfo,
 	personalInfo: FantasyPlayerPersonalInfo,
 	statistics: FantasyPlayerStatisticsMap
 })
 
-type Response = TypeOf<typeof FantasyPlayer['model']>
+type Response = M.TypeOf<typeof FantasyPlayer['model']>
 
 type Store = typeof FantasyPlayer['store']
+
+type Cache = Exclude<typeof FantasyPlayer['__cacheType'], undefined>

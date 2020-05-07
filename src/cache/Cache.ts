@@ -5,16 +5,14 @@ import {Ref} from '../shared';
 
 export interface Cache<S extends Schema<any>> {
 	write(data: ExtractModelType<S>): IO<Evict<void>>
-	read(variables: ExtractVariables<S>): IO<ExtractModelType<S>>
-	toRefs(variables: ExtractVariables<S>): IO<S['store']>
-	toRef(variables: ExtractVariables<S>): IO<Ref<ExtractModelType<S>>>
+	read(variables: ExtractVariablesType<S>): IO<ExtractModelType<S>>
+	toRefs(variables: ExtractVariablesType<S>): IO<S['store']>
+	toRef(variables: ExtractVariablesType<S>): IO<Ref<ExtractModelType<S>>>
 }
 
 interface Evict<T> extends IO<T> {}
 
-type ExtractModelType<T> = T extends Node ? TypeOf<T['model']> : never
 
-type ExtractVariables<T> = T extends Schema<infer A> ? { [K in keyof A]: TypeOf<A[K]['model']> } : never
 
 export interface OfRef {
 	<T>(value?: T): Ref<T>;
