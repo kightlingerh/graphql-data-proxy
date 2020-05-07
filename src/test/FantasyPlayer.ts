@@ -1,3 +1,4 @@
+import * as C from '../cache/Cache';
 import * as M from '../model/Model';
 import * as N from '../schema/Node'
 
@@ -34,10 +35,8 @@ const FantasyPlayerStatisticsMap = N.map(N.staticNumber, N.staticNumber, Fantasy
 
 type FantasyPlayerStatisticsMapModel = typeof FantasyPlayerStatisticsMap
 
-const FantasyPlayer = N.type('FantasyPlayer', {
+const FantasyPlayer = N.schema({
 	id: FantasyPlayerId,
-	number: N.staticNumber,
-	fantasyInfo: FantasyPlayerFantasyInfo,
 	personalInfo: FantasyPlayerPersonalInfo,
 	statistics: FantasyPlayerStatisticsMap
 })
@@ -46,4 +45,11 @@ type Response = M.TypeOf<typeof FantasyPlayer['model']>
 
 type Store = typeof FantasyPlayer['store']
 
-type Cache = Exclude<typeof FantasyPlayer['__cacheType'], undefined>
+let x: C.Cache<typeof FantasyPlayer> = 1 as any;
+
+x.write({
+	id: 'test',
+	personalInfo: {
+		firstName:
+	}
+})

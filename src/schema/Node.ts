@@ -11,7 +11,7 @@ interface DocumentNode<ModelType, StoreType, V extends VariablesNode = {}, MV ex
 	readonly model: M.Model<ModelType>
 	readonly print: Lazy<string>
 	readonly variables: V
-	readonly store?: Lazy<StoreType>
+	readonly store?: StoreType
 }
 
 export type Node =
@@ -168,7 +168,7 @@ interface VariablesNode {
 	[K: string]: Node
 }
 
-type ExtractVariables<V extends VariablesNode = {}> = {
+export type ExtractVariables<V extends VariablesNode = {}> = {
 	[K in keyof V]: ExtractModelType<V[K]>
 }
 
