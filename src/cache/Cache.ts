@@ -3,9 +3,9 @@ import * as N from '../schema/Node';
 import {Ref} from '../shared';
 
 export interface Cache<S extends N.Schema<any>> {
-	write(data: N.ExtractModelType<S>): IO<Evict<void>>
+	write(variables: ExtractVariablesType<S>, data: N.ExtractModelType<S>): IO<Evict<void>>
 	read(variables: ExtractVariablesType<S>): IO<N.ExtractModelType<S>>
-	toRefs(variables: ExtractVariablesType<S>): IO<S['__cacheType']>
+	toRefs(variables: ExtractVariablesType<S>): IO<Exclude<S['store'], undefined>>
 	toRef(variables: ExtractVariablesType<S>): IO<Ref<N.ExtractModelType<S>>>
 }
 

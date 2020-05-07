@@ -1,3 +1,4 @@
+import {some} from 'fp-ts/lib/Option';
 import * as C from '../cache/Cache';
 import * as M from '../model/Model';
 import * as N from '../schema/Node'
@@ -47,9 +48,11 @@ type Store = typeof FantasyPlayer['store']
 
 let x: C.Cache<typeof FantasyPlayer> = 1 as any;
 
-x.write({
+x.write({ statisticIds: [''] }, {
 	id: 'test',
 	personalInfo: {
-		firstName:
-	}
+		firstName: 'test',
+		pictureUrl: some('')
+	},
+	statistics: new Map()
 })

@@ -4,9 +4,8 @@ import { Option } from 'fp-ts/lib/Option'
 import * as M from '../model/Model'
 import {constEmptyString, isEmptyObject, once, Ref} from '../shared'
 
-interface DocumentNode<ModelType, StoreType, V extends VariablesNode = {}, MV extends VariablesNode = {}, CacheType = StoreType> {
+interface DocumentNode<ModelType, StoreType, V extends VariablesNode = {}, MV extends VariablesNode = {}> {
 	readonly __mergedVariables?: MV
-	readonly __cacheType?: CacheType
 	readonly tag: string
 	readonly model: M.Model<ModelType>
 	readonly print: Lazy<string>
@@ -42,7 +41,6 @@ export interface Schema<T extends { [K in keyof T]: Node }>
 		Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, {}>,
 		{},
 		{} & Intersection<Values<{ [K in keyof T]: Exclude<T[K]['__mergedVariables'], undefined> }>>,
-		Store<{ [K in keyof T]: ExtractCacheType<T[K]> }, {}>
 	> {
 	readonly tag: 'Schema'
 	readonly members: T
@@ -67,8 +65,7 @@ export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, 
 		{ [K in keyof T]: ExtractModelType<T[K]> },
 		Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, V>,
 		V,
-		V & Intersection<Values<{ [K in keyof T]: Exclude<T[K]['__mergedVariables'], undefined> }>>,
-		Store<{ [K in keyof T]: ExtractCacheType<T[K]> }, V>
+		V & Intersection<Values<{ [K in keyof T]: Exclude<T[K]['__mergedVariables'], undefined> }>>
 	> {
 	readonly __typename: N
 	readonly tag: 'Type'
@@ -86,8 +83,7 @@ export interface ArrayNode<T extends Node, V extends VariablesNode = {}>
 		ExtractModelType<T>[],
 		Store<ExtractStoreType<T>[], V>,
 		V,
-		V & Exclude<T['__mergedVariables'], undefined>,
-		Store<ExtractCacheType<T>[], V>
+		V & Exclude<T['__mergedVariables'], undefined>
 	> {
 	readonly tag: 'Array'
 	readonly wrapped: T
@@ -98,8 +94,7 @@ export interface MapNode<T extends Node, V extends VariablesNode = {}, K extends
 		Map<ExtractModelType<K>, ExtractModelType<T>>,
 		Store<Map<unknown, ExtractStoreType<T>>, V>,
 		V,
-		V & Exclude<T['__mergedVariables'], undefined>,
-		Store<Map<unknown, ExtractCacheType<T>>, V>
+		V & Exclude<T['__mergedVariables'], undefined>
 	> {
 	readonly tag: 'Map'
 	readonly key: K
@@ -111,8 +106,7 @@ export interface OptionNode<T extends Node, V extends VariablesNode = {}>
 		Option<ExtractModelType<T>>,
 		Store<Option<ExtractStoreType<T>>, V>,
 		V,
-		V & Exclude<T['__mergedVariables'], undefined>,
-		Store<Option<ExtractCacheType<T>>, V>
+		V & Exclude<T['__mergedVariables'], undefined>
 	> {
 	readonly tag: 'Option'
 	readonly wrapped: T
@@ -123,8 +117,7 @@ export interface NonEmptyArrayNode<T extends Node, V extends VariablesNode = {}>
 		NonEmptyArray<ExtractModelType<T>>,
 		Store<NonEmptyArray<ExtractStoreType<T>>, V>,
 		V,
-		V & Exclude<T['__mergedVariables'], undefined>,
-		Store<NonEmptyArray<ExtractCacheType<T>>, V>
+		V & Exclude<T['__mergedVariables'], undefined>
 	> {
 	readonly tag: 'NonEmptyArray'
 	readonly wrapped: T
@@ -135,15 +128,14 @@ export interface SumNode<T extends { [K in keyof T]: TypeNode<string, any> }, V 
 		{ [K in keyof T]: ExtractModelType<T[K]> }[keyof T],
 		Store<{ [K in keyof T]: ExtractStoreType<T[K]> }[keyof T], V>,
 		V,
-		V & Intersection<Values<{ [K in keyof T]: Exclude<T[K]['__mergedVariables'], undefined> }>>,
-		Store<{ [K in keyof T]: ExtractCacheType<T[K]> }[keyof T], V>
+		V & Intersection<Values<{ [K in keyof T]: ExtractMergedVariables<T[K]> }>>
 	> {
 	readonly tag: 'Sum'
 	readonly members: T
 }
 
 export interface MutationNode<T extends Node, V extends VariablesNode = {}>
-	extends DocumentNode<ExtractModelType<T>, ExtractStoreType<T>, V, V & Exclude<T['__mergedVariables'], undefined>, ExtractCacheType<T>> {
+	extends DocumentNode<ExtractModelType<T>, ExtractStoreType<T>, V, V & Exclude<T['__mergedVariables'], undefined>> {
 	readonly tag: 'Mutation'
 }
 
@@ -156,7 +148,7 @@ export type ExtractModelType<T> = T extends { readonly model: M.Model<infer A> }
 
 export type ExtractStoreType<T> = T extends Node ? Exclude<T['store'], undefined> : never
 
-export type ExtractCacheType<T> = T extends Node ? Exclude<T['__cacheType'], undefined>  : never;
+export type ExtractMergedVariables<T> = T extends Node ? Exclude<T['__mergedVariables'], undefined> : undefined;
 
 export type Store<T, V extends VariablesNode = {}> = keyof V extends never ? Ref<T> : FunctionN<[ExtractVariables<V>], Ref<T>>
 
@@ -178,7 +170,7 @@ export function number(): NumberNode
 export function number<V extends VariablesNode>(variables: V): NumberNode<V>
 export function number<V extends VariablesNode = {}>(
 	variables: V = EMPTY_VARIABLES,
-	store?: Lazy<Store<number, V>>
+	store?: Store<number, V>
 ): NumberNode<V> {
 	return {
 		tag: 'Number',
@@ -199,7 +191,7 @@ export function string(): StringNode
 export function string<V extends VariablesNode>(variables: V): StringNode<V>
 export function string<V extends VariablesNode = {}>(
 	variables: V = EMPTY_VARIABLES,
-	store?: Lazy<Store<string, V>>
+	store?: Store<string, V>
 ): StringNode<V> {
 	return {
 		tag: 'String',
@@ -220,7 +212,7 @@ export function boolean(): BooleanNode
 export function boolean<V extends VariablesNode>(variables: V): BooleanNode<V>
 export function boolean<V extends VariablesNode = {}>(
 	variables: V = EMPTY_VARIABLES,
-	store?: Lazy<Store<boolean, V>>
+	store?: Store<boolean, V>
 ): BooleanNode<V> {
 	return {
 		tag: 'Boolean',
@@ -251,7 +243,7 @@ export function type<N extends string, T extends { [K in keyof T]: Node }, V ext
 	__typename: N,
 	members: T,
 	variables: V = EMPTY_VARIABLES,
-	store?: Lazy<Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, V>>
+	store?: Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, V>
 ): TypeNode<N, T, V> {
 	return {
 		__typename,
@@ -362,7 +354,7 @@ export function map<K extends Node, T extends Node, V extends VariablesNode = {}
 	key: K,
 	value: T,
 	variables: V = EMPTY_VARIABLES,
-	store?: Lazy<Store<Map<unknown, ExtractStoreType<T>>, V>>
+	store?: Store<Map<unknown, ExtractStoreType<T>>, V>
 ): MapNode<T, V, K> {
 	return {
 		tag: 'Map',
@@ -384,7 +376,7 @@ export function array<T extends Node, V extends VariablesNode>(node: T, variable
 export function array<T extends Node, V extends VariablesNode = {}>(
 	node: T,
 	variables: V = EMPTY_VARIABLES,
-	store?: Lazy<Store<ExtractStoreType<T>[], V>>
+	store?: Store<ExtractStoreType<T>[], V>
 ): ArrayNode<T, V> {
 	return {
 		tag: 'Array',
@@ -408,7 +400,7 @@ export function sum<T extends { [K in keyof T]: TypeNode<string, any> }, V exten
 export function sum<T extends { [K in keyof T]: TypeNode<string, any> }, V extends VariablesNode = {}>(
 	members: T,
 	variables: V = EMPTY_VARIABLES,
-	store?: Lazy<Store<{ [K in keyof T]: ExtractStoreType<T[K]> }[keyof T], V>>
+	store?: Store<{ [K in keyof T]: ExtractStoreType<T[K]> }[keyof T], V>
 ): SumNode<T, V> {
 	return {
 		tag: 'Sum',
@@ -467,7 +459,7 @@ export function option<T extends Node, V extends VariablesNode>(node: T, variabl
 export function option<T extends Node, V extends VariablesNode = {}>(
 	node: T,
 	variables: V = EMPTY_VARIABLES,
-	store?: Lazy<Store<Option<ExtractStoreType<T>>, V>>
+	store?: Store<Option<ExtractStoreType<T>>, V>
 ): OptionNode<T, V> {
 	return {
 		tag: 'Option',
@@ -488,7 +480,7 @@ export function nonEmptyArray<T extends Node, V extends VariablesNode>(node: T, 
 export function nonEmptyArray<T extends Node, V extends VariablesNode = {}>(
 	node: T,
 	variables: V = EMPTY_VARIABLES,
-	store?: Lazy<Store<NonEmptyArray<ExtractStoreType<T>>, V>>
+	store?: Store<NonEmptyArray<ExtractStoreType<T>>, V>
 ): NonEmptyArrayNode<T, V> {
 	return {
 		tag: 'NonEmptyArray',
@@ -510,7 +502,7 @@ export function scalar<N extends string, T, V extends VariablesNode = {}>(
 	name: N,
 	model: M.Model<T>,
 	variables: V = EMPTY_VARIABLES,
-	store?: Lazy<Store<T, V>>
+	store?: Store<T, V>
 ): ScalarNode<N, T, V> {
 	return {
 		name,
@@ -524,7 +516,7 @@ export function scalar<N extends string, T, V extends VariablesNode = {}>(
 
 export function schema<T extends { [K in keyof T]: Node }>(
 	members: T,
-	store?: Lazy<Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, {}>>
+	store?: Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, {}>
 ): Schema<T> {
 	return {
 		tag: 'Schema',
