@@ -1,146 +1,199 @@
-import {constant, FunctionN, identity, Lazy} from 'fp-ts/lib/function';
 import { IO } from 'fp-ts/lib/IO'
-import * as R from 'fp-ts/lib/Reader';
-import {VariablesNode} from '../schema/Node';
-import * as N from '../schema/Node';
-import {isEmptyObject, isFunction, Ref} from '../shared';
+import {IOEither} from 'fp-ts/lib/IOEither';
+import {isNone, none, some} from 'fp-ts/lib/Option';
+import * as R from 'fp-ts/lib/Reader'
+import {isLeft} from 'fp-ts/lib/These';
+import {DecodeError} from 'io-ts/lib/Decoder';
+import {Node} from '../schema/Node';
+import * as N from '../schema/Node'
+import { isEmptyObject, isFunction, Ref } from '../shared'
 
 export interface Cache<TNode extends N.Node> {
-	write(data: N.ExtractModelType<TNode>, variables: ExtractVariablesType<TNode>): IO<Evict>
-	read(variables: ExtractVariablesType<TNode>): IO<N.ExtractModelType<TNode>>
-	toRefs(variables: ExtractVariablesType<TNode>): IO<N.ExtractStoreType<TNode>>
-	toRef(variables: ExtractVariablesType<TNode>): IO<Ref<N.ExtractModelType<TNode>>>
+	unsafeWrite(data: unknown, variables: ExtractMergedVariablesType<TNode>): IOEither<DecodeError, Evict>
+	write(data: N.ExtractModelType<TNode>, variables: ExtractMergedVariablesType<TNode>): IO<Evict>
+	read(variables: ExtractMergedVariablesType<TNode>): IO<N.ExtractModelType<TNode>>
+	toRefs(variables: ExtractMergedVariablesType<TNode>): IO<N.ExtractStoreType<TNode>>
+	toRef(variables: ExtractMergedVariablesType<TNode>): IO<Ref<N.ExtractModelType<TNode>>>
 }
 
 type Evict = IO<void>
 
-export type ExtractVariablesType<S extends N.Node> = keyof N.ExtractMergedVariables<S> extends never ? undefined : N.ExtractVariables<N.ExtractMergedVariables<S>>
+export type ExtractMergedVariablesType<S extends N.Node> = keyof N.ExtractMergedVariables<S> extends never
+	? undefined
+	: N.ExtractVariables<N.ExtractMergedVariables<S>>
 
 export interface OfRef {
-	<T>(value?: T): Ref<T>;
+	<T>(value?: T): Ref<T>
 }
 
 export function cache<S extends N.Schema<any>>(schema: S): R.Reader<OfRef, Cache<S>> {
-	return of => {
+	return (of) => {}
+}
 
+function write<T extends N.Node>(
+	node: T,
+	store: N.ExtractStoreType<T>,
+	data: N.ExtractModelType<T>,
+	mergedVariables: ExtractMergedVariablesType<T>
+): IO<Evict> {
+	switch (node.tag) {
+		case 'Boolean':
+		case 'Number':
+		case 'String':
+		case 'Scalar':
+			return writeLiteralOrScalar(store, data, extractNodeVariables(node, mergedVariables));
+	}
+}
+
+function writeType<T extends N.TypeNode<string, any, any>>(
+	node: T,
+	store: N.ExtractStoreType<T>,
+	data: N.ExtractModelType<T>,
+	mergedVariables: ExtractMergedVariablesType<T>
+): IO<Evict> {
+	return () => {
+		const ref = isFunction(store) ? store(extractNodeVariables(node, mergedVariables)) : store;
+		if (isNone(ref.value)) {
+
+		}
 	};
 }
 
-function write<T extends N.Node>(node: T, store: N.ExtractStoreType<T>, data: N.ExtractModelType<T>, variables: ExtractVariablesType<T>): IO<Evict> {
-
+function extractNodeVariables<T extends N.Node>(node: T, mergedVariables: ExtractMergedVariablesType<T>): N.ExtractVariables<T['variables']> {
+	const x: any = {};
+	Object.keys(node.variables).forEach(key => {
+		x[key] = mergedVariables && mergedVariables[key];
+	});
+	return x;
 }
 
-function isVariableStore<T, V extends VariablesNode = {}>(store: N.Store<T, V>): store is FunctionN<[N.ExtractVariables<V>], N.Ref<T>> {
-	return isFunction(store);
+function writeLiteralOrScalar<T extends N.Node>(
+	store: N.ExtractStoreType<T>,
+	data: N.ExtractModelType<T>,
+	variables: N.ExtractVariables<T['variables']>
+): IO<Evict> {
+	return () => {
+		const ref = isFunction(store) ? store(variables) : store;
+		const currentValue = ref.value;
+		const newValue = some(data);
+		ref.value = newValue;
+		return () => {
+			if (ref.value === newValue) {
+				ref.value = currentValue;
+			}
+		};
+	}
 }
 
 
 export function store<T extends N.Node>(node: T): R.Reader<OfRef, any> {
 	if (node.store) {
-		return () => node.store;
+		return () => node.store
 	}
 	switch (node.tag) {
 		case 'Schema':
 		case 'Type':
-			return type(node as N.TypeNode<any, any, any>);
+			return type(node as N.TypeNode<any, any, any>)
 		case 'Array':
-			return array(node);
+			return array(node )
 		case 'Map':
-			return map(node);
+			return map(node)
 		case 'NonEmptyArray':
-			return nonEmptyArray(node);
+			return nonEmptyArray(node)
 		case 'Option':
 			return option(node)
 		case 'Sum':
-			return sum(node);
+			return sum(node)
 		case 'Mutation':
 			return mutation(node)
 		case 'Number':
 		case 'Boolean':
 		case 'String':
 		case 'Scalar':
-			return make(node.variables);
-	}};
+			return make(node)
+	}
+}
 
-export function type<T extends TypeNode<any, any, any>>(
+export function type<T extends N.TypeNode<any, any, any>>(
 	node: T
-): R.Reader<OfRef, N.Store<{ [K in keyof T]: N.ExtractStoreType<T[K]> }, V>> {
-	return of => {
-		const members = node.members;
-		if (isEmptyObject(node.variables)) {
-			const x = {};
-			for (const [key, value] of Object.entries(members)) {
-				x[key] = store(members[key]);
-			}
-			return of(x);
-		} else {
-
-		}
-	};
+): R.Reader<OfRef, T['store']> {
+	function subStore(of: OfRef): N.ExtractStoreRefType<T> {
+		const members = node.members
+		const x: any = {}
+		Object.keys(members).forEach(key => {
+			x[key] = store(members[key])(of)
+		})
+		return x;
+	}
+	return make(node, subStore);
 }
 
-export function array<T extends Node, V extends VariablesNode = {}>(node: N.ArrayNode<T, V>): R.Reader<OfRef, N.Store<ExtractStoreType<T>[], V>> {
-	return make(node.variables, of => constant(of([])))
+export function array<T extends N.ArrayNode<any, any>>(
+	node: T
+): R.Reader<OfRef, T['store']> {
+	function subStore(of: OfRef): N.ExtractStoreRefType<T> {
+		return [store(node.wrapped)(of)] as N.ExtractStoreRefType<T>;
+	}
+	return make(node, subStore)
 }
 
-export function nonEmptyArray(): R.Reader<OfRef, any> {
-	return of => {
-
-	};
+export function nonEmptyArray<T extends N.NonEmptyArrayNode<any, any>>(
+	node: T
+): R.Reader<OfRef, T['store']> {
+	function subStore(of: OfRef): N.ExtractStoreRefType<T> {
+		return [store(node.wrapped)(of)] as N.ExtractStoreRefType<T>;
+	}
+	return make(node, subStore)
 }
 
-export function map(): R.Reader<OfRef, any> {
-	return of => {};
+export function map<T extends N.MapNode<any, any, any>>(
+	node: T
+): R.Reader<OfRef, T['store']> {
+	function subStore(): N.ExtractStoreRefType<T> {
+		return new Map() as N.ExtractStoreRefType<T>;
+	}
+	return make(node, subStore)
 }
 
-export function option(): R.Reader<OfRef, any> {
-	return of => {};
+export function option<T extends N.OptionNode<any, any>>(
+	node: T
+): R.Reader<OfRef, T['store']> {
+	function subStore(): N.ExtractStoreRefType<T> {
+		return none as N.ExtractStoreRefType<T>
+	}
+	return make(node, subStore)
 }
 
 export function sum(): R.Reader<OfRef, any> {
-	return of => {};
+	return (of) => {}
 }
 
-export function mutation(): R.Reader<OfRef, any> {
-	return of => {};
-};
-
-export function scalar<Name extends string, T, V extends N.VariablesNode = {}>(node: N.ScalarNode<Name, T, V>): R.Reader<OfRef, N.Store<T, V>> {
-	return make(node.variables);
+export function mutation<T extends N.OptionNode<any, any>>(
+	node: T
+): R.Reader<OfRef, T['store']> {
+	function subStore(of: OfRef): N.ExtractStoreRefType<T> {
+		return store(node.wrapped)(of)
+	}
+	return make(node, subStore)
 }
 
-export function string<V extends N.VariablesNode = {}>(node: N.StringNode<V>): R.Reader<OfRef, N.Store<string, V>> {
-	return make(node.variables)
-}
-
-export function number<V extends N.VariablesNode = {}>(node: N.NumberNode<V>): R.Reader<OfRef, N.Store<number, V>> {
-	return make(node.variables)
-}
-
-export function boolean<V extends N.VariablesNode = {}>(node: N.BooleanNode<V>): R.Reader<OfRef, N.Store<boolean, V>> {
-	return make(node.variables)
-}
-
-function make<T, V extends N.VariablesNode = {}>(variables: V): R.Reader<OfRef, N.Store<T, V>> {
-	return of => {
-		if (isEmptyObject(variables)) {
-			return of<T>() as N.Store<T, V>;
+function make<T extends N.Node>(node: T, subStore?: R.Reader<OfRef, N.ExtractStoreRefType<T>>): R.Reader<OfRef, N.ExtractStoreType<T>> {
+	return (of) => {
+		if (isEmptyObject(node.variables)) {
+			return of<T>() as N.ExtractStoreType<T>
 		} else {
-			const variablesModel = N.getVariablesModel(variables as V);
-			const results = new Map<unknown, Ref<T>>();
-			return ((variables) => {
-				const encodedVariables = variablesModel.encode(variables);
-				const result = results.get(encodedVariables);
+			const results = new Map()
+			return ((variables: N.ExtractVariables<T['variables']>) => {
+				const encodedVariables = node.variablesModel.encode(variables)
+				const result = results.get(encodedVariables)
 				if (result) {
-					return result;
+					return result
 				} else {
-					const newResult = of<T>();
-					results.set(encodedVariables, newResult);
-					return newResult;
+					const newResult = of(subStore ? subStore(of) : undefined);
+					results.set(encodedVariables, newResult)
+					return newResult
 				}
-			}) as N.Store<T, V>;
+			}) as N.ExtractStoreType<T>
 		}
-	};
+	}
 }
-
-

@@ -2,7 +2,7 @@ import { FunctionN, Lazy } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
 import * as M from '../model/Model'
-import {constEmptyString, isEmptyObject, once, Ref} from '../shared'
+import { constEmptyString, isEmptyObject, once, Ref } from '../shared'
 
 export interface DocumentNode<ModelType, StoreType, V extends VariablesNode = {}, MV extends VariablesNode = {}> {
 	readonly __mergedVariables?: MV
@@ -10,6 +10,7 @@ export interface DocumentNode<ModelType, StoreType, V extends VariablesNode = {}
 	readonly model: M.Model<ModelType>
 	readonly print: Lazy<string>
 	readonly variables: V
+	readonly variablesModel: M.Model<ExtractVariables<V>>
 	readonly store?: StoreType
 }
 
@@ -21,20 +22,6 @@ export type Node =
 	| ScalarNode<string, any, any>
 	| MutationNode<any>
 	| Schema<any>
-
-// type Tag =
-// 	| 'Schema'
-// 	| 'String'
-// 	| 'Boolean'
-// 	| 'Number'
-// 	| 'Type'
-// 	| 'Array'
-// 	| 'Map'
-// 	| 'Option'
-// 	| 'NonEmptyArray'
-// 	| 'Sum'
-// 	| 'Scalar'
-// 	| 'Mutation'
 
 export interface Schema<T extends { [K in keyof T]: Node }>
 	extends DocumentNode<
@@ -80,12 +67,7 @@ export type WrappedNode<T extends Node> =
 	| NonEmptyArrayNode<T, any>
 
 export interface ArrayNode<T extends Node, V extends VariablesNode = {}>
-	extends DocumentNode<
-		ExtractModelType<T>[],
-		Store<ExtractStoreType<T>[], V>,
-		V,
-		V & ExtractMergedVariables<T>
-	> {
+	extends DocumentNode<ExtractModelType<T>[], Store<ExtractStoreType<T>[], V>, V, V & ExtractMergedVariables<T>> {
 	readonly tag: 'Array'
 	readonly wrapped: T
 }
@@ -149,9 +131,13 @@ export type ExtractModelType<T> = T extends { readonly model: M.Model<infer A> }
 
 export type ExtractStoreType<T> = T extends Node ? Exclude<T['store'], undefined> : never
 
-export type ExtractMergedVariables<T> = T extends Node ? Exclude<T['__mergedVariables'], undefined> : undefined;
+export type ExtractStoreRefType<T> = ExtractStoreType<T> extends Store<infer S, any> ? S : never;
 
-export type Store<T, V extends VariablesNode = {}> = keyof V extends never ? Ref<T> : FunctionN<[ExtractVariables<V>], Ref<T>>
+export type ExtractMergedVariables<T> = T extends Node ? Exclude<T['__mergedVariables'], undefined> : undefined
+
+export type Store<T, V extends VariablesNode = {}> = keyof V extends never
+	? Ref<T>
+	: FunctionN<[ExtractVariables<V>], Ref<T>>
 
 type Values<T> = T[keyof T]
 
@@ -165,8 +151,12 @@ export type ExtractVariables<V extends VariablesNode = {}> = {
 	[K in keyof V]: ExtractModelType<V[K]>
 }
 
-export function getVariablesModel<V extends VariablesNode>(variables: V): M.Model<{ [K in keyof V]: ExtractModelType<V[K]> }> {
-	return getTypeModel(variables);
+const EMPTY_VARIABLES_MODEL = M.type({})
+
+export function getVariablesModel<V extends VariablesNode>(
+	variables: V
+): M.Model<{ [K in keyof V]: ExtractModelType<V[K]> }> {
+	return isEmptyObject(variables) ? (EMPTY_VARIABLES_MODEL as any) : getTypeModel(variables)
 }
 
 const EMPTY_VARIABLES: any = {}
@@ -181,12 +171,13 @@ export function number<V extends VariablesNode = {}>(
 		tag: 'Number',
 		print: constEmptyString,
 		variables,
+		variablesModel: getVariablesModel(variables),
 		model: M.number,
 		store
 	}
 }
 
-export const staticNumber = number();
+export const staticNumber = number()
 
 export function isNumberNode(u: Node): u is NumberNode {
 	return u.tag === 'Number'
@@ -202,12 +193,13 @@ export function string<V extends VariablesNode = {}>(
 		tag: 'String',
 		print: constEmptyString,
 		variables,
+		variablesModel: getVariablesModel(variables),
 		model: M.string,
 		store
 	}
 }
 
-export const staticString = string();
+export const staticString = string()
 
 export function isStringNode(u: Node): u is StringNode {
 	return u.tag === 'String'
@@ -223,12 +215,13 @@ export function boolean<V extends VariablesNode = {}>(
 		tag: 'Boolean',
 		print: constEmptyString,
 		variables,
+		variablesModel: getVariablesModel(variables),
 		model: M.boolean,
 		store
 	}
 }
 
-export const staticBoolean = boolean();
+export const staticBoolean = boolean()
 
 export function isBooleanNode(u: Node): u is BooleanNode {
 	return u.tag === 'Boolean'
@@ -255,6 +248,7 @@ export function type<N extends string, T extends { [K in keyof T]: Node }, V ext
 		tag: 'Type',
 		members,
 		variables,
+		variablesModel: getVariablesModel(variables),
 		store,
 		print: printTypeNodeMembers(members),
 		model: getTypeModel(members)
@@ -367,6 +361,7 @@ export function map<K extends Node, T extends Node, V extends VariablesNode = {}
 		key,
 		wrapped: value,
 		variables,
+		variablesModel: getVariablesModel(variables),
 		store,
 		print: value.print
 	}
@@ -388,6 +383,7 @@ export function array<T extends Node, V extends VariablesNode = {}>(
 		wrapped: node,
 		model: M.array(node.model),
 		variables,
+		variablesModel: getVariablesModel(variables),
 		store,
 		print: node.print
 	}
@@ -412,6 +408,7 @@ export function sum<T extends { [K in keyof T]: TypeNode<string, any> }, V exten
 		model: getSumModel(members),
 		print: printSumNode(members),
 		members,
+		variablesModel: getVariablesModel(variables),
 		variables,
 		store
 	}
@@ -471,6 +468,7 @@ export function option<T extends Node, V extends VariablesNode = {}>(
 		wrapped: node,
 		model: M.option(node.model),
 		variables,
+		variablesModel: getVariablesModel(variables),
 		store,
 		print: node.print
 	}
@@ -492,6 +490,7 @@ export function nonEmptyArray<T extends Node, V extends VariablesNode = {}>(
 		wrapped: node,
 		model: M.nonEmptyArray(node.model),
 		variables,
+		variablesModel: getVariablesModel(variables),
 		store,
 		print: node.print
 	}
@@ -514,6 +513,7 @@ export function scalar<N extends string, T, V extends VariablesNode = {}>(
 		tag: 'Scalar',
 		model,
 		variables,
+		variablesModel: getVariablesModel(variables),
 		store,
 		print: constEmptyString
 	}
@@ -527,6 +527,7 @@ export function schema<T extends { [K in keyof T]: Node }>(
 		tag: 'Schema',
 		model: getTypeModel(members),
 		variables: EMPTY_VARIABLES,
+		variablesModel: EMPTY_VARIABLES_MODEL as any,
 		print: printTypeNodeMembers(members),
 		members,
 		store

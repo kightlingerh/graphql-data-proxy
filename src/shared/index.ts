@@ -1,5 +1,5 @@
-import {constant, Lazy} from 'fp-ts/lib/function'
-import {Option} from 'fp-ts/lib/Option';
+import { constant, Lazy } from 'fp-ts/lib/function'
+import { Option } from 'fp-ts/lib/Option'
 
 export function isEmptyObject(obj: object): obj is {} {
 	return Object.keys(obj).length === 0
@@ -24,5 +24,5 @@ export interface Ref<T> {
 }
 
 export function isFunction(u: unknown): u is Function {
-	return typeof u === 'function';
+	return typeof u === 'function'
 }
