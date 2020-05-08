@@ -48,7 +48,7 @@ type Store = typeof FantasyPlayer['store']
 
 let x: C.Cache<typeof FantasyPlayer> = 1 as any;
 
-x.write({ statisticIds: [''] }, {
+x.write(undefined, {
 	id: 'test',
 	personalInfo: {
 		firstName: 'test',

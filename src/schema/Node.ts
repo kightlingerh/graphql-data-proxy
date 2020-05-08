@@ -4,7 +4,7 @@ import { Option } from 'fp-ts/lib/Option'
 import * as M from '../model/Model'
 import {constEmptyString, isEmptyObject, once, Ref} from '../shared'
 
-interface DocumentNode<ModelType, StoreType, V extends VariablesNode = {}, MV extends VariablesNode = {}> {
+export interface DocumentNode<ModelType, StoreType, V extends VariablesNode = {}, MV extends VariablesNode = {}> {
 	readonly __mergedVariables?: MV
 	readonly tag: string
 	readonly model: M.Model<ModelType>
@@ -20,6 +20,7 @@ export type Node =
 	| SumNode<any, any>
 	| ScalarNode<string, any, any>
 	| MutationNode<any>
+	| Schema<any>
 
 // type Tag =
 // 	| 'Schema'
@@ -40,7 +41,7 @@ export interface Schema<T extends { [K in keyof T]: Node }>
 		{ [K in keyof T]: ExtractModelType<T[K]> },
 		Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, {}>,
 		{},
-		{} & Intersection<Values<{ [K in keyof T]: Exclude<T[K]['__mergedVariables'], undefined> }>>,
+		{} & Intersection<Values<{ [K in keyof T]: ExtractMergedVariables<T[K]> }>>
 	> {
 	readonly tag: 'Schema'
 	readonly members: T
@@ -65,7 +66,7 @@ export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, 
 		{ [K in keyof T]: ExtractModelType<T[K]> },
 		Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, V>,
 		V,
-		V & Intersection<Values<{ [K in keyof T]: Exclude<T[K]['__mergedVariables'], undefined> }>>
+		V & Intersection<Values<{ [K in keyof T]: ExtractMergedVariables<T[K]> }>>
 	> {
 	readonly __typename: N
 	readonly tag: 'Type'
@@ -83,7 +84,7 @@ export interface ArrayNode<T extends Node, V extends VariablesNode = {}>
 		ExtractModelType<T>[],
 		Store<ExtractStoreType<T>[], V>,
 		V,
-		V & Exclude<T['__mergedVariables'], undefined>
+		V & ExtractMergedVariables<T>
 	> {
 	readonly tag: 'Array'
 	readonly wrapped: T
@@ -94,7 +95,7 @@ export interface MapNode<T extends Node, V extends VariablesNode = {}, K extends
 		Map<ExtractModelType<K>, ExtractModelType<T>>,
 		Store<Map<unknown, ExtractStoreType<T>>, V>,
 		V,
-		V & Exclude<T['__mergedVariables'], undefined>
+		V & ExtractMergedVariables<T>
 	> {
 	readonly tag: 'Map'
 	readonly key: K
@@ -106,7 +107,7 @@ export interface OptionNode<T extends Node, V extends VariablesNode = {}>
 		Option<ExtractModelType<T>>,
 		Store<Option<ExtractStoreType<T>>, V>,
 		V,
-		V & Exclude<T['__mergedVariables'], undefined>
+		V & ExtractMergedVariables<T>
 	> {
 	readonly tag: 'Option'
 	readonly wrapped: T
@@ -117,7 +118,7 @@ export interface NonEmptyArrayNode<T extends Node, V extends VariablesNode = {}>
 		NonEmptyArray<ExtractModelType<T>>,
 		Store<NonEmptyArray<ExtractStoreType<T>>, V>,
 		V,
-		V & Exclude<T['__mergedVariables'], undefined>
+		V & ExtractMergedVariables<T>
 	> {
 	readonly tag: 'NonEmptyArray'
 	readonly wrapped: T
@@ -135,7 +136,7 @@ export interface SumNode<T extends { [K in keyof T]: TypeNode<string, any> }, V 
 }
 
 export interface MutationNode<T extends Node, V extends VariablesNode = {}>
-	extends DocumentNode<ExtractModelType<T>, ExtractStoreType<T>, V, V & Exclude<T['__mergedVariables'], undefined>> {
+	extends DocumentNode<ExtractModelType<T>, ExtractStoreType<T>, V, ExtractMergedVariables<T>> {
 	readonly tag: 'Mutation'
 }
 
@@ -156,12 +157,16 @@ type Values<T> = T[keyof T]
 
 type Intersection<T> = (T extends unknown ? (x: T) => 0 : never) extends (x: infer R) => 0 ? R : never
 
-interface VariablesNode {
+export interface VariablesNode {
 	[K: string]: Node
 }
 
 export type ExtractVariables<V extends VariablesNode = {}> = {
 	[K in keyof V]: ExtractModelType<V[K]>
+}
+
+export function getVariablesModel<V extends VariablesNode>(variables: V): M.Model<{ [K in keyof V]: ExtractModelType<V[K]> }> {
+	return getTypeModel(variables);
 }
 
 const EMPTY_VARIABLES: any = {}

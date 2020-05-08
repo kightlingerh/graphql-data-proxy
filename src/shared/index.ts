@@ -23,3 +23,6 @@ export interface Ref<T> {
 	value: Option<T>
 }
 
+export function isFunction(u: unknown): u is Function {
+	return typeof u === 'function';
+}
