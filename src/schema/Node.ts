@@ -4,8 +4,9 @@ import { Option } from 'fp-ts/lib/Option'
 import * as M from '../model/Model'
 import { constEmptyString, isEmptyObject, once, Ref } from '../shared'
 
-export interface DocumentNode<ModelType, PartialModelType, StoreType, V extends VariablesNode = {}, MV extends VariablesNode = {}> {
+export interface DocumentNode<ModelType, PartialModelType, StoreType, RefType, V extends VariablesNode = {}, MV extends VariablesNode = {}> {
 	readonly __mergedVariables?: MV
+	readonly __refType?: RefType,
 	readonly tag: string
 	readonly model: M.Model<ModelType>
 	readonly partialModel: M.Model<PartialModelType>;
@@ -27,8 +28,9 @@ export type Node =
 export interface Schema<T extends { [K in keyof T]: Node }>
 	extends DocumentNode<
 		{ [K in keyof T]: ExtractModelType<T[K]> },
-		{ [K in keyof T]?: ExtractModelType<T[K]> },
+		Partial<{ [K in keyof T]: ExtractModelType<T[K]> }>,
 		Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, {}>,
+		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }>,
 		{},
 		{} & Intersection<Values<{ [K in keyof T]: ExtractMergedVariables<T[K]> }>>
 	> {
@@ -38,15 +40,15 @@ export interface Schema<T extends { [K in keyof T]: Node }>
 
 export type LiteralNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
 
-export interface StringNode<V extends VariablesNode = {}> extends DocumentNode<string, string, Store<string, V>, V> {
+export interface StringNode<V extends VariablesNode = {}> extends DocumentNode<string, string, Store<string, V>, Ref<string>, V> {
 	readonly tag: 'String'
 }
 
-export interface BooleanNode<V extends VariablesNode = {}> extends DocumentNode<boolean, boolean, Store<boolean, V>, V> {
+export interface BooleanNode<V extends VariablesNode = {}> extends DocumentNode<boolean, boolean, Store<boolean, V>, Ref<boolean>, V> {
 	readonly tag: 'Boolean'
 }
 
-export interface NumberNode<V extends VariablesNode = {}> extends DocumentNode<number, number, Store<number, V>, V> {
+export interface NumberNode<V extends VariablesNode = {}> extends DocumentNode<number, number, Store<number, V>, Ref<number>, V> {
 	readonly tag: 'Number'
 }
 
@@ -55,6 +57,7 @@ export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, 
 		{ [K in keyof T]: ExtractModelType<T[K]> },
 		Partial<{ [K in keyof T]: ExtractModelType<T[K]> }>,
 		Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, V>,
+		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }>,
 		V,
 		V & Intersection<Values<{ [K in keyof T]: ExtractMergedVariables<T[K]> }>>
 	> {
@@ -70,7 +73,7 @@ export type WrappedNode<T extends Node> =
 	| NonEmptyArrayNode<T, any>
 
 export interface ArrayNode<T extends Node, V extends VariablesNode = {}>
-	extends DocumentNode<ExtractModelType<T>[], ExtractPartialModelType<T>[], Store<ExtractStoreType<T>[], V>, V, V & ExtractMergedVariables<T>> {
+	extends DocumentNode<ExtractModelType<T>[], ExtractPartialModelType<T>[], Store<ExtractStoreType<T>[], V>, Ref<ExtractRefType<T>[]>, V, V & ExtractMergedVariables<T>> {
 	readonly tag: 'Array'
 	readonly wrapped: T
 }
@@ -80,6 +83,7 @@ export interface MapNode<T extends Node, V extends VariablesNode = {}, K extends
 		Map<ExtractModelType<K>, ExtractModelType<T>>,
 		Map<ExtractModelType<K>, ExtractPartialModelType<T>>,
 		Store<Map<unknown, ExtractStoreType<T>>, V>,
+		Ref<Map<unknown, ExtractRefType<T>>>,
 		V,
 		V & ExtractMergedVariables<T>
 	> {
@@ -93,6 +97,7 @@ export interface OptionNode<T extends Node, V extends VariablesNode = {}>
 		Option<ExtractModelType<T>>,
 		Option<ExtractPartialModelType<T>>,
 		Store<Option<ExtractStoreType<T>>, V>,
+		Ref<Option<ExtractRefType<T>>>,
 		V,
 		V & ExtractMergedVariables<T>
 	> {
@@ -105,6 +110,7 @@ export interface NonEmptyArrayNode<T extends Node, V extends VariablesNode = {}>
 		NonEmptyArray<ExtractModelType<T>>,
 		NonEmptyArray<ExtractPartialModelType<T>>,
 		Store<NonEmptyArray<ExtractStoreType<T>>, V>,
+		Ref<NonEmptyArray<ExtractRefType<T>>>,
 		V,
 		V & ExtractMergedVariables<T>
 	> {
@@ -117,6 +123,7 @@ export interface SumNode<T extends { [K in keyof T]: TypeNode<string, any> }, V 
 		{ [K in keyof T]: ExtractModelType<T[K]> }[keyof T],
 		{ [K in keyof T]: ExtractPartialModelType<T[K]> }[keyof T],
 		Store<{ [K in keyof T]: ExtractStoreType<T[K]> }[keyof T], V>,
+		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }[keyof T]>,
 		V,
 		V & Intersection<Values<{ [K in keyof T]: ExtractMergedVariables<T[K]> }>>
 	> {
@@ -125,11 +132,11 @@ export interface SumNode<T extends { [K in keyof T]: TypeNode<string, any> }, V 
 }
 
 export interface MutationNode<T extends Node, V extends VariablesNode = {}>
-	extends DocumentNode<ExtractModelType<T>, ExtractPartialModelType<T>, ExtractStoreType<T>, V, ExtractMergedVariables<T>> {
+	extends DocumentNode<ExtractModelType<T>, ExtractPartialModelType<T>, ExtractStoreType<T>, ExtractRefType<T>, V, ExtractMergedVariables<T>> {
 	readonly tag: 'Mutation'
 }
 
-export interface ScalarNode<N extends string, T, V extends VariablesNode = {}> extends DocumentNode<T, T, Store<T, V>, V> {
+export interface ScalarNode<N extends string, T, V extends VariablesNode = {}> extends DocumentNode<T, T, Store<T, V>, Ref<T>, V> {
 	readonly tag: 'Scalar'
 	readonly name: N
 }
@@ -140,7 +147,7 @@ export type ExtractPartialModelType<T> = T extends { readonly partialModel: M.Mo
 
 export type ExtractStoreType<T> = T extends Node ? Exclude<T['store'], undefined> : never
 
-export type ExtractStoreRefType<T> = T extends Store<infer S, any> ? S : never;
+export type ExtractRefType<T> = T extends Node ? Exclude<T['__refType'], undefined> : never;
 
 export type ExtractStoreRefTypeFromNode<T> = ExtractStoreType<T> extends Store<infer S, any> ? S : never;
 
@@ -497,6 +504,7 @@ export function option<T extends Node, V extends VariablesNode = {}>(
 		model: M.option(node.model),
 		variables,
 		variablesModel: getVariablesModel(variables),
+		partialModel: M.option(node.partialModel),
 		store,
 		print: node.print
 	}
@@ -517,6 +525,7 @@ export function nonEmptyArray<T extends Node, V extends VariablesNode = {}>(
 		tag: 'NonEmptyArray',
 		wrapped: node,
 		model: M.nonEmptyArray(node.model),
+		partialModel: M.nonEmptyArray(node.partialModel),
 		variables,
 		variablesModel: getVariablesModel(variables),
 		store,
@@ -540,6 +549,7 @@ export function scalar<N extends string, T, V extends VariablesNode = {}>(
 		name,
 		tag: 'Scalar',
 		model,
+		partialModel: model,
 		variables,
 		variablesModel: getVariablesModel(variables),
 		store,
@@ -551,9 +561,11 @@ export function schema<T extends { [K in keyof T]: Node }>(
 	members: T,
 	store?: Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, {}>
 ): Schema<T> {
+	const models = extractTypeMemberModels(members) as any;
 	return {
 		tag: 'Schema',
-		model: getTypeModel(members),
+		model: M.type(models),
+		partialModel: M.partial(models),
 		variables: EMPTY_VARIABLES,
 		variablesModel: EMPTY_VARIABLES_MODEL as any,
 		print: printTypeNodeMembers(members),

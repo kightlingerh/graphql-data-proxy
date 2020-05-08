@@ -9,10 +9,9 @@ import * as N from '../schema/Node'
 import { isEmptyObject, isFunction, Ref } from '../shared'
 
 export interface Cache<TNode extends N.Node> {
-	write(data: N.ExtractModelType<TNode>, variables: ExtractMergedVariablesType<TNode>): IO<Evict>
-	update(data: N.ExtractModelType<TNode>, variables: ExtractMergedVariablesType<TNode>): IO<Evict>
+	write(data: N.ExtractPartialModelType<TNode>, variables: ExtractMergedVariablesType<TNode>): IO<Evict>
 	read(variables: ExtractMergedVariablesType<TNode>): IO<N.ExtractModelType<TNode>>
-	toRefs(variables: ExtractMergedVariablesType<TNode>): IO<N.ExtractStoreType<TNode>>
+	toRefs(variables: ExtractMergedVariablesType<TNode>): IO<N.ExtractRefType<TNode>>
 	toRef(variables: ExtractMergedVariablesType<TNode>): IO<Ref<N.ExtractModelType<TNode>>>
 }
 
