@@ -29,7 +29,11 @@ const FantasyPlayerInfoUnion = N.sum({
 
 const FantasyPlayerStatistics = N.map(N.staticNumber, FantasyPlayerPersonalInfo)
 
-const FantasyPlayerStatisticsMap = N.map(N.staticNumber, FantasyPlayerPersonalInfo)
+const FantasyPlayerStatisticsMap = N.map(
+	N.staticNumber,
+	FantasyPlayerPersonalInfo,
+	FantasyPlayerStatisticsQueryVariables
+)
 
 type FantasyPlayerStatisticsMapModel = typeof FantasyPlayerStatisticsMap
 
@@ -41,7 +45,7 @@ const FantasyPlayer = N.schema({
 
 type Response = M.TypeOf<typeof FantasyPlayer['model']>
 
-type Store = typeof FantasyPlayer['store']
+type Store = Exclude<typeof FantasyPlayer['__refType'], undefined>
 
 let x: C.Cache<typeof FantasyPlayer> = 1 as any
 

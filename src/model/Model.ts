@@ -1,7 +1,8 @@
-import { getStructEq } from 'fp-ts/lib/Eq'
+import {findFirst, head} from 'fp-ts/lib/array';
 import * as EQ from 'fp-ts/lib/Eq'
 import { constNull, flow, Lazy } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
+import {fold} from 'fp-ts/lib/Option';
 import { pipe } from 'fp-ts/lib/pipeable'
 import * as A from 'fp-ts/lib/array'
 import { Tree } from 'fp-ts/lib/Tree'
@@ -47,11 +48,60 @@ export function type<T>(
 	overrides: Overrides<T> = DEFAULT_OVERRIDES
 ): Model<T> {
 	return {
-		equals: getStructEq(members).equals,
+		equals: EQ.getStructEq(members).equals,
 		is: G.type(members).is,
 		...C.type(members),
 		...overrides
 	}
+}
+
+export function partial<T>(
+	members: { [K in keyof T]: Model<T[K]> },
+	overrides: Overrides<Partial<T>> = DEFAULT_OVERRIDES
+): Model<Partial<T>> {
+	return {
+		equals: (x, y) => {
+			for (const k in members) {
+				const xk = x[k]
+				const yk = y[k]
+				if (!(xk === undefined || yk === undefined ? xk === yk : members[k].equals(xk!, yk!))) {
+					return false
+				}
+			}
+			return true
+		},
+		is: G.partial(members).is,
+		...C.partial(members),
+		...overrides
+	}
+}
+
+export function intersection<A, B>(
+	left: Model<A>,
+	right: Model<B>,
+	overrides: Overrides<A & B> = DEFAULT_OVERRIDES
+): Model<A & B> {
+	return {
+		equals: (x, y) => left.equals(x, y) && right.equals(x, y);
+		is: G.intersection(left, right).is,
+		...C.intersection(left, right),
+		...overrides
+	}
+}
+
+export function union<A extends ReadonlyArray<unknown>>(
+	...members: { [K in keyof A]: Model<A[K]> }
+): Model<A[number]> {
+	return {
+		equals: (x, y) => {
+			return members.filter(m => m.is(x) && m.is(y)).some(m => m.equals(x, y))
+		},
+		is: G.union(...members).is,
+		encode: a => {
+			return pipe(members.filter(m => m.is(a)), head, fold(() => JSON.stringify(a), m => m.encode(a)))
+		},
+		...D.union(...members)
+	};
 }
 
 export function typeWithUniqueIdentifier<T, K extends keyof T>(
