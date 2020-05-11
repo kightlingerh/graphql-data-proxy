@@ -1,10 +1,7 @@
-import {findFirst, head} from 'fp-ts/lib/array';
+import * as A from 'fp-ts/lib/Array';
 import * as EQ from 'fp-ts/lib/Eq'
-import { constNull, flow, Lazy } from 'fp-ts/lib/function'
-import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
-import {fold} from 'fp-ts/lib/Option';
+import {constant, constNull, flow, Lazy} from 'fp-ts/lib/function'
 import { pipe } from 'fp-ts/lib/pipeable'
-import * as A from 'fp-ts/lib/array'
 import { Tree } from 'fp-ts/lib/Tree'
 import * as C from 'io-ts/lib/Codec'
 import * as E from 'io-ts/lib/Encoder'
@@ -39,25 +36,18 @@ export const boolean: Model<boolean> = {
 	...C.boolean
 }
 
-type Overrides<T> = Partial<Model<T>>
-
-const DEFAULT_OVERRIDES: Overrides<any> = {}
-
 export function type<T>(
-	members: { [K in keyof T]: Model<T[K]> },
-	overrides: Overrides<T> = DEFAULT_OVERRIDES
+	members: { [K in keyof T]: Model<T[K]> }
 ): Model<T> {
 	return {
 		equals: EQ.getStructEq(members).equals,
 		is: G.type(members).is,
-		...C.type(members),
-		...overrides
+		...C.type(members)
 	}
 }
 
 export function partial<T>(
-	members: { [K in keyof T]: Model<T[K]> },
-	overrides: Overrides<Partial<T>> = DEFAULT_OVERRIDES
+	members: { [K in keyof T]: Model<T[K]> }
 ): Model<Partial<T>> {
 	return {
 		equals: (x, y) => {
@@ -71,55 +61,54 @@ export function partial<T>(
 			return true
 		},
 		is: G.partial(members).is,
-		...C.partial(members),
-		...overrides
+		...C.partial(members)
 	}
 }
 
 export function intersection<A, B>(
 	left: Model<A>,
-	right: Model<B>,
-	overrides: Overrides<A & B> = DEFAULT_OVERRIDES
+	right: Model<B>
 ): Model<A & B> {
 	return {
-		equals: (x, y) => left.equals(x, y) && right.equals(x, y);
+		equals: (x, y) => left.equals(x, y) && right.equals(x, y),
 		is: G.intersection(left, right).is,
 		...C.intersection(left, right),
-		...overrides
 	}
 }
 
-export function union<A extends ReadonlyArray<unknown>>(
-	...members: { [K in keyof A]: Model<A[K]> }
-): Model<A[number]> {
+export function union<A extends ReadonlyArray<unknown>>(...members: { [K in keyof A]: Model<A[K]> }): Model<A[number]> {
 	return {
 		equals: (x, y) => {
-			return members.filter(m => m.is(x) && m.is(y)).some(m => m.equals(x, y))
+			return members.filter((m) => m.is(x) && m.is(y)).some((m) => m.equals(x, y))
 		},
 		is: G.union(...members).is,
-		encode: a => {
-			return pipe(members.filter(m => m.is(a)), head, fold(() => JSON.stringify(a), m => m.encode(a)))
+		encode: (a) => {
+			return pipe(
+				members.filter((m) => m.is(a)),
+				A.head,
+				O.fold(
+					constant(JSON.stringify(a)),
+					(m) => m.encode(a)
+				)
+			)
 		},
 		...D.union(...members)
-	};
+	}
 }
 
 export function typeWithUniqueIdentifier<T, K extends keyof T>(
 	properties: { [K in keyof T]: Model<T[K]> },
-	key: K,
-	overrides: Overrides<T> = DEFAULT_OVERRIDES
+	key: K
 ): Model<T> {
 	const keyModel = properties[key]
 	return {
 		...type(properties),
-		equals: (x, y) => keyModel.equals(x[key], y[key]),
-		...overrides
+		equals: (x, y) => keyModel.equals(x[key], y[key])
 	}
 }
 
 export function nonEmptyArray<T>(
-	val: Model<T>,
-	overrides: Overrides<NE.NonEmptyArray<T>> = DEFAULT_OVERRIDES
+	val: Model<T>
 ): Model<NE.NonEmptyArray<T>> {
 	const a = array(val)
 	return {
@@ -136,19 +125,16 @@ export function nonEmptyArray<T>(
 					? D.success(r)
 					: D.failure(`expected non empty array but received ${JSON.stringify(u)}`)
 			}
-		},
-		...overrides
+		}
 	}
 }
 
-export const ARRAY_TAG = 'Array' as const
 
-export function array<T>(val: Model<T>, overrides: Overrides<T[]> = DEFAULT_OVERRIDES): Model<T[]> {
+export function array<T>(val: Model<T>): Model<T[]> {
 	return {
 		equals: A.getEq(val).equals,
-		...C.array(val),
-		...G.array(val),
-		...overrides
+		is: G.array(val).is,
+		...C.array(val)
 	}
 }
 
@@ -161,48 +147,34 @@ const UnknownRecordDecoder: D.Decoder<Record<string | number, unknown>> = D.from
 	'stringNode | number'
 )
 
-export function map<Key extends string | number, Value>(
+export function map<Key, Value>(
 	key: Model<Key>,
-	value: Model<Value>,
-	overrides: Overrides<Map<Key, Value>> = DEFAULT_OVERRIDES
+	value: Model<Value>
 ): Model<Map<Key, Value>> {
 	return {
 		equals: M.getEq(key, value).equals,
 		encode: getMapEncoder(key, value).encode,
 		decode: getMapDecoder(key, value).decode,
-		is: getMapGuard(key, value).is,
-		...overrides
+		is: getMapGuard(key, value).is
 	}
 }
 
-export function set<T>(model: Model<T>, overrides: Overrides<Set<T>> = DEFAULT_OVERRIDES): Model<Set<T>> {
-	const a = array(model)
+function getMapEncoder<Key, Value>(
+	key: E.Encoder<Key>,
+	value: E.Encoder<Value>
+): E.Encoder<Map<Key, Value>> {
 	return {
-		equals: S.getEq(model).equals,
-		encode: flow(toArray, a.encode),
-		decode: flow(a.decode, EITHER.map(fromArray)),
-		is: (u: unknown): u is Set<T> => {
-			if (typeof Set !== undefined && u instanceof Set) {
-				return a.is(toArray(u))
-			} else {
-				return false
+		encode: (a) => {
+			const encodedObject: any = {}
+			for (const [k, v] of a.entries()) {
+				encodedObject[key.encode(k) as string | number] = value.encode(v)
 			}
-		},
-		...overrides
+			return encodedObject
+		}
 	}
 }
 
-function toArray<T>(set: Set<T>): T[] {
-	const x: T[] = []
-	set.forEach((e) => x.push(e))
-	return x
-}
-
-function fromArray<T>(a: T[]): Set<T> {
-	return new Set(a)
-}
-
-function getMapDecoder<Key extends string | number, Value>(
+function getMapDecoder<Key, Value>(
 	key: D.Decoder<Key>,
 	value: D.Decoder<Value>
 ): D.Decoder<Map<Key, Value>> {
@@ -235,21 +207,6 @@ function getMapDecoder<Key extends string | number, Value>(
 	}
 }
 
-function getMapEncoder<Key extends string | number, Value>(
-	key: E.Encoder<Key>,
-	value: E.Encoder<Value>
-): E.Encoder<Map<Key, Value>> {
-	return {
-		encode: (a) => {
-			const encodedObject: any = {}
-			for (const [k, v] of a.entries()) {
-				encodedObject[key.encode(k) as string | number] = value.encode(v)
-			}
-			return encodedObject
-		}
-	}
-}
-
 function getMapGuard<Key, Value>(key: G.Guard<Key>, value: G.Guard<Value>): G.Guard<Map<Key, Value>> {
 	return {
 		is: (u: unknown): u is Map<Key, Value> => {
@@ -267,21 +224,50 @@ function getMapGuard<Key, Value>(key: G.Guard<Key>, value: G.Guard<Value>): G.Gu
 	}
 }
 
-function isNotEmpty<A>(as: Array<A>): as is NonEmptyArray<A> {
+export function set<T>(model: Model<T>): Model<Set<T>> {
+	const a = array(model)
+	return {
+		equals: S.getEq(model).equals,
+		encode: flow(setToArray, a.encode),
+		decode: flow(a.decode, EITHER.map(arrayToSet)),
+		is: (u: unknown): u is Set<T> => {
+			if (typeof Set !== undefined && u instanceof Set) {
+				for (const v of u.values()) {
+					if (!model.is(v)) {
+						return false;
+					}
+				}
+				return true
+			} else {
+				return false
+			}
+		}
+	}
+}
+
+function setToArray<T>(set: Set<T>): T[] {
+	const x: T[] = []
+	set.forEach((e) => x.push(e))
+	return x
+}
+
+function arrayToSet<T>(a: T[]): Set<T> {
+	return new Set(a)
+}
+
+function isNotEmpty<A>(as: Array<A>): as is NE.NonEmptyArray<A> {
 	return as.length > 0
 }
 
 export function option<T>(
 	val: Model<T>,
-	lazy: Lazy<T | null> = constNull,
-	overrides: Overrides<O.Option<T>> = DEFAULT_OVERRIDES
+	lazy: Lazy<T | null> = constNull
 ): Model<O.Option<T>> {
 	return {
 		equals: O.getEq(val).equals,
 		decode: (u) => (u === null ? EITHER.right(O.none as O.Option<T>) : pipe(u, val.decode, EITHER.map(O.some))),
 		encode: O.fold(lazy, val.encode),
 		is: getOptionGuard(val).is,
-		...overrides
 	}
 }
 

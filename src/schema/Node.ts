@@ -1,15 +1,23 @@
 import { FunctionN, Lazy } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
+import { Show } from 'fp-ts/lib/Show'
 import * as M from '../model/Model'
 import { constEmptyString, isEmptyObject, once, Ref } from '../shared'
 
-export interface DocumentNode<ModelType, PartialModelType, StoreType, RefType, V extends VariablesNode = {}, MV extends VariablesNode = {}> {
+export interface DocumentNode<
+	ModelType,
+	PartialModelType,
+	StoreType,
+	RefType,
+	V extends VariablesNode = {},
+	MV extends VariablesNode = {}
+> {
 	readonly __mergedVariables?: MV
-	readonly __refType?: RefType,
+	readonly __refType?: RefType
 	readonly tag: string
 	readonly model: M.Model<ModelType>
-	readonly partialModel: M.Model<PartialModelType>;
+	readonly partialModel: M.Model<PartialModelType>
 	readonly print: Lazy<string>
 	readonly variables: V
 	readonly variablesModel: M.Model<ExtractVariables<V>>
@@ -40,15 +48,18 @@ export interface Schema<T extends { [K in keyof T]: Node }>
 
 export type LiteralNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
 
-export interface StringNode<V extends VariablesNode = {}> extends DocumentNode<string, string, Store<string, V>, Ref<string>, V> {
+export interface StringNode<V extends VariablesNode = {}>
+	extends DocumentNode<string, string, Store<string, V>, Ref<string>, V> {
 	readonly tag: 'String'
 }
 
-export interface BooleanNode<V extends VariablesNode = {}> extends DocumentNode<boolean, boolean, Store<boolean, V>, Ref<boolean>, V> {
+export interface BooleanNode<V extends VariablesNode = {}>
+	extends DocumentNode<boolean, boolean, Store<boolean, V>, Ref<boolean>, V> {
 	readonly tag: 'Boolean'
 }
 
-export interface NumberNode<V extends VariablesNode = {}> extends DocumentNode<number, number, Store<number, V>, Ref<number>, V> {
+export interface NumberNode<V extends VariablesNode = {}>
+	extends DocumentNode<number, number, Store<number, V>, Ref<number>, V> {
 	readonly tag: 'Number'
 }
 
@@ -73,7 +84,14 @@ export type WrappedNode<T extends Node> =
 	| NonEmptyArrayNode<T, any>
 
 export interface ArrayNode<T extends Node, V extends VariablesNode = {}>
-	extends DocumentNode<ExtractModelType<T>[], ExtractPartialModelType<T>[], Store<ExtractStoreType<T>[], V>, Ref<ExtractRefType<T>[]>, V, V & ExtractMergedVariables<T>> {
+	extends DocumentNode<
+		ExtractModelType<T>[],
+		ExtractPartialModelType<T>[],
+		Store<ExtractStoreType<T>[], V>,
+		Ref<ExtractRefType<T>[]>,
+		V,
+		V & ExtractMergedVariables<T>
+	> {
 	readonly tag: 'Array'
 	readonly wrapped: T
 }
@@ -132,24 +150,32 @@ export interface SumNode<T extends { [K in keyof T]: TypeNode<string, any> }, V 
 }
 
 export interface MutationNode<T extends Node, V extends VariablesNode = {}>
-	extends DocumentNode<ExtractModelType<T>, ExtractPartialModelType<T>, ExtractStoreType<T>, ExtractRefType<T>, V, ExtractMergedVariables<T>> {
+	extends DocumentNode<
+		ExtractModelType<T>,
+		ExtractPartialModelType<T>,
+		ExtractStoreType<T>,
+		ExtractRefType<T>,
+		V,
+		ExtractMergedVariables<T>
+	> {
 	readonly tag: 'Mutation'
 }
 
-export interface ScalarNode<N extends string, T, V extends VariablesNode = {}> extends DocumentNode<T, T, Store<T, V>, Ref<T>, V> {
+export interface ScalarNode<N extends string, T, V extends VariablesNode = {}>
+	extends DocumentNode<T, T, Store<T, V>, Ref<T>, V> {
 	readonly tag: 'Scalar'
 	readonly name: N
 }
 
 export type ExtractModelType<T> = T extends { readonly model: M.Model<infer A> } ? A : never
 
-export type ExtractPartialModelType<T> = T extends { readonly partialModel: M.Model<infer A> } ? A : never;
+export type ExtractPartialModelType<T> = T extends { readonly partialModel: M.Model<infer A> } ? A : never
 
 export type ExtractStoreType<T> = T extends Node ? Exclude<T['store'], undefined> : never
 
-export type ExtractRefType<T> = T extends Node ? Exclude<T['__refType'], undefined> : never;
+export type ExtractRefType<T> = T extends Node ? Exclude<T['__refType'], undefined> : never
 
-export type ExtractStoreRefTypeFromNode<T> = ExtractStoreType<T> extends Store<infer S, any> ? S : never;
+export type ExtractStoreRefTypeFromNode<T> = ExtractStoreType<T> extends Store<infer S, any> ? S : never
 
 export type ExtractMergedVariables<T> = T extends Node ? Exclude<T['__mergedVariables'], undefined> : undefined
 
@@ -174,7 +200,7 @@ const EMPTY_VARIABLES_MODEL = M.type({})
 export function getVariablesModel<V extends VariablesNode>(
 	variables: V
 ): M.Model<{ [K in keyof V]: ExtractModelType<V[K]> }> {
-	return isEmptyObject(variables) ? (EMPTY_VARIABLES_MODEL as any) : getTypeModel(variables)
+	return isEmptyObject(variables) ? (EMPTY_VARIABLES_MODEL as any) : M.type(variables)
 }
 
 const EMPTY_VARIABLES: any = {}
@@ -264,7 +290,7 @@ export function type<N extends string, T extends { [K in keyof T]: Node }, V ext
 	variables: V = EMPTY_VARIABLES,
 	store?: Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, V>
 ): TypeNode<N, T, V> {
-	const models = extractTypeMemberModels(members) as any;
+	const models = extractTypeMemberModels(members) as any
 	return {
 		__typename,
 		tag: 'Type',
@@ -356,7 +382,7 @@ function printVariableName(node: Node, isOptional: boolean = false): string {
 	}
 }
 
-export function isTypeNode(u: Node): u is TypeNode<string, any> {
+export function isTypeNode(u: Node): u is TypeNode<string, any, any> {
 	return u.tag === 'Type'
 }
 
@@ -434,6 +460,10 @@ export function sum<T extends { [K in keyof T]: TypeNode<string, any> }, V exten
 	}
 }
 
+export function isSumNode(x: Node): x is SumNode<any, any> {
+	return x.tag === 'Sum'
+}
+
 function getSumModel<T extends { [K in keyof T]: TypeNode<string, any> }>(
 	members: T
 ): M.Model<{ [K in keyof T]: ExtractModelType<T[K]> }[keyof T]> {
@@ -461,7 +491,6 @@ function getSumPartialModel<T extends { [K in keyof T]: TypeNode<string, any> }>
 	})
 	return M.sum('__typename')(m) as any
 }
-
 
 const ELLIPSIS = '...'
 
@@ -533,6 +562,11 @@ export function nonEmptyArray<T extends Node, V extends VariablesNode = {}>(
 	}
 }
 
+export function isWrappedNode(x: Node): x is WrappedNode<any> {
+	const tag = x.tag
+	return tag === 'Map' || tag === 'Option' || tag === 'Array' || tag === 'NonEmptyArray'
+}
+
 export function scalar<N extends string, T>(name: N, model: M.Model<T>): ScalarNode<N, T>
 export function scalar<N extends string, T, V extends VariablesNode>(
 	name: N,
@@ -557,11 +591,15 @@ export function scalar<N extends string, T, V extends VariablesNode = {}>(
 	}
 }
 
+export function isScalarNode(x: Node): x is ScalarNode<string, any> {
+	return x.tag === 'Scalar'
+}
+
 export function schema<T extends { [K in keyof T]: Node }>(
 	members: T,
 	store?: Store<{ [K in keyof T]: ExtractStoreType<T[K]> }, {}>
 ): Schema<T> {
-	const models = extractTypeMemberModels(members) as any;
+	const models = extractTypeMemberModels(members) as any
 	return {
 		tag: 'Schema',
 		model: M.type(models),
@@ -572,4 +610,52 @@ export function schema<T extends { [K in keyof T]: Node }>(
 		members,
 		store
 	}
+}
+
+export function isSchemaNode(x: Node): x is Schema<any>{
+	return x.tag === 'Schema';
+}
+
+export const showNode: Show<Node> = {
+	show: (node) => {
+		switch (node.tag) {
+			case 'Boolean':
+			case 'Number':
+			case 'String':
+				return node.tag
+			case 'Scalar':
+				return `Scalar: ${node.name}`
+			case 'Map':
+				return `Map<${showNode.show(node.key)}, ${showNode.show(node.wrapped)}>`
+			case 'Option':
+				return `Option<${showNode.show(node.wrapped)}>`
+			case 'Array':
+				return `Array<${showNode.show(node.wrapped)}`
+			case 'NonEmptyArray':
+				return `NonEmptyArray<${showNode.show(node.wrapped)}`
+			case 'Sum':
+				return showSumNode.show(node)
+			case 'Type':
+			case 'Schema':
+				return showTypeNode.show(node)
+			default:
+				return node.tag
+		}
+	}
+}
+
+export const showSumNode: Show<SumNode<any>> = {
+	show: (node) =>
+		`{ ${Object.keys(node.members)
+			.map((k) => `${k}: ${node.members[k].__typename}`)
+			.join(', ')} }`
+}
+
+export const showTypeNode: Show<TypeNode<string, any, any> | Schema<any>> = {
+	show: (node) =>
+		`{ ${Object.keys(node.members)
+			.map((k) =>
+				`${k}: ${node.members[k].tag} ${node.members[k].__typename || node.members[k].name || ''}`.trimEnd()
+			)
+			.join(', ')} }`
 }
