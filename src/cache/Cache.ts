@@ -1,43 +1,41 @@
-import { isNonEmpty } from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { constVoid } from 'fp-ts/lib/function'
-import { IO } from 'fp-ts/lib/IO'
-import * as IOE from 'fp-ts/lib/IOEither'
+import * as O from 'fp-ts/lib/Option';
+import {IO} from 'fp-ts/lib/IO';
+import {Reader} from 'fp-ts/lib/Reader';
+import {Task} from 'fp-ts/lib/Task';
+import * as TE from 'fp-ts/lib/TaskEither'
 import { Monoid } from 'fp-ts/lib/Monoid'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
-import { isNone, none, some } from 'fp-ts/lib/Option'
-import * as R from 'fp-ts/lib/Reader'
 import { Tree } from 'fp-ts/lib/Tree'
-import { tree } from 'io-ts/lib/Decoder'
-import { isWrappedNode } from '../schema/Node'
 import * as N from '../schema/Node'
-import { isEmptyObject, isFunction, Ref } from '../shared'
+import { Ref } from '../shared'
 
-export interface Cache {
-	write<TNode extends N.Node>(
-		node: TNode,
-		data: N.ExtractPartialModelType<TNode>,
-		variables: ExtractMergedVariablesType<TNode>
-	): CacheResult<Evict>
-	read<TNode extends N.Node>(
-		node: TNode,
-		variables: ExtractMergedVariablesType<TNode>
-	): CacheResult<N.ExtractModelType<TNode>>
-	toRefs<TNode extends N.Node>(
-		node: TNode,
-		variables: ExtractMergedVariablesType<TNode>
-	): CacheResult<N.ExtractRefType<TNode>>
-	toRef<TNode extends N.Node>(
-		node: TNode,
-		variables: ExtractMergedVariablesType<TNode>
-	): CacheResult<Ref<N.ExtractModelType<TNode>>>
+export interface Cache extends Reader<CacheDependencies, Make> {};
+
+export interface Make {
+	<R extends N.Schema<any>>(request: R): E.Either<CacheError, CacheProxy<R>>
+}
+
+export interface CacheProxy<R extends N.Node> {
+	write(
+		variables: ExtractMergedVariablesType<R>
+	): Reader<N.ExtractPartialModelType<R>, CacheResult<Evict>>
+	read(
+		variables: ExtractMergedVariablesType<R>
+	): CacheResult<N.ExtractModelType<R>>
+	toRefs(
+		variables: ExtractMergedVariablesType<R>
+	): CacheResult<N.ExtractRefType<R>>
+	toRef(
+		variables: ExtractMergedVariablesType<R>
+	): CacheResult<Ref<N.ExtractModelType<R>>>
 }
 
 interface CacheWriteResult extends CacheResult<Evict> {}
 
-interface CacheResult<T> extends IOE.IOEither<CacheError, T> {}
+interface CacheResult<T> extends TE.TaskEither<CacheError, T> {}
 
-interface Evict extends IO<void> {}
+interface Evict extends Task<void> {}
 
 export interface CacheError extends NonEmptyArray<Tree<string>> {}
 
@@ -45,308 +43,111 @@ export type ExtractMergedVariablesType<S extends N.Node> = keyof N.ExtractMerged
 	? undefined
 	: N.ExtractVariables<N.ExtractMergedVariables<S>>
 
+export interface CacheDependencies {
+	ofRef: OfRef;
+	persist?: Persist
+}
+
 export interface OfRef {
 	<T>(value?: T): Ref<T>
 }
 
-export function cache<S extends N.Schema<any>>(schema: S): R.Reader<OfRef, Cache> {
-	return (of) => {}
+export interface Persist {
+	store(key: string, value: string): Task<void>;
+	restore<T>(key: string): Task<O.Option<T>>
 }
 
-function write<SchemaNode extends N.Node, RequestNode extends N.Node>(
-	cacheNode: SchemaNode,
-	requestNode: RequestNode,
-	ref: N.ExtractRefType<SchemaNode>,
-	data: N.ExtractModelType<RequestNode>,
-	mergedVariables: ExtractMergedVariablesType<RequestNode>
-): R.Reader<OfRef, CacheResult<Evict>> {
-	switch (cacheNode.tag) {
-		case 'Boolean':
-		case 'Number':
-		case 'String':
-		case 'Scalar':
-			return writeLiteralOrScalar(store, data, extractNodeVariables(node, mergedVariables))
-	}
+interface CacheNodeParams<T extends N.Node> extends CacheDependencies {
+	id: string;
+	node: T;
 }
+
+ abstract class CacheNode<T extends N.Node> implements CacheProxy<T> {
+	 constructor(protected readonly params: CacheNodeParams<T>) {
+		 this.write = this.write.bind(this);
+		 this.read = this.read.bind(this);
+		 this.toRef = this.toRef.bind(this);
+		 this.toRefs = this.toRefs.bind(this);
+	 }
+
+	 abstract write(variables: ExtractMergedVariablesType<T>): Reader<N.ExtractPartialModelType<T>, CacheResult<Evict>>
+
+	 abstract read(variables: ExtractMergedVariablesType<T>): CacheResult<N.ExtractModelType<T>>
+
+	 abstract toRef(variables: ExtractMergedVariablesType<T>): CacheResult<Ref<N.ExtractModelType<T>>>
+
+	 abstract toRefs(variables: ExtractMergedVariablesType<T>): CacheResult<N.ExtractRefType<T>>
+
+	 protected encodeVariables(variables: ExtractMergedVariablesType<T>): unknown {
+	 	return this.params.node.variablesModel.encode(this.extractNodeVariables(variables));
+	 }
+
+	 protected extractNodeVariables(
+		 variables: ExtractMergedVariablesType<T>
+	 ): N.ExtractVariables<T['variables']> {
+		 const x: any = {}
+		 Object.keys(this.params.node.variables).forEach((key) => {
+			 x[key] = variables && variables[key]
+		 })
+		 return x
+	 }
+
+ }
+
+
+class LiteralCacheNode<T extends N.LiteralNode<any>> extends CacheNode<T> {
+	private results: Map<unknown, N.ExtractRefType<T>> = new Map();
+	constructor(params: CacheNodeParams<T>) {
+		super(params);
+	}
+
+	toRef(variables: ExtractMergedVariablesType<T>): CacheResult<Ref<N.ExtractModelType<T>>> {
+		return TE.rightIO(this.extractRef(variables));
+	}
+
+	toRefs(variables: ExtractMergedVariablesType<T>): CacheResult<ExtractRefType<T>> {
+		return undefined;
+	}
+
+	private extractRef(variables: ExtractMergedVariablesType<T>): IO<N.ExtractRefType<T>> {
+		return () => {
+			const encodedVariables = this.encodeVariables(variables);
+			const ref = this.results.get(encodedVariables);
+			if (ref) {
+				return ref;
+			} else {
+				const newRef = this.params.ofRef() as N.ExtractRefType<T>;
+				this.results.set(encodedVariables, newRef);
+				return newRef;
+			}
+		};
+	}
+
+}
+
 
 const cacheWriteResultMonoid: Monoid<CacheWriteResult> = {
-	empty: IOE.right(constVoid),
+	empty: TE.right(taskVoid),
 	concat: (x, y) => {
-		return () => {
-			const xResult = x()
-			const yResult = y()
+		return (async () => {
+			const [xResult, yResult] = await Promise.all([x(), y()]);
 			if (E.isLeft(xResult) && E.isLeft(yResult)) {
-				return E.left<CacheError, Evict>([...xResult.left, ...yResult.left] as CacheError)
+				return E.left([...xResult.left, ...yResult.left] as CacheError)
 			} else if (E.isLeft(xResult) && E.isRight(yResult)) {
 				yResult.right()
-				return xResult
+				return xResult;
 			} else if (E.isLeft(yResult) && E.isRight(xResult)) {
 				xResult.right()
-				return yResult
+				return yResult;
 			} else if (E.isRight(xResult) && E.isRight(yResult)) {
-				return E.right(() => {
-					xResult.right()
-					yResult.right()
+				return E.right(async () => {
+					await Promise.all([x(), y()]);
 				})
 			} else {
-				return E.right(constVoid)
+				return cacheWriteResultMonoid.empty
 			}
-		}
+		}) as CacheWriteResult
 	}
 }
 
-function writeType<T extends N.TypeNode<string, any, any>>(
-	node: T,
-	store: N.ExtractStoreType<T>,
-	data: N.ExtractModelType<T>,
-	mergedVariables: ExtractMergedVariablesType<T>
-): IO<Evict> {
-	return () => {
-		const ref = isFunction(store) ? store(extractNodeVariables(node, mergedVariables)) : store
-		if (isNone(ref.value)) {
-		}
-	}
-}
-
-function extractNodeVariables<T extends N.Node>(
-	node: T,
-	mergedVariables: ExtractMergedVariablesType<T>
-): N.ExtractVariables<T['variables']> {
-	const x: any = {}
-	Object.keys(node.variables).forEach((key) => {
-		x[key] = mergedVariables && mergedVariables[key]
-	})
-	return x
-}
-
-function writeLiteralOrScalar<SchemaNode extends N.Node, RequestNode extends N.Node>(
-	cacheNode: SchemaNode,
-	requestNode: RequestNode,
-	store: N.ExtractStoreType<T>,
-	data: N.ExtractModelType<T>,
-	variables: N.ExtractVariables<T['variables']>
-): CacheResult<Evict> {
-	return () => {
-		const ref = isFunction(store) ? store(variables) : store
-		const currentValue = ref.value
-		const newValue = some(data)
-		ref.value = newValue
-		return () => {
-			if (ref.value === newValue) {
-				ref.value = currentValue
-			}
-		}
-	}
-}
-
-export function store<T extends N.Node>(node: T): R.Reader<OfRef, any> {
-	if (node.store) {
-		return () => node.store
-	}
-	switch (node.tag) {
-		case 'Schema':
-		case 'Type':
-			return type(node as N.TypeNode<any, any, any>)
-		case 'Array':
-			return array(node)
-		case 'Map':
-			return map(node)
-		case 'NonEmptyArray':
-			return nonEmptyArray(node)
-		case 'Option':
-			return option(node)
-		case 'Sum':
-			return sum(node)
-		case 'Mutation':
-			return mutation(node)
-		case 'Number':
-		case 'Boolean':
-		case 'String':
-		case 'Scalar':
-			return make(node)
-	}
-}
-
-export function type<T extends N.TypeNode<any, any, any>>(node: T): R.Reader<OfRef, T['store']> {
-	function subStore(of: OfRef): N.ExtractStoreRefTypeFromNode<T> {
-		const members = node.members
-		const x: any = {}
-		Object.keys(members).forEach((key) => {
-			x[key] = store(members[key])(of)
-		})
-		return x
-	}
-	return make(node, subStore)
-}
-
-export function array<T extends N.ArrayNode<any, any>>(node: T): R.Reader<OfRef, T['store']> {
-	function subStore(of: OfRef): N.ExtractStoreRefTypeFromNode<T> {
-		return [store(node.wrapped)(of)] as N.ExtractStoreRefTypeFromNode<T>
-	}
-	return make(node, subStore)
-}
-
-export function nonEmptyArray<T extends N.NonEmptyArrayNode<any, any>>(node: T): R.Reader<OfRef, T['store']> {
-	function subStore(of: OfRef): N.ExtractStoreRefTypeFromNode<T> {
-		return [store(node.wrapped)(of)] as N.ExtractStoreRefTypeFromNode<T>
-	}
-	return make(node, subStore)
-}
-
-export function map<T extends N.MapNode<any, any, any>>(node: T): R.Reader<OfRef, T['store']> {
-	function subStore(): N.ExtractStoreRefTypeFromNode<T> {
-		return new Map() as N.ExtractStoreRefTypeFromNode<T>
-	}
-	return make(node, subStore)
-}
-
-export function option<T extends N.OptionNode<any, any>>(node: T): R.Reader<OfRef, T['store']> {
-	function subStore(): N.ExtractStoreRefTypeFromNode<T> {
-		return none as N.ExtractStoreRefTypeFromNode<T>
-	}
-	return make(node, subStore)
-}
-
-export function sum(): R.Reader<OfRef, any> {
-	return (of) => {}
-}
-
-export function mutation<T extends N.OptionNode<any, any>>(node: T): R.Reader<OfRef, T['store']> {
-	function subStore(of: OfRef): N.ExtractStoreRefTypeFromNode<T> {
-		return store(node.wrapped)(of)
-	}
-	return make(node, subStore)
-}
-
-function make<T extends N.Node>(
-	node: T,
-	subStore?: R.Reader<OfRef, N.ExtractStoreRefTypeFromNode<T>>
-): R.Reader<OfRef, N.ExtractStoreType<T>> {
-	return (of) => {
-		if (isEmptyObject(node.variables)) {
-			return of<T>() as N.ExtractStoreType<T>
-		} else {
-			const results = new Map()
-			return ((variables: N.ExtractVariables<T['variables']>) => {
-				const encodedVariables = node.variablesModel.encode(variables)
-				const result = results.get(encodedVariables)
-				if (result) {
-					return result
-				} else {
-					const newResult = of(subStore ? subStore(of) : undefined)
-					results.set(encodedVariables, newResult)
-					return newResult
-				}
-			}) as N.ExtractStoreType<T>
-		}
-	}
-}
-
-function validate<S extends N.Schema<any>>(schema: S) {
-	const validations: Map<N.Schema<any>, Array<Tree<string>>> = new Map();
-	return <R extends N.Schema<any>>(request: R): Array<Tree<string>> => {
-		const validation = validations.get(request);
-		if (validation) {
-			return validation;
-		} else {
-			const newValidation = validateNode(schema, request);
-			validations.set(request, newValidation);
-			return newValidation;
-		}
-	}
-
-}
-
-function validateNode<SchemaNode extends N.Node, RequestNode extends N.Node>(
-	x: SchemaNode,
-	y: RequestNode
-): Array<Tree<string>> {
-	if (N.isWrappedNode(x) && N.isWrappedNode(y)) {
-		return validateWrappedNode(x.wrapped, y.wrapped)
-	} else if ((N.isTypeNode(x) && N.isTypeNode(y)) || (N.isSchemaNode(x) && N.isSchemaNode(y))) {
-		return validateTypeNode(x, y)
-	} else if (N.isScalarNode(x) && N.isScalarNode(y)) {
-		return validateScalarNode(x, y)
-	} else if (N.isSumNode(x) && N.isSumNode(y)) {
-		return validateSumNode(x, y);
-	} else {
-		return [tree(`cannot use node ${N.showNode.show(y)}, should be assignable to ${N.showNode.show(x)}`)]
-	}
-}
-
-function validateTypeNode<
-	SchemaNode extends N.TypeNode<string, any, any> | N.Schema<any>,
-	RequestNode extends N.TypeNode<string, any, any> | N.Schema<any>
->(x: SchemaNode, y: RequestNode): Array<Tree<string>> {
-	const xMembers = x.members
-	const yMembers = y.members
-	const errors: Array<Tree<string>> = []
-	for (const k in yMembers) {
-		const xk = xMembers[k]
-		const yk = yMembers[k]
-		if (xk === undefined) {
-			errors.push(tree(`request has expected field ${k} that is unavailable on ${N.showTypeNode.show(xk)}`))
-		} else {
-			const mErrors = validateNode(xk, yk)
-			if (isNonEmpty(mErrors)) {
-				errors.push(tree(`invalid request on ${k}`, mErrors))
-			}
-		}
-	}
-	return errors
-}
-
-function validateWrappedNode<SchemaNode extends N.WrappedNode<any>, RequestNode extends N.WrappedNode<any>>(
-	x: SchemaNode,
-	y: RequestNode
-): Array<Tree<string>> {
-	const errors = validateNode(x.wrapped, y.wrapped)
-	if (isNonEmpty(errors)) {
-		return [
-			tree(
-				`invalid request within ${x.tag}<${
-					N.isMapNode(x) ? `${x.key.name || x.key.__typename || x.key.tag}, ` : ''
-				}${x.wrapped.name || x.wrapped.__typename || x.tag}>`,
-				errors
-			)
-		]
-	} else {
-		return [];
-	}
-}
-
-function validateScalarNode<
-	SchemaNode extends N.ScalarNode<string, any, N.VariablesNode>,
-	RequestNode extends N.ScalarNode<string, any, N.VariablesNode>
->(x: SchemaNode, y: RequestNode): Array<Tree<string>> {
-	const errors = []
-	if (x.name !== y.name) {
-		errors.push(tree(`scalar nodes are not the same, schema has ${x.name}, while request has ${y.name}`))
-	}
-	if (x.model !== y.model) {
-		errors.push(tree(`Scalar Node: ${x.name} in the schema has a different model than Scalar Node:${y.name}`))
-	}
-	return errors
-}
-
-function validateSumNode<
-	SchemaNode extends N.SumNode<any, any>,
-	RequestNode extends N.SumNode<any, any>
-	>(x: SchemaNode, y: RequestNode): Array<Tree<string>> {
-	const xMembers = x.members
-	const yMembers = y.members
-	const errors: Array<Tree<string>> = []
-	for (const k in yMembers) {
-		const xk = xMembers[k]
-		const yk = yMembers[k]
-		if (xk === undefined) {
-			errors.push(tree(`request has sum member ${k} that is unavailable in schema ${N.showTypeNode.show(xk)}`))
-		} else {
-			const mErrors = validateNode(xk, yk)
-			if (isNonEmpty(mErrors)) {
-				errors.push(tree(`invalid request on ${k}`, mErrors))
-			}
-		}
-	}
-	return errors
-}
+async function taskVoid() {}

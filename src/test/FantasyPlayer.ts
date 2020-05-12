@@ -47,7 +47,7 @@ type Response = M.TypeOf<typeof FantasyPlayer['model']>
 
 type Store = Exclude<typeof FantasyPlayer['__refType'], undefined>
 
-let x: C.Cache<typeof FantasyPlayer> = 1 as any
+let x: C.CacheProxy<typeof FantasyPlayer> = 1 as any
 
 x.write(undefined, {
 	id: 'test',
