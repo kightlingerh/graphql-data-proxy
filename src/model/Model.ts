@@ -1,6 +1,6 @@
-import * as A from 'fp-ts/lib/Array';
+import * as A from 'fp-ts/lib/Array'
 import * as EQ from 'fp-ts/lib/Eq'
-import {constant, constNull, flow, Lazy} from 'fp-ts/lib/function'
+import { constant, constNull, flow, Lazy } from 'fp-ts/lib/function'
 import { pipe } from 'fp-ts/lib/pipeable'
 import { Tree } from 'fp-ts/lib/Tree'
 import * as C from 'io-ts/lib/Codec'
@@ -36,9 +36,7 @@ export const boolean: Model<boolean> = {
 	...C.boolean
 }
 
-export function type<T>(
-	members: { [K in keyof T]: Model<T[K]> }
-): Model<T> {
+export function type<T>(members: { [K in keyof T]: Model<T[K]> }): Model<T> {
 	return {
 		equals: EQ.getStructEq(members).equals,
 		is: G.type(members).is,
@@ -46,9 +44,7 @@ export function type<T>(
 	}
 }
 
-export function partial<T>(
-	members: { [K in keyof T]: Model<T[K]> }
-): Model<Partial<T>> {
+export function partial<T>(members: { [K in keyof T]: Model<T[K]> }): Model<Partial<T>> {
 	return {
 		equals: (x, y) => {
 			for (const k in members) {
@@ -65,14 +61,11 @@ export function partial<T>(
 	}
 }
 
-export function intersection<A, B>(
-	left: Model<A>,
-	right: Model<B>
-): Model<A & B> {
+export function intersection<A, B>(left: Model<A>, right: Model<B>): Model<A & B> {
 	return {
 		equals: (x, y) => left.equals(x, y) && right.equals(x, y),
 		is: G.intersection(left, right).is,
-		...C.intersection(left, right),
+		...C.intersection(left, right)
 	}
 }
 
@@ -86,10 +79,7 @@ export function union<A extends ReadonlyArray<unknown>>(...members: { [K in keyo
 			return pipe(
 				members.filter((m) => m.is(a)),
 				A.head,
-				O.fold(
-					constant(JSON.stringify(a)),
-					(m) => m.encode(a)
-				)
+				O.fold(constant(JSON.stringify(a)), (m) => m.encode(a))
 			)
 		},
 		...D.union(...members)
@@ -107,9 +97,7 @@ export function typeWithUniqueIdentifier<T, K extends keyof T>(
 	}
 }
 
-export function nonEmptyArray<T>(
-	val: Model<T>
-): Model<NE.NonEmptyArray<T>> {
+export function nonEmptyArray<T>(val: Model<T>): Model<NE.NonEmptyArray<T>> {
 	const a = array(val)
 	return {
 		encode: a.encode,
@@ -129,7 +117,6 @@ export function nonEmptyArray<T>(
 	}
 }
 
-
 export function array<T>(val: Model<T>): Model<T[]> {
 	return {
 		equals: A.getEq(val).equals,
@@ -147,10 +134,7 @@ const UnknownRecordDecoder: D.Decoder<Record<string | number, unknown>> = D.from
 	'stringNode | number'
 )
 
-export function map<Key, Value>(
-	key: Model<Key>,
-	value: Model<Value>
-): Model<Map<Key, Value>> {
+export function map<Key, Value>(key: Model<Key>, value: Model<Value>): Model<Map<Key, Value>> {
 	return {
 		equals: M.getEq(key, value).equals,
 		encode: getMapEncoder(key, value).encode,
@@ -159,10 +143,7 @@ export function map<Key, Value>(
 	}
 }
 
-function getMapEncoder<Key, Value>(
-	key: E.Encoder<Key>,
-	value: E.Encoder<Value>
-): E.Encoder<Map<Key, Value>> {
+function getMapEncoder<Key, Value>(key: E.Encoder<Key>, value: E.Encoder<Value>): E.Encoder<Map<Key, Value>> {
 	return {
 		encode: (a) => {
 			const encodedObject: any = {}
@@ -174,10 +155,7 @@ function getMapEncoder<Key, Value>(
 	}
 }
 
-function getMapDecoder<Key, Value>(
-	key: D.Decoder<Key>,
-	value: D.Decoder<Value>
-): D.Decoder<Map<Key, Value>> {
+function getMapDecoder<Key, Value>(key: D.Decoder<Key>, value: D.Decoder<Value>): D.Decoder<Map<Key, Value>> {
 	return {
 		decode: (u) => {
 			const v = UnknownRecordDecoder.decode(u)
@@ -234,7 +212,7 @@ export function set<T>(model: Model<T>): Model<Set<T>> {
 			if (typeof Set !== undefined && u instanceof Set) {
 				for (const v of u.values()) {
 					if (!model.is(v)) {
-						return false;
+						return false
 					}
 				}
 				return true
@@ -259,15 +237,12 @@ function isNotEmpty<A>(as: Array<A>): as is NE.NonEmptyArray<A> {
 	return as.length > 0
 }
 
-export function option<T>(
-	val: Model<T>,
-	lazy: Lazy<T | null> = constNull
-): Model<O.Option<T>> {
+export function option<T>(val: Model<T>, lazy: Lazy<T | null> = constNull): Model<O.Option<T>> {
 	return {
 		equals: O.getEq(val).equals,
 		decode: (u) => (u === null ? EITHER.right(O.none as O.Option<T>) : pipe(u, val.decode, EITHER.map(O.some))),
 		encode: O.fold(lazy, val.encode),
-		is: getOptionGuard(val).is,
+		is: getOptionGuard(val).is
 	}
 }
 

@@ -14,14 +14,12 @@ export interface DocumentNode<
 	MV extends VariablesNode = {}
 > {
 	readonly __mergedVariables?: MV
-	readonly __refType?: RefType
 	readonly tag: string
 	readonly model: M.Model<ModelType>
 	readonly partialModel: M.Model<PartialModelType>
 	readonly print: Lazy<string>
 	readonly variables: V
 	readonly variablesModel: M.Model<ExtractVariables<V>>
-	readonly store?: StoreType
 }
 
 export type Node =

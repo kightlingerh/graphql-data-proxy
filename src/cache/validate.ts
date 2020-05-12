@@ -1,21 +1,20 @@
-import {isNonEmpty} from 'fp-ts/lib/Array';
-import {Tree} from 'fp-ts/lib/Tree';
-import {tree} from 'io-ts/lib/Decoder';
-import * as N from '../schema/Node';
+import { isNonEmpty } from 'fp-ts/lib/Array'
+import { Tree } from 'fp-ts/lib/Tree'
+import { tree } from 'io-ts/lib/Decoder'
+import * as N from '../schema/Node'
 
 export function validate<S extends N.Schema<any>>(schema: S) {
-	const validations: Map<N.Schema<any>, Array<Tree<string>>> = new Map();
+	const validations: Map<N.Schema<any>, Array<Tree<string>>> = new Map()
 	return <R extends N.Schema<any>>(request: R): Array<Tree<string>> => {
-		const validation = validations.get(request);
+		const validation = validations.get(request)
 		if (validation) {
-			return validation;
+			return validation
 		} else {
-			const newValidation = validateNode(schema, request);
-			validations.set(request, newValidation);
-			return newValidation;
+			const newValidation = validateNode(schema, request)
+			validations.set(request, newValidation)
+			return newValidation
 		}
 	}
-
 }
 
 function validateNode<SchemaNode extends N.Node, RequestNode extends N.Node>(
@@ -29,7 +28,7 @@ function validateNode<SchemaNode extends N.Node, RequestNode extends N.Node>(
 	} else if (N.isScalarNode(x) && N.isScalarNode(y)) {
 		return validateScalarNode(x, y)
 	} else if (N.isSumNode(x) && N.isSumNode(y)) {
-		return validateSumNode(x, y);
+		return validateSumNode(x, y)
 	} else {
 		return [tree(`cannot use node ${N.showNode.show(y)}, should be assignable to ${N.showNode.show(x)}`)]
 	}
@@ -38,7 +37,7 @@ function validateNode<SchemaNode extends N.Node, RequestNode extends N.Node>(
 function validateTypeNode<
 	SchemaNode extends N.TypeNode<string, any, any> | N.Schema<any>,
 	RequestNode extends N.TypeNode<string, any, any> | N.Schema<any>
-	>(x: SchemaNode, y: RequestNode): Array<Tree<string>> {
+>(x: SchemaNode, y: RequestNode): Array<Tree<string>> {
 	const xMembers = x.members
 	const yMembers = y.members
 	const errors: Array<Tree<string>> = []
@@ -72,14 +71,14 @@ function validateWrappedNode<SchemaNode extends N.WrappedNode<any>, RequestNode 
 			)
 		]
 	} else {
-		return [];
+		return []
 	}
 }
 
 function validateScalarNode<
 	SchemaNode extends N.ScalarNode<string, any, N.VariablesNode>,
 	RequestNode extends N.ScalarNode<string, any, N.VariablesNode>
-	>(x: SchemaNode, y: RequestNode): Array<Tree<string>> {
+>(x: SchemaNode, y: RequestNode): Array<Tree<string>> {
 	const errors = []
 	if (x.name !== y.name) {
 		errors.push(tree(`scalar nodes are not the same, schema has ${x.name}, while request has ${y.name}`))
@@ -90,10 +89,10 @@ function validateScalarNode<
 	return errors
 }
 
-function validateSumNode<
-	SchemaNode extends N.SumNode<any, any>,
-	RequestNode extends N.SumNode<any, any>
-	>(x: SchemaNode, y: RequestNode): Array<Tree<string>> {
+function validateSumNode<SchemaNode extends N.SumNode<any, any>, RequestNode extends N.SumNode<any, any>>(
+	x: SchemaNode,
+	y: RequestNode
+): Array<Tree<string>> {
 	const xMembers = x.members
 	const yMembers = y.members
 	const errors: Array<Tree<string>> = []
