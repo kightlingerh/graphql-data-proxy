@@ -13,9 +13,9 @@ export interface DocumentNode<M, P, R, V extends VariablesNode = {}, MV extends 
 }
 
 interface DocumentVariables<V extends VariablesNode = {}, MV extends VariablesNode = {}> {
-	__merged?: MV
+	__children?: MV
 	definition: V
-	model: M.Model<ExtractVariables<V>>
+	model: M.Model<ExtractVariablesDefinitionType<V>>
 }
 
 interface DocumentModel<W, P, R> {
@@ -39,7 +39,7 @@ export interface Schema<T extends { [K in keyof T]: Node }>
 		Partial<{ [K in keyof T]: ExtractModelType<T[K]> }>,
 		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }>,
 		{},
-		{} & Intersection<Values<{ [K in keyof T]: ExtractMergedVariables<T[K]> }>>
+		{} & Intersection<Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> }>>
 	> {
 	readonly tag: 'Schema'
 	readonly members: T
@@ -47,15 +47,15 @@ export interface Schema<T extends { [K in keyof T]: Node }>
 
 export type LiteralNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
 
-export interface StringNode<V extends VariablesNode = {}> extends DocumentNode<string, string, Ref<string>, V, V> {
+export interface StringNode<V extends VariablesNode = {}> extends DocumentNode<string, string, Ref<string>, V> {
 	readonly tag: 'String'
 }
 
-export interface BooleanNode<V extends VariablesNode = {}> extends DocumentNode<boolean, boolean, Ref<boolean>, V, V> {
+export interface BooleanNode<V extends VariablesNode = {}> extends DocumentNode<boolean, boolean, Ref<boolean>, V> {
 	readonly tag: 'Boolean'
 }
 
-export interface NumberNode<V extends VariablesNode = {}> extends DocumentNode<number, number, Ref<number>, V, V> {
+export interface NumberNode<V extends VariablesNode = {}> extends DocumentNode<number, number, Ref<number>, V> {
 	readonly tag: 'Number'
 }
 
@@ -65,7 +65,7 @@ export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, 
 		Partial<{ [K in keyof T]: ExtractModelType<T[K]> }>,
 		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }>,
 		V,
-		V & Intersection<Values<{ [K in keyof T]: ExtractMergedVariables<T[K]> }>>
+		{} & Intersection<Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> }>>
 	> {
 	readonly __typename: N
 	readonly tag: 'Type'
@@ -84,7 +84,7 @@ export interface ArrayNode<T extends Node, V extends VariablesNode = {}>
 		ExtractPartialModelType<T>[],
 		Ref<ExtractRefType<T>[]>,
 		V,
-		V & ExtractMergedVariables<T>
+		{} & ExtractChildrenVariablesDefinition<T>
 	> {
 	readonly tag: 'Array'
 	readonly wrapped: T
@@ -96,7 +96,7 @@ export interface MapNode<K extends Node, T extends Node, V extends VariablesNode
 		Map<ExtractModelType<K>, ExtractPartialModelType<T>>,
 		Ref<Map<unknown, ExtractRefType<T>>>,
 		V,
-		V & ExtractMergedVariables<T>
+		{} & ExtractChildrenVariablesDefinition<T>
 	> {
 	readonly tag: 'Map'
 	readonly key: K
@@ -109,7 +109,7 @@ export interface OptionNode<T extends Node, V extends VariablesNode = {}>
 		Option<ExtractPartialModelType<T>>,
 		Ref<Option<ExtractRefType<T>>>,
 		V,
-		V & ExtractMergedVariables<T>
+		{} & ExtractChildrenVariablesDefinition<T>
 	> {
 	readonly tag: 'Option'
 	readonly wrapped: T
@@ -121,7 +121,7 @@ export interface NonEmptyArrayNode<T extends Node, V extends VariablesNode = {}>
 		NonEmptyArray<ExtractPartialModelType<T>>,
 		Ref<NonEmptyArray<ExtractRefType<T>>>,
 		V,
-		V & ExtractMergedVariables<T>
+		{} & ExtractChildrenVariablesDefinition<T>
 	> {
 	readonly tag: 'NonEmptyArray'
 	readonly wrapped: T
@@ -133,7 +133,7 @@ export interface SumNode<T extends { [K in keyof T]: TypeNode<string, any> }, V 
 		{ [K in keyof T]: ExtractPartialModelType<T[K]> }[keyof T],
 		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }[keyof T]>,
 		V,
-		V & Intersection<Values<{ [K in keyof T]: ExtractMergedVariables<T[K]> }>>
+		{} & Intersection<Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> }>>
 	> {
 	readonly tag: 'Sum'
 	readonly members: T
@@ -145,7 +145,7 @@ export interface MutationNode<T extends Node, V extends VariablesNode = {}>
 		ExtractPartialModelType<T>,
 		ExtractRefType<T>,
 		V,
-		ExtractMergedVariables<T>
+		{} & ExtractChildrenVariablesDefinition<T>
 	> {
 	readonly tag: 'Mutation'
 }
@@ -157,11 +157,17 @@ export interface ScalarNode<N extends string, T, V extends VariablesNode = {}> e
 
 export type ExtractRefType<T> = T extends Node ? Exclude<T['model']['__ref'], undefined> : never
 
-export type ExtractModelType<T> = T extends Node ? T['model']['whole'] : never
+export type ExtractModelType<T> = T extends { readonly model: DocumentModel<infer A, any, any> } ? A : never
 
-export type ExtractPartialModelType<T> = T extends Node ? T['model']['partial'] : never
+export type ExtractPartialModelType<T> = T extends { readonly model: DocumentModel<any, infer A, any> } ? A : never
 
-export type ExtractMergedVariables<T> = T extends Node ? Exclude<T['variables']['__merged'], undefined> : undefined
+export type ExtractChildrenVariablesType<T> = T extends Node
+	? ExtractVariablesDefinitionType<ExtractChildrenVariablesDefinition<T>>
+	: undefined
+
+export type ExtractChildrenVariablesDefinition<T> = T extends Node
+	? Exclude<T['variables']['__children'], undefined>
+	: undefined
 
 export type Values<T> = T[keyof T]
 
@@ -171,7 +177,13 @@ export interface VariablesNode {
 	[K: string]: Node
 }
 
-export type ExtractVariables<V> = {
+export type ExtractVariablesType<T> = T extends Node
+	? ExtractVariablesDefinitionType<ExtractVariablesDefinition<T>>
+	: never
+
+export type ExtractVariablesDefinition<T> = T extends Node ? T['variables']['definition'] : never
+
+export type ExtractVariablesDefinitionType<V> = {
 	[K in keyof V]: ExtractModelType<V[K]>
 }
 

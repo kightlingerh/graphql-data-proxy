@@ -35,9 +35,9 @@ export interface Evict extends Task<void> {}
 
 export interface CacheError extends NonEmptyArray<Tree<string>> {}
 
-export type ExtractMergedVariablesType<S extends D.Node> = keyof D.ExtractMergedVariables<S> extends never
+export type ExtractMergedVariablesType<S extends D.Node> = keyof D.ExtractChildrenVariablesDefinition<S> extends never
 	? undefined
-	: D.ExtractVariables<D.ExtractMergedVariables<S>>
+	: D.ExtractVariablesDefinitionType<D.ExtractChildrenVariablesDefinition<S>>
 
 interface CacheNodeDependencies<T extends D.Node> extends CacheDependencies {
 	id: string
