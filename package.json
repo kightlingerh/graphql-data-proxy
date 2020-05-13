@@ -12,11 +12,11 @@
     "prettier-write": "prettier --no-semi --single-quote --print-width 120 --parser typescript --write \"{src,test,examples,exercises}/**/*.ts\""
   },
   "peerDependencies": {
-    "fp-ts": "^2.0.0",
+    "fp-ts": "^2.6.0",
     "io-ts": "^2.2.1"
   },
   "devDependencies": {
-    "fp-ts": "^2.0.0",
+    "fp-ts": "^2.6.0",
     "io-ts": "^2.2.1",
     "prettier": "^2.0.5",
     "ts-node": "^8.9.1",

@@ -155,7 +155,7 @@ export interface ScalarNode<N extends string, T, V extends VariablesNode = {}> e
 	readonly name: N
 }
 
-export type ExtractRefType<T> = T extends Node ? Exclude<T['model']['__ref'], undefined> : never
+export type ExtractRefType<T> = T extends { readonly model: DocumentModel<any, any, infer A> } ? A : never
 
 export type ExtractModelType<T> = T extends { readonly model: DocumentModel<infer A, any, any> } ? A : never
 
