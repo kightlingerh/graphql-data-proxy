@@ -1,7 +1,7 @@
 import { sequenceT } from 'fp-ts/lib/Apply'
 import {isNonEmpty} from 'fp-ts/lib/Array';
 import * as E from 'fp-ts/lib/Either'
-import {constant, flow} from 'fp-ts/lib/function'
+import {constant} from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
 import { Monoid } from 'fp-ts/lib/Monoid'
 import { getSemigroup, NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
@@ -11,7 +11,6 @@ import { pipe } from 'fp-ts/lib/pipeable'
 import { Reader } from 'fp-ts/lib/Reader'
 import { sequence, traverse } from 'fp-ts/lib/Record'
 import * as A from 'fp-ts/lib/Array'
-import * as NEA from 'fp-ts/lib/NonEmptyArray';
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { Tree } from 'fp-ts/lib/Tree'
@@ -20,6 +19,8 @@ import * as D from '../document/DocumentNode'
 import * as M from '../model/Model'
 import * as MAP from 'fp-ts/lib/Map'
 import { isEmptyObject, Ref } from '../shared'
+
+export type CacheNode<T = D.Node> = T & Proxy<T>
 
 export interface Proxy<T> {
 	readonly data: Reader<DataProxyDependencies<T>, DataProxy<T>>
@@ -78,13 +79,43 @@ export interface Persist {
 	restore<T>(key: string): TE.TaskEither<CacheError, O.Option<T>>
 }
 
-export type CacheNode<T = D.Node> = T & Proxy<T>
+export type ExtractDataProxyType<T> = T extends CacheNode<infer A> ? DataProxy<A> : never
 
-export type ExtractDataProxyType<T> = T extends Proxy<infer A> ? DataProxy<A> : never
-
-export type ExtractStoreProxyType<T> = T extends Proxy<infer A> ? StoreProxy<A> : never
+export type ExtractStoreProxyType<T> = T extends CacheNode<infer A> ? StoreProxy<A> : never
 
 const cacheErrorApplicativeValidation = TE.getTaskValidation(getSemigroup<Tree<string>>())
+
+const cacheWriteResultMonoid: Monoid<CacheWriteResult> = {
+	empty: TE.right(taskVoid),
+	concat: (x, y) => {
+		return (async () => {
+			const [xResult, yResult] = await Promise.all([x(), y()])
+			if (E.isLeft(xResult) && E.isLeft(yResult)) {
+				return E.left([...xResult.left, ...yResult.left] as CacheError)
+			} else if (E.isLeft(xResult) && E.isRight(yResult)) {
+				yResult.right()
+				return xResult
+			} else if (E.isLeft(yResult) && E.isRight(xResult)) {
+				xResult.right()
+				return yResult
+			} else if (E.isRight(xResult) && E.isRight(yResult)) {
+				return E.right(async () => {
+					await Promise.all([x(), y()])
+				})
+			} else {
+				return cacheWriteResultMonoid.empty
+			}
+		}) as CacheWriteResult
+	}
+}
+
+async function taskVoid() {}
+
+function concatEvict(x: Evict, y: Evict): Evict {
+	return async () => {
+		await Promise.all([x(), y()])
+	}
+}
 
 class Store<T extends D.Node> implements StoreProxy<T> {
 	protected readonly proxyMap: Map<unknown, DataProxy<T>> = new Map()
@@ -219,7 +250,7 @@ export function scalar<N extends string, T, V extends D.VariablesNode = {}>(
 	name: N,
 	model: M.Model<T>,
 	variables: V = D.EMPTY_VARIABLES
-): Proxy<D.ScalarNode<N, T, V>> {
+): CacheNode<D.ScalarNode<N, T, V>> {
 	const node = D.scalar(name, model, variables)
 	const data = (deps: DataProxyDependencies<D.ScalarNode<N, T, V>>) => new LiteralProxy({ ...deps, node })
 	return {
@@ -229,13 +260,12 @@ export function scalar<N extends string, T, V extends D.VariablesNode = {}>(
 	}
 }
 
-
 const recordTraverse = traverse(cacheErrorApplicativeValidation)
 
 abstract class BaseProxy<T extends D.Node>
 	implements DataProxy<T>
 {
-	constructor(protected readonly deps: Pick<DataProxyDependencies<T>, 'persist'> &
+	protected constructor(protected readonly deps: Pick<DataProxyDependencies<T>, 'persist'> &
 		Required<Omit<DataProxyDependencies<T>, 'persist'>>
 	) {
 		this.read.bind(this)
@@ -318,7 +348,7 @@ export function type<N extends string, T extends { [K in keyof T]: CacheNode }, 
 	__typename: N,
 	members: T,
 	variables: V
-): Proxy<D.TypeNode<N, T, V>> {
+): CacheNode<D.TypeNode<N, T, V>> {
 	const node = D.type(__typename, members, variables)
 	const data = (deps: DataProxyDependencies<D.TypeNode<N, T, V>>) => new TypeProxy({ ...deps, node })
 	return {
@@ -700,58 +730,5 @@ export function nonEmptyArray<T extends CacheNode, V extends D.VariablesNode = {
 		...node,
 		data,
 		store: (deps) => (isEmptyObject(node.variables) ? data(deps) : new Store({ node, data, ...deps }))
-	}
-}
-
-class SchemaProxy<T extends { [K in keyof T]: CacheNode }>
-	extends BaseProxy<'schema', T> implements DataProxy<D.Schema<T>> {
-	constructor(
-		deps: Pick<DataProxyDependencies<D.TypeNode<'schema', T>>, 'persist'> &
-			Required<Omit<DataProxyDependencies<D.TypeNode<'schema', T>>, 'persist'>>
-	) {
-		super(deps)
-	}
-}
-
-
-export function schema<T extends { [K in keyof T]: CacheNode }>(members: T): CacheNode<D.Schema<T>> {
-	const node = D.type('schema', members)
-	const data = (deps: DataProxyDependencies<D.Schema<T>>) => new SchemaProxy({ ...deps, node })
-	return {
-		...node,
-		data,
-		store: (deps) => (isEmptyObject(node.variables) ? data(deps) : new Store({ node, data, ...deps }))
-	}
-}
-
-const cacheWriteResultMonoid: Monoid<CacheWriteResult> = {
-	empty: TE.right(taskVoid),
-	concat: (x, y) => {
-		return (async () => {
-			const [xResult, yResult] = await Promise.all([x(), y()])
-			if (E.isLeft(xResult) && E.isLeft(yResult)) {
-				return E.left([...xResult.left, ...yResult.left] as CacheError)
-			} else if (E.isLeft(xResult) && E.isRight(yResult)) {
-				yResult.right()
-				return xResult
-			} else if (E.isLeft(yResult) && E.isRight(xResult)) {
-				xResult.right()
-				return yResult
-			} else if (E.isRight(xResult) && E.isRight(yResult)) {
-				return E.right(async () => {
-					await Promise.all([x(), y()])
-				})
-			} else {
-				return cacheWriteResultMonoid.empty
-			}
-		}) as CacheWriteResult
-	}
-}
-
-async function taskVoid() {}
-
-function concatEvict(x: Evict, y: Evict): Evict {
-	return async () => {
-		await Promise.all([x(), y()])
 	}
 }

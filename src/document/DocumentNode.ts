@@ -31,19 +31,6 @@ export type Node =
 	| SumNode<any, any>
 	| ScalarNode<string, any, any>
 	| MutationNode<any>
-	| Schema<any>
-
-export interface Schema<T extends { [K in keyof T]: Node }>
-	extends DocumentNode<
-		{ [K in keyof T]: ExtractModelType<T[K]> },
-		Partial<{ [K in keyof T]: ExtractModelType<T[K]> }>,
-		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }>,
-		{},
-		{} & Intersection<Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> }>>
-	> {
-	readonly tag: 'Schema'
-	readonly members: T
-}
 
 export type LiteralNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
 
@@ -185,6 +172,50 @@ export type ExtractVariablesDefinition<T> = T extends Node ? T['variables']['def
 
 export type ExtractVariablesDefinitionType<V> = {
 	[K in keyof V]: ExtractModelType<V[K]>
+}
+
+
+export const showNode: Show<Node> = {
+	show: (node) => {
+		switch (node.tag) {
+			case 'Boolean':
+			case 'Number':
+			case 'String':
+				return node.tag
+			case 'Scalar':
+				return `Scalar: ${node.name}`
+			case 'Map':
+				return `Map<${showNode.show(node.key)}, ${showNode.show(node.wrapped)}>`
+			case 'Option':
+				return `Option<${showNode.show(node.wrapped)}>`
+			case 'Array':
+				return `Array<${showNode.show(node.wrapped)}`
+			case 'NonEmptyArray':
+				return `NonEmptyArray<${showNode.show(node.wrapped)}`
+			case 'Sum':
+				return showSumNode.show(node)
+			case 'Type':
+				return showTypeNode.show(node)
+			default:
+				return node.tag
+		}
+	}
+}
+
+export const showSumNode: Show<SumNode<any>> = {
+	show: (node) =>
+		`{ ${Object.keys(node.members)
+			.map((k) => `${k}: ${node.members[k].__typename}`)
+			.join(', ')} }`
+}
+
+export const showTypeNode: Show<TypeNode<string, any, any>> = {
+	show: (node) =>
+		`{ ${Object.keys(node.members)
+			.map((k) =>
+				`${k}: ${node.members[k].tag} ${node.members[k].__typename || node.members[k].name || ''}`.trimEnd()
+			)
+			.join(', ')} }`
 }
 
 export const EMPTY_VARIABLES_MODEL = M.type({})
@@ -600,69 +631,4 @@ export function scalar<N extends string, T, V extends VariablesNode = {}>(
 
 export function isScalarNode(x: Node): x is ScalarNode<string, any> {
 	return x.tag === 'Scalar'
-}
-
-export function schema<T extends { [K in keyof T]: Node }>(members: T): Schema<T> {
-	const models = extractTypeMemberModels(members) as any
-	return {
-		tag: 'Schema',
-		model: {
-			whole: M.type(models),
-			partial: M.partial(models)
-		},
-		variables: {
-			definition: EMPTY_VARIABLES,
-			model: EMPTY_VARIABLES_MODEL as any
-		},
-		print: printTypeNodeMembers(members),
-		members
-	}
-}
-
-export function isSchemaNode(x: Node): x is Schema<any> {
-	return x.tag === 'Schema'
-}
-
-export const showNode: Show<Node> = {
-	show: (node) => {
-		switch (node.tag) {
-			case 'Boolean':
-			case 'Number':
-			case 'String':
-				return node.tag
-			case 'Scalar':
-				return `Scalar: ${node.name}`
-			case 'Map':
-				return `Map<${showNode.show(node.key)}, ${showNode.show(node.wrapped)}>`
-			case 'Option':
-				return `Option<${showNode.show(node.wrapped)}>`
-			case 'Array':
-				return `Array<${showNode.show(node.wrapped)}`
-			case 'NonEmptyArray':
-				return `NonEmptyArray<${showNode.show(node.wrapped)}`
-			case 'Sum':
-				return showSumNode.show(node)
-			case 'Type':
-			case 'Schema':
-				return showTypeNode.show(node)
-			default:
-				return node.tag
-		}
-	}
-}
-
-export const showSumNode: Show<SumNode<any>> = {
-	show: (node) =>
-		`{ ${Object.keys(node.members)
-			.map((k) => `${k}: ${node.members[k].__typename}`)
-			.join(', ')} }`
-}
-
-export const showTypeNode: Show<TypeNode<string, any, any> | Schema<any>> = {
-	show: (node) =>
-		`{ ${Object.keys(node.members)
-			.map((k) =>
-				`${k}: ${node.members[k].tag} ${node.members[k].__typename || node.members[k].name || ''}`.trimEnd()
-			)
-			.join(', ')} }`
 }
