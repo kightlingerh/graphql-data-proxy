@@ -31,19 +31,6 @@ export type Node =
 	| SumNode<any, any>
 	| ScalarNode<string, any, any>
 	| MutationNode<any, any>
-	| Schema<any>
-
-export interface Schema<T extends { [K in keyof T]: Node }>
-	extends DocumentNode<
-		{ [K in keyof T]: ExtractModelType<T[K]> },
-		Partial<{ [K in keyof T]: ExtractModelType<T[K]> }>,
-		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }>,
-		{},
-		{} & Intersection<Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>>
-	> {
-	readonly tag: 'Schema'
-	readonly members: T
-}
 
 export type LiteralNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
 

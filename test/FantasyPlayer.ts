@@ -1,7 +1,7 @@
 import { some } from 'fp-ts/lib/Option'
-import * as M from '../model/Model'
-import * as C from '../cache/CacheNode'
-import * as D from '../document/DocumentNode';
+import * as M from '../src/model/Model'
+import * as C from '../src/node'
+import * as D from '../src/document/DocumentNode';
 
 const FantasyPlayerId = C.scalar('FantasyPlayerId', M.string)
 
@@ -37,6 +37,7 @@ const FantasyPlayerStatisticsMap = C.map(
 type FantasyPlayerStatisticsMapVariables = D.ExtractChildrenVariablesDefinition<typeof FantasyPlayerStatisticsMap>
 
 const FantasyPlayer = C.type('FantasyPlayer', {
+	id: FantasyPlayerId,
 	statistics: FantasyPlayerStatisticsMap
 })
 

@@ -100,7 +100,7 @@ export function typeWithUniqueIdentifier<T, K extends keyof T>(
 export function nonEmptyArray<T>(val: Model<T>): Model<NE.NonEmptyArray<T>> {
 	const a = array(val)
 	return {
-		encode: a.encode,
+		encode: nea => a.encode(nea as T[]),
 		equals: NE.getEq(val).equals,
 		is: (u: unknown): u is NE.NonEmptyArray<T> => a.is(u) && u.length > 0,
 		decode: (u) => {

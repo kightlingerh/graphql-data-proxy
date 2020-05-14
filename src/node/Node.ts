@@ -26,9 +26,8 @@ export type Node =
 	| SumNode<any, any>
 	| ScalarNode<any, any, any>
 	| MutationNode<any>
-	| Schema<any>
 
-export interface Schema<T extends { [K in keyof T]: Node }> extends MergeProxy<D.Schema<T>> {}
+// export interface Schema<T extends { [K in keyof T]: Node }> extends MergeProxy<D.Schema<T>> {}
 
 export type LiteralNode<V extends D.VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
 
@@ -98,16 +97,16 @@ export interface StoreProxy<N> {
 export type ExtractSelection<T> = T extends D.TypeNode<string, any>
 	? D.TypeNode<string, any>
 	: T extends D.ArrayNode<any>
-	? D.ArrayNode<any>
-	: T extends D.MapNode<any, any>
-	? D.MapNode<any, any>
-	: T extends D.NonEmptyArrayNode<any>
-	? D.NonEmptyArrayNode<any>
-	: T extends D.OptionNode<any>
-	? D.OptionNode<any>
-	: T extends D.SumNode<any, any>
-	? D.SumNode<any, any>
-	: never
+		? D.ArrayNode<any>
+		: T extends D.MapNode<any, any>
+			? D.MapNode<any, any>
+			: T extends D.NonEmptyArrayNode<any>
+				? D.NonEmptyArrayNode<any>
+				: T extends D.OptionNode<any>
+					? D.OptionNode<any>
+					: T extends D.SumNode<any, any>
+						? D.SumNode<any, any>
+						: never
 
 export interface CacheWriteResult extends CacheResult<Evict> {}
 
@@ -489,7 +488,7 @@ class MapProxy<T extends D.MapNode<any, any, any>> extends BaseProxy<T> {
 				D.ExtractModelType<T['key']>,
 				CacheError,
 				Evict
-			>(
+				>(
 				data as Map<unknown, D.ExtractPartialModelType<T>>,
 				((k: D.ExtractModelType<T['key']>, v: D.ExtractPartialModelType<T['wrapped']>) => {
 					return pipe(
