@@ -1,6 +1,7 @@
 import { some } from 'fp-ts/lib/Option'
 import * as M from '../model/Model'
 import * as C from '../cache/CacheNode'
+import * as D from '../document/DocumentNode';
 
 const FantasyPlayerId = C.scalar('FantasyPlayerId', M.string)
 
@@ -11,15 +12,14 @@ const FantasyPlayerPersonalInfo = C.type('FantasyPlayerPersonalInfo', {
 	firstName: C.array(C.staticString)
 })
 
+const FantasyPlayerStatisticsQueryVariables = {
+	statisticIds: D.array(D.staticString)
+}
+
 const FantasyPlayerFantasyInfo = C.type('FantasyPlayerFantasyInfo', {
 	ownerFantasyTeamId: C.staticString
-})
+}, FantasyPlayerStatisticsQueryVariables)
 
-type FantasyPlayerFantasyInfoStore = typeof FantasyPlayerFantasyInfo['store']
-
-const FantasyPlayerStatisticsQueryVariables = {
-	statisticIds: C.array(C.staticString)
-}
 
 const FantasyPlayerInfoUnion = C.sum({
 	fantasyPlayerFantasyInfo: FantasyPlayerFantasyInfo,
@@ -30,22 +30,17 @@ const FantasyPlayerStatistics = C.map(C.staticNumber, FantasyPlayerPersonalInfo)
 
 const FantasyPlayerStatisticsMap = C.map(
 	C.staticNumber,
-	FantasyPlayerPersonalInfo,
-	FantasyPlayerStatisticsQueryVariables
+	FantasyPlayerFantasyInfo,
+
 )
 
-type FantasyPlayerStatisticsMapModel = typeof FantasyPlayerStatisticsMap
+type FantasyPlayerStatisticsMapVariables = D.ExtractChildrenVariablesDefinition<typeof FantasyPlayerStatisticsMap>
 
-const FantasyPlayer = C.schema({
-	id: FantasyPlayerId,
-	personalInfo: FantasyPlayerPersonalInfo,
+const FantasyPlayer = C.type('FantasyPlayer', {
 	statistics: FantasyPlayerStatisticsMap
 })
 
-type Response = M.TypeOf<typeof FantasyPlayer['model']>
-
-type Store = Exclude<typeof FantasyPlayer['__refType'], undefined>
-
+type FantasyPlayerQueryVariables = D.ExtractChildrenVariablesType<typeof FantasyPlayer>;
 
 x.write(undefined, {
 	id: 'test',

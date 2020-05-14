@@ -31,7 +31,7 @@ export function cache<Cache extends C.TypeNode<string, any>>(c: Cache): Reader<C
 			if (isNonEmpty(errors)) {
 				return left(errors)
 			} else {
-				const store = c.store({ persist: deps.persist, ofRef: deps.ofRef, path: deps.id || 'root' });
+				const store = c.store({ persist: deps.persist, ofRef: deps.ofRef, path: deps.id || 'root' })
 				return right<C.CacheError, RequestProxy<R>>({
 					write: store.write,
 					read: (variables) => store.read(r)(variables) as C.CacheResult<O.Option<D.ExtractModelType<R>>>,
