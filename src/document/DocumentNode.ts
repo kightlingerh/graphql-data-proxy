@@ -174,7 +174,6 @@ export type ExtractVariablesDefinitionType<V> = {
 	[K in keyof V]: ExtractModelType<V[K]>
 }
 
-
 export const showNode: Show<Node> = {
 	show: (node) => {
 		switch (node.tag) {

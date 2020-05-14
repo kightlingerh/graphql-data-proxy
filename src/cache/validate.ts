@@ -23,7 +23,7 @@ function validateNode<SchemaNode extends D.Node, RequestNode extends D.Node>(
 ): Array<Tree<string>> {
 	if (D.isWrappedNode(x) && D.isWrappedNode(y)) {
 		return validateWrappedNode(x.wrapped, y.wrapped)
-	} else if ((D.isTypeNode(x) && D.isTypeNode(y))) {
+	} else if (D.isTypeNode(x) && D.isTypeNode(y)) {
 		return validateTypeNode(x, y)
 	} else if (D.isScalarNode(x) && D.isScalarNode(y)) {
 		return validateScalarNode(x, y)

@@ -1,43 +1,42 @@
 import { some } from 'fp-ts/lib/Option'
-import * as C from '../cache/Cache'
 import * as M from '../model/Model'
-import * as N from '../schema/Node'
+import * as C from '../cache/CacheNode'
 
-const FantasyPlayerId = N.scalar('FantasyPlayerId', M.string)
+const FantasyPlayerId = C.scalar('FantasyPlayerId', M.string)
 
-const Date = N.scalar('SerialDate', M.string)
+const Date = C.scalar('SerialDate', M.string)
 
-const FantasyPlayerPersonalInfo = N.type('FantasyPlayerPersonalInfo', {
-	pictureUrl: N.option(N.staticString),
-	firstName: N.array(N.staticString)
+const FantasyPlayerPersonalInfo = C.type('FantasyPlayerPersonalInfo', {
+	pictureUrl: C.option(C.staticString),
+	firstName: C.array(C.staticString)
 })
 
-const FantasyPlayerFantasyInfo = N.type('FantasyPlayerFantasyInfo', {
-	ownerFantasyTeamId: N.staticString
+const FantasyPlayerFantasyInfo = C.type('FantasyPlayerFantasyInfo', {
+	ownerFantasyTeamId: C.staticString
 })
 
 type FantasyPlayerFantasyInfoStore = typeof FantasyPlayerFantasyInfo['store']
 
 const FantasyPlayerStatisticsQueryVariables = {
-	statisticIds: N.array(N.staticString)
+	statisticIds: C.array(C.staticString)
 }
 
-const FantasyPlayerInfoUnion = N.sum({
+const FantasyPlayerInfoUnion = C.sum({
 	fantasyPlayerFantasyInfo: FantasyPlayerFantasyInfo,
 	fantasyPlayerPersonalInfo: FantasyPlayerPersonalInfo
 })
 
-const FantasyPlayerStatistics = N.map(N.staticNumber, FantasyPlayerPersonalInfo)
+const FantasyPlayerStatistics = C.map(C.staticNumber, FantasyPlayerPersonalInfo)
 
-const FantasyPlayerStatisticsMap = N.map(
-	N.staticNumber,
+const FantasyPlayerStatisticsMap = C.map(
+	C.staticNumber,
 	FantasyPlayerPersonalInfo,
 	FantasyPlayerStatisticsQueryVariables
 )
 
 type FantasyPlayerStatisticsMapModel = typeof FantasyPlayerStatisticsMap
 
-const FantasyPlayer = N.schema({
+const FantasyPlayer = C.schema({
 	id: FantasyPlayerId,
 	personalInfo: FantasyPlayerPersonalInfo,
 	statistics: FantasyPlayerStatisticsMap
@@ -47,7 +46,6 @@ type Response = M.TypeOf<typeof FantasyPlayer['model']>
 
 type Store = Exclude<typeof FantasyPlayer['__refType'], undefined>
 
-let x: C.CacheProxy<typeof FantasyPlayer> = 1 as any
 
 x.write(undefined, {
 	id: 'test',

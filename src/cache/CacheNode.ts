@@ -1,7 +1,7 @@
 import { sequenceT } from 'fp-ts/lib/Apply'
-import {isNonEmpty} from 'fp-ts/lib/Array';
+import { isNonEmpty } from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import {constant} from 'fp-ts/lib/function'
+import { constant } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
 import { Monoid } from 'fp-ts/lib/Monoid'
 import { getSemigroup, NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
@@ -9,7 +9,7 @@ import * as O from 'fp-ts/lib/Option'
 import { fromCompare } from 'fp-ts/lib/Ord'
 import { pipe } from 'fp-ts/lib/pipeable'
 import { Reader } from 'fp-ts/lib/Reader'
-import { sequence, traverse } from 'fp-ts/lib/Record'
+import { sequence, traverseWithIndex } from 'fp-ts/lib/Record'
 import * as A from 'fp-ts/lib/Array'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
@@ -20,7 +20,7 @@ import * as M from '../model/Model'
 import * as MAP from 'fp-ts/lib/Map'
 import { isEmptyObject, Ref } from '../shared'
 
-export type CacheNode<T = D.Node> = T & Proxy<T>
+export type CacheNode<T extends D.Node = D.Node> = T & Proxy<T>
 
 export interface Proxy<T> {
 	readonly data: Reader<DataProxyDependencies<T>, DataProxy<T>>
@@ -29,17 +29,39 @@ export interface Proxy<T> {
 
 export interface DataProxy<N> {
 	write(variables: ExtractMergedVariablesType<N>): Reader<D.ExtractPartialModelType<N>, CacheWriteResult>
-	read(variables: ExtractMergedVariablesType<N>): CacheResult<O.Option<D.ExtractModelType<N>>>
-	toRefs(variables: ExtractMergedVariablesType<N>): CacheResult<D.ExtractRefType<N>>
-	toRef(variables: ExtractMergedVariablesType<N>): CacheResult<Ref<D.ExtractModelType<N>>>
+	read(
+		selection: ExtractSelection<N>
+	): Reader<ExtractMergedVariablesType<N>, CacheResult<O.Option<D.ExtractModelType<N>>>>
+	toRefs(selection: ExtractSelection<N>): Reader<ExtractMergedVariablesType<N>, CacheResult<D.ExtractRefType<N>>>
+	toRef(
+		selection: ExtractSelection<N>
+	): Reader<ExtractMergedVariablesType<N>, CacheResult<Ref<D.ExtractModelType<N>>>>
 }
 
 export interface StoreProxy<N> {
-	write(variables: ExtractMergedVariablesType<N>): Reader<D.ExtractPartialModelType<N>, CacheResult<Evict>>
-	read(variables: ExtractMergedVariablesType<N>): CacheResult<O.Option<D.ExtractModelType<N>>>
-	toRefs(variables: ExtractMergedVariablesType<N>): CacheResult<D.ExtractRefType<N>>
-	toRef(variables: ExtractMergedVariablesType<N>): CacheResult<Ref<D.ExtractModelType<N>>>
+	write(variables: ExtractMergedVariablesType<N>): Reader<D.ExtractPartialModelType<N>, CacheWriteResult>
+	read(
+		selection: ExtractSelection<N>
+	): Reader<ExtractMergedVariablesType<N>, CacheResult<O.Option<D.ExtractModelType<N>>>>
+	toRefs(selection: ExtractSelection<N>): Reader<ExtractMergedVariablesType<N>, CacheResult<D.ExtractRefType<N>>>
+	toRef(
+		selection: ExtractSelection<N>
+	): Reader<ExtractMergedVariablesType<N>, CacheResult<Ref<D.ExtractModelType<N>>>>
 }
+
+export type ExtractSelection<T> = T extends D.TypeNode<string, any>
+	? D.TypeNode<string, any>
+	: T extends D.ArrayNode<any>
+	? D.ArrayNode<any>
+	: T extends D.MapNode<any, any>
+	? D.MapNode<any, any>
+	: T extends D.NonEmptyArrayNode<any>
+	? D.NonEmptyArrayNode<any>
+	: T extends D.OptionNode<any>
+	? D.OptionNode<any>
+	: T extends D.SumNode<any, any>
+	? D.SumNode<any, any>
+	: never
 
 export interface CacheWriteResult extends CacheResult<Evict> {}
 
@@ -55,16 +77,16 @@ export type ExtractMergedVariablesType<S> = S extends D.Node
 		: D.ExtractVariablesType<S> & D.ExtractChildrenVariablesType<S>
 	: never
 
-interface DataProxyDependencies<T> extends CacheDependencies {
+interface DataProxyDependencies<T> extends CacheNodeDependencies {
 	node?: T
 }
 
-interface StoreProxyDependencies<T> extends CacheDependencies {
+interface StoreProxyDependencies<T> extends CacheNodeDependencies {
 	data?: Reader<DataProxyDependencies<T>, DataProxy<T>>
 	node?: T
 }
 
-export interface CacheDependencies {
+export interface CacheNodeDependencies {
 	path: string
 	ofRef: OfRef
 	persist?: Persist
@@ -130,20 +152,26 @@ class Store<T extends D.Node> implements StoreProxy<T> {
 		this.toRefs.bind(this)
 	}
 
-	read(variables: ExtractMergedVariablesType<T>): CacheResult<O.Option<D.ExtractModelType<T>>> {
-		return this.extractProxy(this.encodeVariables(variables)).read(variables)
+	read(selection: ExtractSelection<T>) {
+		return (variables: ExtractMergedVariablesType<T>): CacheResult<O.Option<D.ExtractModelType<T>>> => {
+			return this.extractProxy(this.encodeVariables(variables)).read(selection)(variables)
+		}
 	}
 
 	write(variables: ExtractMergedVariablesType<T>): Reader<D.ExtractPartialModelType<T>, CacheResult<Evict>> {
 		return this.extractProxy(this.encodeVariables(variables)).write(variables)
 	}
 
-	toRef(variables: ExtractMergedVariablesType<T>): CacheResult<Ref<D.ExtractModelType<T>>> {
-		return this.extractProxy(this.encodeVariables(variables)).toRef(variables)
+	toRef(selection: ExtractSelection<T>) {
+		return (variables: ExtractMergedVariablesType<T>): CacheResult<Ref<D.ExtractModelType<T>>> => {
+			return this.extractProxy(this.encodeVariables(variables)).toRef(selection)(variables)
+		}
 	}
 
-	toRefs(variables: ExtractMergedVariablesType<T>): CacheResult<D.ExtractRefType<T>> {
-		return this.extractProxy(this.encodeVariables(variables)).toRefs(variables)
+	toRefs(selection: ExtractSelection<T>) {
+		return (variables: ExtractMergedVariablesType<T>): CacheResult<D.ExtractRefType<T>> => {
+			return this.extractProxy(this.encodeVariables(variables)).toRefs(selection)(variables)
+		}
 	}
 
 	protected extractProxy(encodedVariables: unknown): DataProxy<T> {
@@ -169,8 +197,7 @@ class Store<T extends D.Node> implements StoreProxy<T> {
 	}
 }
 
-class LiteralProxy<T, V extends D.VariablesNode = {}>
-	implements DataProxy<D.DocumentNode<T, T, Ref<T>, V>> {
+class LiteralProxy<T, V extends D.VariablesNode = {}> implements DataProxy<D.DocumentNode<T, T, Ref<T>, V>> {
 	readonly ref: Ref<T>
 	constructor(private readonly deps: DataProxyDependencies<D.DocumentNode<T, T, Ref<T>, V>>) {
 		this.ref = this.deps.ofRef()
@@ -180,21 +207,21 @@ class LiteralProxy<T, V extends D.VariablesNode = {}>
 		this.toRefs.bind(this)
 	}
 
-	read(): CacheResult<O.Option<T>> {
-		return TE.rightIO(() => this.ref.value)
+	read() {
+		return () => TE.rightIO(() => this.ref.value)
 	}
 
 	write(): Reader<T, CacheResult<Evict>> {
 		return (num) =>
 			pipe(
-				this.read(),
+				this.read()(),
 				TE.chain((previousValue) => {
 					const newValue = O.some(num)
 					return pipe(
 						TE.rightIO(() => {
 							this.ref.value = newValue
 						}),
-						TE.apSecond(this.read()),
+						TE.apSecond(this.read()()),
 						TE.map((currentValue) => {
 							return T.fromIO(() => {
 								if (newValue === currentValue) {
@@ -207,16 +234,16 @@ class LiteralProxy<T, V extends D.VariablesNode = {}>
 			)
 	}
 
-	toRef(): CacheResult<Ref<T>> {
-		return TE.rightIO(() => this.ref)
+	toRef() {
+		return () => TE.rightIO(() => this.ref)
 	}
 
-	toRefs(): CacheResult<Ref<T>> {
+	toRefs() {
 		return this.toRef()
 	}
 }
 
-export function number<V extends D.VariablesNode = {}>(variables: V): CacheNode<D.NumberNode<V>> {
+export function number<V extends D.VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES): CacheNode<D.NumberNode<V>> {
 	const node = D.number(variables)
 	const data = (deps: DataProxyDependencies<D.NumberNode<V>>) => new LiteralProxy({ ...deps, node })
 	return {
@@ -226,7 +253,9 @@ export function number<V extends D.VariablesNode = {}>(variables: V): CacheNode<
 	}
 }
 
-export function string<V extends D.VariablesNode = {}>(variables: V): CacheNode<D.StringNode<V>> {
+export const staticNumber = number();
+
+export function string<V extends D.VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES): CacheNode<D.StringNode<V>> {
 	const node = D.string(variables)
 	const data = (deps: DataProxyDependencies<D.StringNode<V>>) => new LiteralProxy({ ...deps, node })
 	return {
@@ -236,7 +265,9 @@ export function string<V extends D.VariablesNode = {}>(variables: V): CacheNode<
 	}
 }
 
-export function boolean<V extends D.VariablesNode = {}>(variables: V): CacheNode<D.BooleanNode<V>> {
+export const staticString = string();
+
+export function boolean<V extends D.VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES): CacheNode<D.BooleanNode<V>> {
 	const node = D.boolean(variables)
 	const data = (deps: DataProxyDependencies<D.BooleanNode<V>>) => new LiteralProxy({ ...deps, node })
 	return {
@@ -245,6 +276,8 @@ export function boolean<V extends D.VariablesNode = {}>(variables: V): CacheNode
 		store: (deps) => (isEmptyObject(node.variables) ? data(deps) : new Store({ node, data, ...deps }))
 	}
 }
+
+export const staticBoolean = boolean();
 
 export function scalar<N extends string, T, V extends D.VariablesNode = {}>(
 	name: N,
@@ -260,31 +293,48 @@ export function scalar<N extends string, T, V extends D.VariablesNode = {}>(
 	}
 }
 
-const recordTraverse = traverse(cacheErrorApplicativeValidation)
+const recordTraverse = traverseWithIndex(cacheErrorApplicativeValidation)
 
-abstract class BaseProxy<T extends D.Node>
-	implements DataProxy<T>
-{
-	protected constructor(protected readonly deps: Pick<DataProxyDependencies<T>, 'persist'> &
-		Required<Omit<DataProxyDependencies<T>, 'persist'>>
+abstract class BaseProxy<T extends D.Node> implements DataProxy<T> {
+	protected constructor(
+		protected readonly deps: Pick<DataProxyDependencies<T>, 'persist'> &
+			Required<Omit<DataProxyDependencies<T>, 'persist'>>
 	) {
 		this.read.bind(this)
 		this.write.bind(this)
 		this.toRef.bind(this)
 		this.toRefs.bind(this)
 	}
-	abstract read(variables: ExtractMergedVariablesType<T>): CacheResult<O.Option<D.ExtractModelType<T>>>
+	abstract read(
+		selection: ExtractSelection<T>
+	): Reader<ExtractMergedVariablesType<T>, CacheResult<O.Option<D.ExtractModelType<T>>>>
+	abstract toRefs(
+		selection: ExtractSelection<T>
+	): Reader<ExtractMergedVariablesType<T>, CacheResult<D.ExtractRefType<T>>>
 	abstract write(variables: ExtractMergedVariablesType<T>): Reader<D.ExtractPartialModelType<T>, CacheWriteResult>
-	abstract toRefs(variables: ExtractMergedVariablesType<T>): CacheResult<D.ExtractRefType<T>>
 
-	toRef(variables: ExtractMergedVariablesType<T>): CacheResult<Ref<D.ExtractModelType<T>>> {
-		return pipe(variables, this.read, TE.map((o) => (O.isSome(o) ? this.deps.ofRef(o.value) : this.deps.ofRef())))
+	toRef(selection: ExtractSelection<T>) {
+		return (variables: ExtractMergedVariablesType<T>): CacheResult<Ref<D.ExtractModelType<T>>> => {
+			return pipe(
+				variables,
+				this.read(selection),
+				TE.map((o) => (O.isSome(o) ? this.deps.ofRef(o.value) : this.deps.ofRef()))
+			)
+		}
 	}
 }
 
+export type TypeNode<
+	N extends string,
+	T extends { [K in keyof T]: CacheNode },
+	V extends D.VariablesNode = {}
+> = CacheNode<D.TypeNode<N, T, V>>
 
-class TypeProxy<N extends string, T extends { [K in keyof T]: CacheNode }, V extends D.VariablesNode = {}>
-	extends BaseProxy<D.TypeNode<N, T, V>> {
+class TypeProxy<
+	N extends string,
+	T extends { [K in keyof T]: CacheNode },
+	V extends D.VariablesNode = {}
+> extends BaseProxy<D.TypeNode<N, T, V>> {
 	readonly proxy: { [K in keyof T]: ExtractStoreProxyType<T[K]> }
 	constructor(
 		deps: Pick<DataProxyDependencies<D.TypeNode<N, T, V>>, 'persist'> &
@@ -293,14 +343,16 @@ class TypeProxy<N extends string, T extends { [K in keyof T]: CacheNode }, V ext
 		super(deps)
 		this.proxy = this.getProxy()
 	}
-	read(
-		variables: D.ExtractChildrenVariablesType<D.TypeNode<N, T, V>>
-	): CacheResult<O.Option<D.ExtractModelType<D.TypeNode<N, T, V>>>> {
-		return pipe(
-			this.proxy as Record<keyof T, StoreProxy<any>>,
-			recordTraverse((m) => m.read(variables as any)),
-			TE.map(sequence(O.option))
-		) as CacheResult<O.Option<D.ExtractModelType<D.TypeNode<N, T, V>>>>
+	read(selection: ExtractSelection<D.TypeNode<N, T, V>>) {
+		return (
+			variables: D.ExtractChildrenVariablesType<D.TypeNode<N, T, V>>
+		): CacheResult<O.Option<D.ExtractModelType<D.TypeNode<N, T, V>>>> => {
+			return pipe(
+				selection.members as Record<keyof T, any>,
+				recordTraverse((k, _) => this.proxy[k as keyof T].read(selection.members[k])(variables as any)),
+				TE.map(sequence(O.option))
+			) as CacheResult<O.Option<D.ExtractModelType<D.TypeNode<N, T, V>>>>
+		}
 	}
 
 	write(
@@ -319,14 +371,16 @@ class TypeProxy<N extends string, T extends { [K in keyof T]: CacheNode }, V ext
 			return proxyWrite
 		}
 	}
-	toRefs(
-		variables: D.ExtractChildrenVariablesType<D.TypeNode<N, T, V>>
-	): CacheResult<Ref<{ [K in keyof T]: D.ExtractRefType<T[K]> }>> {
-		return pipe(
-			this.proxy as Record<keyof T, StoreProxy<any>>,
-			recordTraverse((m) => m.toRefs(variables as any)),
-			TE.map(this.deps.ofRef)
-		) as CacheResult<Ref<{ [K in keyof T]: D.ExtractRefType<T[K]> }>>
+	toRefs(selection: ExtractSelection<D.TypeNode<N, T, V>>) {
+		return (
+			variables: D.ExtractChildrenVariablesType<D.TypeNode<N, T, V>>
+		): CacheResult<Ref<{ [K in keyof T]: D.ExtractRefType<T[K]> }>> => {
+			return pipe(
+				selection as Record<keyof T, any>,
+				recordTraverse((k, _) => this.proxy[k as keyof T].toRefs(selection.members[k])(variables as any)),
+				TE.map(this.deps.ofRef)
+			) as CacheResult<Ref<{ [K in keyof T]: D.ExtractRefType<T[K]> }>>
+		}
 	}
 
 	private getProxy() {
@@ -347,7 +401,7 @@ class TypeProxy<N extends string, T extends { [K in keyof T]: CacheNode }, V ext
 export function type<N extends string, T extends { [K in keyof T]: CacheNode }, V extends D.VariablesNode = {}>(
 	__typename: N,
 	members: T,
-	variables: V
+	variables: V = D.EMPTY_VARIABLES
 ): CacheNode<D.TypeNode<N, T, V>> {
 	const node = D.type(__typename, members, variables)
 	const data = (deps: DataProxyDependencies<D.TypeNode<N, T, V>>) => new TypeProxy({ ...deps, node })
@@ -366,8 +420,9 @@ const traverseWithIndexMapCacheResult = withMap.traverseWithIndex(cacheErrorAppl
 
 const sequenceMapOption = withMap.sequence(O.option)
 
-class MapProxy<K extends D.Node, T extends CacheNode, V extends D.VariablesNode = {}>
-	extends BaseProxy<D.MapNode<K, T, V>> {
+class MapProxy<K extends D.Node, T extends CacheNode, V extends D.VariablesNode = {}> extends BaseProxy<
+	D.MapNode<K, T, V>
+> {
 	readonly proxy: Map<D.ExtractModelType<K>, StoreProxy<T>> = new Map()
 	constructor(
 		deps: Pick<DataProxyDependencies<D.MapNode<K, T, V>>, 'persist'> &
@@ -376,13 +431,15 @@ class MapProxy<K extends D.Node, T extends CacheNode, V extends D.VariablesNode 
 		super(deps)
 	}
 
-	read(
-		variables: ExtractMergedVariablesType<D.MapNode<K, T, V>>
-	): CacheResult<O.Option<D.ExtractModelType<D.MapNode<K, T, V>>>> {
-		return pipe(
-			traverseMapCacheResult(this.proxy, (m) => m.read(variables as any)),
-			TE.map(sequenceMapOption)
-		) as CacheResult<O.Option<D.ExtractModelType<D.MapNode<K, T, V>>>>
+	read(selection: ExtractSelection<D.MapNode<K, T, V>>) {
+		return (
+			variables: ExtractMergedVariablesType<D.MapNode<K, T, V>>
+		): CacheResult<O.Option<D.ExtractModelType<D.MapNode<K, T, V>>>> => {
+			return pipe(
+				traverseMapCacheResult(this.proxy, (m) => m.read(selection.wrapped)(variables as any)),
+				TE.map(sequenceMapOption)
+			) as CacheResult<O.Option<D.ExtractModelType<D.MapNode<K, T, V>>>>
+		}
 	}
 
 	write(
@@ -406,13 +463,15 @@ class MapProxy<K extends D.Node, T extends CacheNode, V extends D.VariablesNode 
 		}
 	}
 
-	toRefs(
-		variables: ExtractMergedVariablesType<D.MapNode<K, T, V>>
-	): CacheResult<Ref<Map<unknown, ExtractRefType<T>>>> {
-		return pipe(
-			traverseMapCacheResult(this.proxy, (m) => m.toRefs(variables as any)),
-			TE.map(this.deps.ofRef)
-		)
+	toRefs(selection: ExtractSelection<D.MapNode<K, T, V>>) {
+		return (
+			variables: ExtractMergedVariablesType<D.MapNode<K, T, V>>
+		): CacheResult<Ref<Map<unknown, ExtractRefType<T>>>> => {
+			return pipe(
+				traverseMapCacheResult(this.proxy, (m) => m.toRefs(selection.wrapped)(variables as any)),
+				TE.map(this.deps.ofRef)
+			)
+		}
 	}
 
 	private getProxy(key: D.ExtractModelType<K>): IO<StoreProxy<T>> {
@@ -456,13 +515,17 @@ class ArrayProxy<T extends CacheNode, V extends D.VariablesNode = {}> extends Ba
 		super(deps)
 	}
 
-	read(
-		variables: ExtractMergedVariablesType<D.ArrayNode<T, V>>
-	): CacheResult<O.Option<D.ExtractModelType<D.ArrayNode<T, V>>>> {
-		return pipe(
-			A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) => m.read(variables as any)),
-			TE.map(A.array.sequence(O.option))
-		)
+	read(selection: ExtractSelection<D.ArrayNode<T, V>>) {
+		return (
+			variables: ExtractMergedVariablesType<D.ArrayNode<T, V>>
+		): CacheResult<O.Option<D.ExtractModelType<D.ArrayNode<T, V>>>> => {
+			return pipe(
+				A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) =>
+					m.read(selection.wrapped)(variables as any)
+				),
+				TE.map(A.array.sequence(O.option))
+			)
+		}
 	}
 
 	write(
@@ -481,11 +544,15 @@ class ArrayProxy<T extends CacheNode, V extends D.VariablesNode = {}> extends Ba
 		}
 	}
 
-	toRefs(variables: ExtractMergedVariablesType<D.ArrayNode<T, V>>): CacheResult<Ref<ExtractRefType<T>[]>> {
-		return pipe(
-			A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) => m.toRefs(variables as any)),
-			TE.map(this.deps.ofRef)
-		)
+	toRefs(selection: ExtractSelection<D.ArrayNode<T, V>>) {
+		return (variables: ExtractMergedVariablesType<D.ArrayNode<T, V>>): CacheResult<Ref<ExtractRefType<T>[]>> => {
+			return pipe(
+				A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) =>
+					m.toRefs(selection.wrapped)(variables as any)
+				),
+				TE.map(this.deps.ofRef)
+			)
+		}
 	}
 
 	private getProxy(data: D.ExtractPartialModelType<D.ArrayNode<T, V>>): IO<StoreProxy<T>[]> {
@@ -516,21 +583,28 @@ export function array<T extends CacheNode, V extends D.VariablesNode = {}>(
 	}
 }
 
-class SumProxy<T extends { [K in keyof T]: CacheNode<D.TypeNode<string, any>> }, V extends D.VariablesNode = {}>
-	extends BaseProxy<D.SumNode<T, V>> {
+class SumProxy<
+	T extends { [K in keyof T]: CacheNode<D.TypeNode<string, any>> },
+	V extends D.VariablesNode = {}
+> extends BaseProxy<D.SumNode<T, V>> {
+	type: O.Option<keyof T> = O.none
 	proxy: O.Option<{ [K in keyof T]: StoreProxy<T[K]> }[keyof T]> = O.none
 	constructor(
 		deps: Pick<DataProxyDependencies<D.SumNode<T, V>>, 'persist'> &
 			Required<Omit<DataProxyDependencies<D.SumNode<T, V>>, 'persist'>>
-	) { super(deps) }
+	) {
+		super(deps)
+	}
 
-	read(
-		variables: ExtractMergedVariablesType<D.SumNode<T, V>>
-	): CacheResult<O.Option<D.ExtractModelType<D.SumNode<T, V>>>> {
-		return pipe(
-			this.proxy,
-			O.fold(constant(TE.right(O.none)), (p) => p.read(variables as any))
-		)
+	read(selection: ExtractSelection<D.SumNode<T, V>>) {
+		return (
+			variables: ExtractMergedVariablesType<D.SumNode<T, V>>
+		): CacheResult<O.Option<D.ExtractModelType<D.SumNode<T, V>>>> => {
+			return pipe(
+				optionSequenceT(this.proxy, this.type),
+				O.fold(constant(TE.right(O.none)), ([p, t]) => p.read(selection.members[t])(variables as any))
+			)
+		}
 	}
 
 	write(
@@ -544,13 +618,17 @@ class SumProxy<T extends { [K in keyof T]: CacheNode<D.TypeNode<string, any>> },
 		}
 	}
 
-	toRefs(variables: ExtractMergedVariablesType<D.SumNode<T, V>>): CacheResult<D.ExtractRefType<D.SumNode<T, V>>> {
-		return pipe(
-			this.proxy,
-			O.fold(constant(TE.right(this.deps.ofRef())), (p) =>
-				pipe(p.toRefs(variables as any), TE.map(this.deps.ofRef))
+	toRefs(selection: ExtractSelection<D.SumNode<T, V>>) {
+		return (
+			variables: ExtractMergedVariablesType<D.SumNode<T, V>>
+		): CacheResult<D.ExtractRefType<D.SumNode<T, V>>> => {
+			return pipe(
+				optionSequenceT(this.proxy, this.type),
+				O.fold(constant(TE.right(this.deps.ofRef())), ([p, k]) =>
+					pipe(p.toRefs(selection.members[k])(variables as any), TE.map(this.deps.ofRef))
+				)
 			)
-		)
+		}
 	}
 
 	private getProxy(
@@ -564,6 +642,7 @@ class SumProxy<T extends { [K in keyof T]: CacheNode<D.TypeNode<string, any>> },
 					const newProxy = O.some(
 						member.store({ ...this.deps, path: `${this.deps.path}-${k}`, node: member })
 					)
+					this.type = O.some(k)
 					this.proxy = newProxy
 					return newProxy
 				}
@@ -593,15 +672,19 @@ class OptionProxy<T extends CacheNode, V extends D.VariablesNode = {}> extends B
 	constructor(
 		deps: Pick<DataProxyDependencies<D.OptionNode<T, V>>, 'persist'> &
 			Required<Omit<DataProxyDependencies<D.OptionNode<T, V>>, 'persist'>>
-	) { super(deps) }
+	) {
+		super(deps)
+	}
 
-	read(
-		variables: ExtractMergedVariablesType<D.OptionNode<T, V>>
-	): CacheResult<O.Option<D.ExtractModelType<D.OptionNode<T, V>>>> {
-		return pipe(
-			this.proxy,
-			O.fold(constant(TE.right(O.none)), (p) => p.read(variables as any))
-		)
+	read(selection: ExtractSelection<D.OptionNode<T, V>>) {
+		return (
+			variables: ExtractMergedVariablesType<D.OptionNode<T, V>>
+		): CacheResult<O.Option<D.ExtractModelType<D.OptionNode<T, V>>>> => {
+			return pipe(
+				this.proxy,
+				O.fold(constant(TE.right(O.none)), (p) => p.read(selection.wrapped)(variables as any))
+			)
+		}
 	}
 
 	write(
@@ -620,13 +703,17 @@ class OptionProxy<T extends CacheNode, V extends D.VariablesNode = {}> extends B
 		}
 	}
 
-	toRefs(variables: ExtractMergedVariablesType<D.OptionNode<T, V>>): CacheResult<D.ExtractRefType<D.OptionNode<T, V>>> {
-		return pipe(
-			this.proxy,
-			O.fold(constant(TE.right(this.deps.ofRef())), (p) =>
-				pipe(p.toRefs(variables as any), TE.map(O.some), TE.map(this.deps.ofRef))
+	toRefs(selection: ExtractSelection<D.OptionNode<T, V>>) {
+		return (
+			variables: ExtractMergedVariablesType<D.OptionNode<T, V>>
+		): CacheResult<D.ExtractRefType<D.OptionNode<T, V>>> => {
+			return pipe(
+				this.proxy,
+				O.fold(constant(TE.right(this.deps.ofRef())), (p) =>
+					pipe(p.toRefs(selection.wrapped)(variables as any), TE.map(O.some), TE.map(this.deps.ofRef))
+				)
 			)
-		)
+		}
 	}
 
 	private getProxy(data: D.ExtractPartialModelType<D.OptionNode<T, V>>): IO<O.Option<StoreProxy<T>>> {
@@ -653,7 +740,7 @@ class OptionProxy<T extends CacheNode, V extends D.VariablesNode = {}> extends B
 	}
 }
 
-export function option<T extends CacheNode, V extends D.VariablesNode = {}>(
+export function option<T extends D.Node, V extends D.VariablesNode = {}>(
 	wrapped: T,
 	variables: V = D.EMPTY_VARIABLES
 ): CacheNode<D.OptionNode<T, V>> {
@@ -666,22 +753,35 @@ export function option<T extends CacheNode, V extends D.VariablesNode = {}>(
 	}
 }
 
-class NonEmptyArrayProxy<T extends CacheNode, V extends D.VariablesNode = {}> extends BaseProxy<D.NonEmptyArrayNode<T, V>> {
+class NonEmptyArrayProxy<T extends CacheNode, V extends D.VariablesNode = {}> extends BaseProxy<
+	D.NonEmptyArrayNode<T, V>
+> {
 	proxy: StoreProxy<T>[] = []
 	constructor(
 		deps: Pick<DataProxyDependencies<D.NonEmptyArrayNode<T, V>>, 'persist'> &
 			Required<Omit<DataProxyDependencies<D.NonEmptyArrayNode<T, V>>, 'persist'>>
-	) { super(deps) }
-
-	read(
-		variables: ExtractMergedVariablesType<D.NonEmptyArrayNode<T, V>>
-	): CacheResult<O.Option<D.ExtractModelType<D.NonEmptyArrayNode<T, V>>>> {
-		return pipe(
-			A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) => m.read(variables as any)),
-			TE.map(results => pipe(results, A.array.sequence(O.option), O.chain(value => isNonEmpty(value) ? O.some(value) : O.none)))
-		)
+	) {
+		super(deps)
 	}
 
+	read(selection: ExtractSelection<D.NonEmptyArrayNode<T, V>>) {
+		return (
+			variables: ExtractMergedVariablesType<D.NonEmptyArrayNode<T, V>>
+		): CacheResult<O.Option<D.ExtractModelType<D.NonEmptyArrayNode<T, V>>>> => {
+			return pipe(
+				A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) =>
+					m.read(selection.wrapped)(variables as any)
+				),
+				TE.map((results) =>
+					pipe(
+						results,
+						A.array.sequence(O.option),
+						O.chain((value) => (isNonEmpty(value) ? O.some(value) : O.none))
+					)
+				)
+			)
+		}
+	}
 	write(
 		variables: ExtractMergedVariablesType<D.NonEmptyArrayNode<T, V>>
 	): Reader<D.ExtractPartialModelType<D.NonEmptyArrayNode<T, V>>, CacheWriteResult> {
@@ -698,11 +798,17 @@ class NonEmptyArrayProxy<T extends CacheNode, V extends D.VariablesNode = {}> ex
 		}
 	}
 
-	toRefs(variables: ExtractMergedVariablesType<D.ArrayNode<T, V>>): CacheResult<Ref<NonEmptyArray<ExtractRefType<T>>>> {
-		return pipe(
-			A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) => m.toRefs(variables as any)),
-			TE.map(val => isNonEmpty(val) ? this.deps.ofRef(val) : this.deps.ofRef())
-		)
+	toRefs(selection: ExtractSelection<D.NonEmptyArrayNode<T, V>>) {
+		return (
+			variables: ExtractMergedVariablesType<D.ArrayNode<T, V>>
+		): CacheResult<Ref<NonEmptyArray<ExtractRefType<T>>>> => {
+			return pipe(
+				A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) =>
+					m.toRefs(selection.wrapped)(variables as any)
+				),
+				TE.map((val) => (isNonEmpty(val) ? this.deps.ofRef(val) : this.deps.ofRef()))
+			)
+		}
 	}
 
 	private getProxy(data: D.ExtractPartialModelType<D.ArrayNode<T, V>>): IO<StoreProxy<T>[]> {
