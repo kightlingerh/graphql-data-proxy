@@ -25,14 +25,14 @@ interface DocumentModel<W, P, R> {
 }
 
 export type Node =
-	| LiteralNode<any>
+	| PrimativeNode<any>
 	| TypeNode<any, any, any>
 	| WrappedNode<any>
 	| SumNode<any, any>
 	| ScalarNode<string, any, any>
 	| MutationNode<any, any>
 
-export type LiteralNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
+export type PrimativeNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
 
 export interface StringNode<V extends VariablesNode = {}> extends DocumentNode<string, string, Ref<string>, V> {
 	readonly tag: 'String'
@@ -52,7 +52,9 @@ export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, 
 		Partial<{ [K in keyof T]: ExtractModelType<T[K]> }>,
 		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }>,
 		V,
-		{} & Intersection<Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>>
+		{} & Intersection<
+			Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
+		>
 	> {
 	readonly __typename: N
 	readonly tag: 'Type'
@@ -120,7 +122,9 @@ export interface SumNode<T extends { [K in keyof T]: TypeNode<any, any, any> }, 
 		{ [K in keyof T]: ExtractPartialModelType<T[K]> }[keyof T],
 		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }[keyof T]>,
 		V,
-		{} & Intersection<Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>>
+		{} & Intersection<
+			Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
+		>
 	> {
 	readonly tag: 'Sum'
 	readonly members: T
@@ -135,6 +139,7 @@ export interface MutationNode<T extends Node, V extends VariablesNode = {}>
 		{} & ExtractChildrenVariablesDefinition<T>
 	> {
 	readonly tag: 'Mutation'
+	readonly result: T
 }
 
 export interface ScalarNode<N extends string, T, V extends VariablesNode = {}> extends DocumentNode<T, T, Ref<T>, V> {
@@ -298,7 +303,7 @@ export function isBooleanNode(u: Node): u is BooleanNode {
 	return u.tag === 'Boolean'
 }
 
-export function isLiteralNode(u: Node): u is LiteralNode {
+export function isLiteralNode(u: Node): u is PrimativeNode {
 	return isNumberNode(u) || isStringNode(u) || isBooleanNode(u)
 }
 
@@ -408,7 +413,7 @@ function printVariableName(node: Node, isOptional: boolean = false): string {
 	}
 }
 
-export function isTypeNode(u: Node): u is TypeNode<string, any, any> {
+export function isTypeNode(u: Node): u is TypeNode<any, any, any> {
 	return u.tag === 'Type'
 }
 

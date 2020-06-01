@@ -1,7 +1,7 @@
 import { some } from 'fp-ts/lib/Option'
 import * as M from '../src/model/Model'
 import * as C from '../src/node'
-import * as D from '../src/document/DocumentNode';
+import * as D from '../src/document/DocumentNode'
 
 const FantasyPlayerId = C.scalar('FantasyPlayerId', M.string)
 
@@ -16,10 +16,13 @@ const FantasyPlayerStatisticsQueryVariables = {
 	statisticIds: D.array(D.staticString)
 }
 
-const FantasyPlayerFantasyInfo = C.type('FantasyPlayerFantasyInfo', {
-	ownerFantasyTeamId: C.staticString
-}, FantasyPlayerStatisticsQueryVariables)
-
+const FantasyPlayerFantasyInfo = C.type(
+	'FantasyPlayerFantasyInfo',
+	{
+		ownerFantasyTeamId: C.staticString
+	},
+	FantasyPlayerStatisticsQueryVariables
+)
 
 const FantasyPlayerInfoUnion = C.sum({
 	fantasyPlayerFantasyInfo: FantasyPlayerFantasyInfo,
@@ -28,11 +31,7 @@ const FantasyPlayerInfoUnion = C.sum({
 
 const FantasyPlayerStatistics = C.map(C.staticNumber, FantasyPlayerPersonalInfo)
 
-const FantasyPlayerStatisticsMap = C.map(
-	C.staticNumber,
-	FantasyPlayerFantasyInfo,
-
-)
+const FantasyPlayerStatisticsMap = C.map(C.staticNumber, FantasyPlayerFantasyInfo)
 
 type FantasyPlayerStatisticsMapVariables = D.ExtractChildrenVariablesDefinition<typeof FantasyPlayerStatisticsMap>
 
@@ -41,7 +40,7 @@ const FantasyPlayer = C.type('FantasyPlayer', {
 	statistics: FantasyPlayerStatisticsMap
 })
 
-type FantasyPlayerQueryVariables = D.ExtractChildrenVariablesType<typeof FantasyPlayer>;
+type FantasyPlayerQueryVariables = D.ExtractChildrenVariablesType<typeof FantasyPlayer>
 
 x.write(undefined, {
 	id: 'test',

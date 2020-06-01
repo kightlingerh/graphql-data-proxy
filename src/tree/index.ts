@@ -1,1 +1,1 @@
-export * from 'io-ts/lib/Tree';
+export * from 'io-ts/lib/Tree'

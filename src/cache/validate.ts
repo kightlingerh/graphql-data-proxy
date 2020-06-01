@@ -17,10 +17,7 @@ export function validate<S extends D.TypeNode<string, any>>(schema: S) {
 	}
 }
 
-function validateNode<SchemaNode extends D.Node, RequestNode extends D.Node>(
-	x: SchemaNode,
-	y: RequestNode
-): Array<Tree<string>> {
+function validateNode(x: D.Node, y: D.Node): Array<Tree<string>> {
 	if (D.isWrappedNode(x) && D.isWrappedNode(y)) {
 		return validateWrappedNode(x.wrapped, y.wrapped)
 	} else if (D.isTypeNode(x) && D.isTypeNode(y)) {
@@ -34,10 +31,10 @@ function validateNode<SchemaNode extends D.Node, RequestNode extends D.Node>(
 	}
 }
 
-function validateTypeNode<
-	SchemaNode extends D.TypeNode<string, any, any>,
-	RequestNode extends D.TypeNode<string, any, any>
->(x: SchemaNode, y: RequestNode): Array<Tree<string>> {
+function validateTypeNode<SchemaNode extends D.TypeNode<any, any, any>, RequestNode extends D.TypeNode<any, any, any>>(
+	x: SchemaNode,
+	y: RequestNode
+): Array<Tree<string>> {
 	const xMembers = x.members
 	const yMembers = y.members
 	const errors: Array<Tree<string>> = []
