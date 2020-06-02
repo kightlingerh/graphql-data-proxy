@@ -3,7 +3,7 @@ import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
 import { Show } from 'fp-ts/lib/Show'
 import * as M from '../model/Model'
-import { constEmptyString, isEmptyObject, once, Ref } from '../shared'
+import {constEmptyString, isEmptyObject, isEmptyString, once, Ref} from '../shared'
 
 export interface DocumentNode<M, P, R, V extends VariablesNode = {}, MV extends VariablesNode = {}> {
 	readonly tag: string
@@ -359,16 +359,16 @@ const EXCLAMATION = '!'
 
 function printTypeNodeMembers(members: { [K: string]: Node }): Lazy<string> {
 	return once(() => {
-		const tokens: string[] = [OPEN_BRACKET]
+		const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE]
 		for (const [key, value] of Object.entries(members)) {
 			tokens.push(key)
-			if (isEmptyObject(value.variables)) {
-				tokens.push(COLON, value.print())
-			} else {
-				tokens.push(printVariablesNode(value.variables), COLON, value.print())
+			if (!isEmptyObject(value.variables.definition)) {
+				tokens.push(printVariablesNode(value.variables.definition));
 			}
+			const val = value.print();
+			tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [COLON, OPEN_SPACE, val]))
 		}
-		tokens.push(CLOSE_BRACKET)
+		tokens.push(OPEN_SPACE, CLOSE_BRACKET)
 		return tokens.join('')
 	})
 }
@@ -381,7 +381,7 @@ function printVariablesNode<V extends VariablesNode>(variables: V): string {
 	let i = 0
 	for (; i < length; i++) {
 		const key = keys[i]
-		tokens.push(DOLLAR_SIGN, key, COLON, printVariableName(variables[key]), i === last ? '' : ', ')
+		tokens.push(DOLLAR_SIGN, key, COLON, OPEN_SPACE, printVariableName(variables[key]), i === last ? '' : ', ')
 	}
 	tokens.push(CLOSE_PAREN)
 	return tokens.join('')

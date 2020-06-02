@@ -1,52 +1,32 @@
-import { some } from 'fp-ts/lib/Option'
 import * as M from '../src/model/Model'
-import * as C from '../src/node'
+import * as N from '../src/node'
 import * as D from '../src/document/DocumentNode'
 
-const FantasyPlayerId = C.scalar('FantasyPlayerId', M.string)
+const FantasyPlayerId = N.scalar('FantasyPlayerId', M.string)
 
-const Date = C.scalar('SerialDate', M.string)
-
-const FantasyPlayerPersonalInfo = C.type('FantasyPlayerPersonalInfo', {
-	pictureUrl: C.option(C.staticString),
-	firstName: C.array(C.staticString)
+const FantasyPlayerPersonalInfo = N.type('FantasyPlayerPersonalInfo', {
+	pictureUrl: N.option(N.staticString),
+	firstName: N.array(N.staticString)
 })
 
 const FantasyPlayerStatisticsQueryVariables = {
 	statisticIds: D.array(D.staticString)
 }
 
-const FantasyPlayerFantasyInfo = C.type(
+const FantasyPlayerFantasyInfo = N.type(
 	'FantasyPlayerFantasyInfo',
 	{
-		ownerFantasyTeamId: C.staticString
+		ownerFantasyTeamId: N.option(N.staticString)
 	},
 	FantasyPlayerStatisticsQueryVariables
 )
 
-const FantasyPlayerInfoUnion = C.sum({
-	fantasyPlayerFantasyInfo: FantasyPlayerFantasyInfo,
-	fantasyPlayerPersonalInfo: FantasyPlayerPersonalInfo
-})
+const FantasyPlayerStatisticsMap = N.map(N.staticNumber, FantasyPlayerFantasyInfo)
 
-const FantasyPlayerStatistics = C.map(C.staticNumber, FantasyPlayerPersonalInfo)
 
-const FantasyPlayerStatisticsMap = C.map(C.staticNumber, FantasyPlayerFantasyInfo)
-
-type FantasyPlayerStatisticsMapVariables = D.ExtractChildrenVariablesDefinition<typeof FantasyPlayerStatisticsMap>
-
-const FantasyPlayer = C.type('FantasyPlayer', {
+export const FantasyPlayer = N.type('FantasyPlayer', {
 	id: FantasyPlayerId,
-	statistics: FantasyPlayerStatisticsMap
-})
-
-type FantasyPlayerQueryVariables = D.ExtractChildrenVariablesType<typeof FantasyPlayer>
-
-x.write(undefined, {
-	id: 'test',
-	personalInfo: {
-		firstName: 'test',
-		pictureUrl: some('')
-	},
-	statistics: new Map()
+	statistics: FantasyPlayerStatisticsMap,
+	personalInfo: FantasyPlayerPersonalInfo,
+	fantasyInfo: FantasyPlayerFantasyInfo
 })

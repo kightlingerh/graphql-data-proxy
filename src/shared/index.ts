@@ -17,6 +17,10 @@ export function once<T>(fn: Lazy<T>): Lazy<T> {
 	}
 }
 
+export function isEmptyString(str: string) {
+	return str === '';
+}
+
 export const constEmptyString = constant('')
 
 export interface Ref<T> {
