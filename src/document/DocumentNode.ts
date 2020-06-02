@@ -3,7 +3,24 @@ import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
 import { Show } from 'fp-ts/lib/Show'
 import * as M from '../model/Model'
-import {constEmptyString, isEmptyObject, isEmptyString, once, Ref} from '../shared'
+
+import {
+	CLOSE_BRACKET,
+	CLOSE_PAREN,
+	COLON,
+	constEmptyString,
+	DOLLAR_SIGN,
+	ELLIPSIS,
+	isEmptyObject,
+	isEmptyString,
+	ON,
+	once,
+	OPEN_BRACKET,
+	OPEN_PAREN,
+	OPEN_SPACE,
+	Ref,
+	TYPENAME
+} from '../shared'
 
 export interface DocumentNode<M, P, R, V extends VariablesNode = {}, MV extends VariablesNode = {}> {
 	readonly tag: string
@@ -13,7 +30,7 @@ export interface DocumentNode<M, P, R, V extends VariablesNode = {}, MV extends 
 }
 
 interface DocumentVariables<V extends VariablesNode = {}, MV extends VariablesNode = {}> {
-	__children?: MV
+	children: MV
 	definition: V
 	model: M.Model<ExtractDefinitionType<V>>
 }
@@ -25,14 +42,14 @@ interface DocumentModel<W, P, R> {
 }
 
 export type Node =
-	| PrimativeNode<any>
+	| PrimitiveNode<any>
 	| TypeNode<any, any, any>
 	| WrappedNode<any>
 	| SumNode<any, any>
 	| ScalarNode<string, any, any>
 	| MutationNode<any, any>
 
-export type PrimativeNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
+export type PrimitiveNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
 
 export interface StringNode<V extends VariablesNode = {}> extends DocumentNode<string, string, Ref<string>, V> {
 	readonly tag: 'String'
@@ -61,6 +78,21 @@ export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, 
 	readonly members: T
 }
 
+export interface SchemaNode<N extends string, T extends { [K in keyof T]: Node }>
+	extends DocumentNode<
+		{ [K in keyof T]: ExtractModelType<T[K]> },
+		Partial<{ [K in keyof T]: ExtractModelType<T[K]> }>,
+		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }>,
+		{},
+		{} & Intersection<
+			Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
+		>
+	> {
+	readonly __typename: N
+	readonly tag: 'Schema'
+	readonly members: T
+}
+
 export type WrappedNode<T extends Node> =
 	| ArrayNode<T, any>
 	| MapNode<T, any, any>
@@ -76,6 +108,18 @@ export interface ArrayNode<T extends Node, V extends VariablesNode = {}>
 		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
 	> {
 	readonly tag: 'Array'
+	readonly wrapped: T
+}
+
+export interface NonEmptyArrayNode<T extends Node, V extends VariablesNode = {}>
+	extends DocumentNode<
+		NonEmptyArray<ExtractModelType<T>>,
+		NonEmptyArray<ExtractPartialModelType<T>>,
+		Ref<NonEmptyArray<ExtractRefType<T>>>,
+		V,
+		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
+	> {
+	readonly tag: 'NonEmptyArray'
 	readonly wrapped: T
 }
 
@@ -101,18 +145,6 @@ export interface OptionNode<T extends Node, V extends VariablesNode = {}>
 		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
 	> {
 	readonly tag: 'Option'
-	readonly wrapped: T
-}
-
-export interface NonEmptyArrayNode<T extends Node, V extends VariablesNode = {}>
-	extends DocumentNode<
-		NonEmptyArray<ExtractModelType<T>>,
-		NonEmptyArray<ExtractPartialModelType<T>>,
-		Ref<NonEmptyArray<ExtractRefType<T>>>,
-		V,
-		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
-	> {
-	readonly tag: 'NonEmptyArray'
 	readonly wrapped: T
 }
 
@@ -241,6 +273,7 @@ export function number<V extends VariablesNode = {}>(variables: V = EMPTY_VARIAB
 		tag: 'Number',
 		print: constEmptyString,
 		variables: {
+			children: EMPTY_VARIABLES,
 			definition: variables,
 			model: getVariablesModel(variables)
 		},
@@ -264,6 +297,7 @@ export function string<V extends VariablesNode = {}>(variables: V = EMPTY_VARIAB
 		tag: 'String',
 		print: constEmptyString,
 		variables: {
+			children: EMPTY_VARIABLES,
 			model: getVariablesModel(variables),
 			definition: variables
 		},
@@ -287,6 +321,7 @@ export function boolean<V extends VariablesNode = {}>(variables: V = EMPTY_VARIA
 		tag: 'Boolean',
 		print: constEmptyString,
 		variables: {
+			children: EMPTY_VARIABLES,
 			model: getVariablesModel(variables),
 			definition: variables
 		},
@@ -303,7 +338,7 @@ export function isBooleanNode(u: Node): u is BooleanNode {
 	return u.tag === 'Boolean'
 }
 
-export function isLiteralNode(u: Node): u is PrimativeNode {
+export function isPrimitiveNode(u: Node): u is PrimitiveNode {
 	return isNumberNode(u) || isStringNode(u) || isBooleanNode(u)
 }
 
@@ -324,6 +359,7 @@ export function type<N extends string, T extends { [K in keyof T]: Node }, V ext
 		tag: 'Type',
 		members,
 		variables: {
+			children: extractTypeChildrenVariables(members),
 			model: getVariablesModel(variables),
 			definition: variables
 		},
@@ -335,6 +371,34 @@ export function type<N extends string, T extends { [K in keyof T]: Node }, V ext
 	}
 }
 
+function extractTypeChildrenVariables<T extends { [K in keyof T]: Node }>(
+	members: T
+): {} & Intersection<
+	Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
+> {
+	const x: any = {}
+	Object.keys(members).forEach((key) => {
+		for (const [k, v] of Object.entries(members[key as keyof T].variables.children)) {
+			if (x[k] !== undefined) {
+				console.warn(
+					`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
+				)
+			}
+			x[k] = v
+		}
+
+		for (const [k, v] of Object.entries(members[key as keyof T].variables.definition)) {
+			if (x[k] !== undefined) {
+				console.warn(
+					`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
+				)
+			}
+			x[k] = v
+		}
+	})
+	return x
+}
+
 function extractTypeMemberModels<T extends { [K in keyof T]: Node }>(members: T): { [K in keyof T]: T[K]['model'] } {
 	const x: any = {}
 	Object.keys(members).forEach((key) => {
@@ -343,37 +407,23 @@ function extractTypeMemberModels<T extends { [K in keyof T]: Node }>(members: T)
 	return x
 }
 
-const OPEN_BRACKET = '{'
-
-const CLOSE_BRACKET = '}'
-
-const OPEN_PAREN = '('
-
-const CLOSE_PAREN = ')'
-
-const COLON = ':'
-
-const DOLLAR_SIGN = '$'
-
-const EXCLAMATION = '!'
-
 function printTypeNodeMembers(members: { [K: string]: Node }): Lazy<string> {
 	return once(() => {
 		const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE]
 		for (const [key, value] of Object.entries(members)) {
 			tokens.push(key)
 			if (!isEmptyObject(value.variables.definition)) {
-				tokens.push(printVariablesNode(value.variables.definition));
+				tokens.push(printVariablesNode(value.variables.definition))
 			}
-			const val = value.print();
-			tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [COLON, OPEN_SPACE, val]))
+			const val = value.print()
+			tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [COLON, OPEN_SPACE, val, OPEN_SPACE]))
 		}
-		tokens.push(OPEN_SPACE, CLOSE_BRACKET)
+		tokens.push(CLOSE_BRACKET)
 		return tokens.join('')
 	})
 }
 
-function printVariablesNode<V extends VariablesNode>(variables: V): string {
+export function printVariablesNode<V extends VariablesNode>(variables: V): string {
 	const tokens: string[] = [OPEN_PAREN]
 	const keys = Object.keys(variables)
 	const length = keys.length
@@ -381,40 +431,36 @@ function printVariablesNode<V extends VariablesNode>(variables: V): string {
 	let i = 0
 	for (; i < length; i++) {
 		const key = keys[i]
-		tokens.push(DOLLAR_SIGN, key, COLON, OPEN_SPACE, printVariableName(variables[key]), i === last ? '' : ', ')
+		tokens.push(key, COLON, OPEN_SPACE, DOLLAR_SIGN, key, i === last ? '' : ', ')
 	}
 	tokens.push(CLOSE_PAREN)
 	return tokens.join('')
 }
 
-function printVariableName(node: Node, isOptional: boolean = false): string {
-	const optionalString = isOptional ? '' : EXCLAMATION
-	switch (node.tag) {
-		case 'Array':
-		case 'NonEmptyArray':
-			return `[${printVariableName(node.wrapped, isOptionNode(node.wrapped))}]${optionalString}`
-		case 'Map':
-			return `Map[${printVariableName(node.key)}, ${printVariableName(
-				node.wrapped,
-				isOptionNode(node.wrapped)
-			)}]${optionalString}`
-		case 'Option':
-			return printVariableName(node.wrapped, true)
-		case 'Boolean':
-		case 'Number':
-		case 'String':
-			return `${node.tag}${optionalString}`
-		case 'Scalar':
-			return `${node.name}${optionalString}`
-		case 'Type':
-			return `${node.__typename}${optionalString}`
-		default:
-			return ''
-	}
-}
-
 export function isTypeNode(u: Node): u is TypeNode<any, any, any> {
 	return u.tag === 'Type'
+}
+
+export function schema<N extends string, T extends { [K in keyof T]: Node }>(
+	__typename: N,
+	members: T
+): SchemaNode<N, T> {
+	const models = extractTypeMemberModels(members) as any
+	return {
+		__typename,
+		tag: 'Schema',
+		members,
+		variables: {
+			children: extractTypeChildrenVariables(members),
+			model: EMPTY_VARIABLES_MODEL as any,
+			definition: EMPTY_VARIABLES
+		},
+		print: () => printTypeNodeMembers(members)().trim(),
+		model: {
+			whole: M.type(models),
+			partial: M.partial(models)
+		}
+	}
 }
 
 export function map<K extends Node, T extends Node>(key: K, value: T): MapNode<K, T, {}>
@@ -437,11 +483,35 @@ export function map<K extends Node, T extends Node, V extends VariablesNode = {}
 		key,
 		wrapped: value,
 		variables: {
+			children: mergeVariablesDefinitionWithChildren(value),
 			definition: variables,
 			model: getVariablesModel(variables)
 		},
 		print: value.print
 	}
+}
+
+function mergeVariablesDefinitionWithChildren<T extends Node>(
+	node: T
+): ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T> {
+	const x: any = {}
+	for (const [k, v] of Object.entries(node.variables.children)) {
+		if (x[k] !== undefined) {
+			console.warn(
+				`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
+			)
+		}
+		x[k] = v
+	}
+	for (const [k, v] of Object.entries(node.variables.definition)) {
+		if (x[k] !== undefined) {
+			console.warn(
+				`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
+			)
+		}
+		x[k] = v
+	}
+	return x
 }
 
 export function isMapNode(u: Node): u is MapNode<any, any> {
@@ -462,6 +532,7 @@ export function array<T extends Node, V extends VariablesNode = {}>(
 			partial: M.array(node.model.partial)
 		},
 		variables: {
+			children: mergeVariablesDefinitionWithChildren(node),
 			definition: variables,
 			model: getVariablesModel(variables)
 		},
@@ -492,6 +563,7 @@ export function sum<T extends { [K in keyof T]: TypeNode<string, any> }, V exten
 		print: printSumNode(members),
 		members,
 		variables: {
+			children: extractTypeChildrenVariables(members),
 			definition: variables,
 			model: getVariablesModel(variables)
 		}
@@ -530,14 +602,6 @@ function getSumPartialModel<T extends { [K in keyof T]: TypeNode<string, any> }>
 	return M.sum('__typename')(m) as any
 }
 
-const ELLIPSIS = '...'
-
-const OPEN_SPACE = ' '
-
-const TYPENAME = '__typename'
-
-const ON = 'on'
-
 function printSumNode<T extends { [K in keyof T]: TypeNode<string, any> }>(members: T): Lazy<string> {
 	return once(() => {
 		const tokens: string[] = [OPEN_BRACKET, TYPENAME]
@@ -572,6 +636,7 @@ export function option<T extends Node, V extends VariablesNode = {}>(
 			partial: M.option(node.model.partial)
 		},
 		variables: {
+			children: mergeVariablesDefinitionWithChildren(node),
 			model: getVariablesModel(variables),
 			definition: variables
 		},
@@ -597,6 +662,7 @@ export function nonEmptyArray<T extends Node, V extends VariablesNode = {}>(
 			partial: M.nonEmptyArray(node.model.partial)
 		},
 		variables: {
+			children: mergeVariablesDefinitionWithChildren(node),
 			definition: variables,
 			model: getVariablesModel(variables)
 		},
@@ -628,6 +694,7 @@ export function scalar<N extends string, T, V extends VariablesNode = {}>(
 			partial: model
 		},
 		variables: {
+			children: EMPTY_VARIABLES,
 			definition: variables,
 			model: getVariablesModel(variables)
 		},

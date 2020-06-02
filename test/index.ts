@@ -1,3 +1,3 @@
-import {FantasyPlayer} from './FantasyPlayer';
-
-console.log(FantasyPlayer.print());
+import { FantasyPlayer } from './FantasyPlayer'
+import { print } from '../src/node'
+console.log(print(FantasyPlayer, 'query', 'getFantasyPlayer')())

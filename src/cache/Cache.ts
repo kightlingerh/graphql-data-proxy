@@ -4,39 +4,42 @@ import * as O from 'fp-ts/lib/Option'
 import { Reader } from 'fp-ts/lib/Reader'
 import * as D from '../document/DocumentNode'
 import { Ref } from '../shared'
-import * as S from '../node/Node'
+import * as N from '../node/Node'
 import { validate } from './validate'
 
 export interface CacheDependencies {
 	id?: string
-	ofRef: S.OfRef
-	persist?: S.Persist
+	ofRef: N.OfRef
+	persist?: N.Persist
 }
 
 export interface Make {
-	<R extends S.TypeNode<string, any>>(request: R): Either<S.CacheError, RequestProxy<R>>
+	<R extends N.TypeNode<string, any>>(request: R): Either<N.CacheError, RequestProxy<R>>
 }
 
 export interface RequestProxy<N> {
-	write(variables: S.ExtractMergedVariablesType<N>): Reader<D.ExtractPartialModelType<N>, S.CacheWriteResult>
-	read(variables: S.ExtractMergedVariablesType<N>): S.CacheResult<O.Option<D.ExtractModelType<N>>>
-	toRefs(variables: S.ExtractMergedVariablesType<N>): S.CacheResult<D.ExtractRefType<N>>
-	toRef(variables: S.ExtractMergedVariablesType<N>): S.CacheResult<Ref<D.ExtractModelType<N>>>
+	write(variables: N.ExtractMergedVariablesType<N>): Reader<D.ExtractPartialModelType<N>, N.CacheWriteResult>
+	read(variables: N.ExtractMergedVariablesType<N>): N.CacheResult<O.Option<D.ExtractModelType<N>>>
+	toRefs(variables: N.ExtractMergedVariablesType<N>): N.CacheResult<D.ExtractRefType<N>>
+	toRef(variables: N.ExtractMergedVariablesType<N>): N.CacheResult<Ref<D.ExtractModelType<N>>>
 }
 
-export function cache<Cache extends S.TypeNode<string, any>>(c: Cache): Reader<CacheDependencies, Make> {
+export function cache<Cache extends N.TypeNode<string, any>>(c: Cache): Reader<CacheDependencies, Make> {
 	return (deps) => {
-		return <R extends S.TypeNode<string, any>>(r: R) => {
+		return <R extends N.TypeNode<string, any>>(r: R) => {
 			const errors = validate(c)(r)
 			if (isNonEmpty(errors)) {
 				return left(errors)
 			} else {
 				const store = c.store({ persist: deps.persist, ofRef: deps.ofRef, path: deps.id || 'root' })
-				return right<S.CacheError, RequestProxy<R>>({
+				const readC = store.read(r)
+				const toRefsC = store.toRefs(r)
+				const toRefC = store.toRef(r)
+				return right<N.CacheError, RequestProxy<R>>({
 					write: store.write,
-					read: (variables) => store.read(r)(variables) as S.CacheResult<O.Option<D.ExtractModelType<R>>>,
-					toRefs: (variables) => store.toRefs(r)(variables) as S.CacheResult<D.ExtractRefType<R>>,
-					toRef: (variables) => store.toRef(r)(variables) as S.CacheResult<Ref<D.ExtractModelType<R>>>
+					read: (variables) => readC(variables) as N.CacheResult<O.Option<D.ExtractModelType<R>>>,
+					toRefs: (variables) => toRefsC(variables) as N.CacheResult<D.ExtractRefType<R>>,
+					toRef: (variables) => toRefC(variables) as N.CacheResult<Ref<D.ExtractModelType<R>>>
 				})
 			}
 		}

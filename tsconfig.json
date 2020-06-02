@@ -13,7 +13,7 @@
     "moduleResolution": "node",
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true,
-    "lib": ["ESNext", "ESNext.BigInt"],
+    "lib": ["ESNext", "ESNext.BigInt", "dom"],
     "downlevelIteration": true
   },
   "include": ["./src/**/*"]

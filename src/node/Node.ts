@@ -1,7 +1,7 @@
 import { sequenceT } from 'fp-ts/lib/Apply'
 import { isNonEmpty } from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { constant } from 'fp-ts/lib/function'
+import { constant, Lazy } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
 import { Monoid } from 'fp-ts/lib/Monoid'
 import { getSemigroup, NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
@@ -14,12 +14,25 @@ import * as A from 'fp-ts/lib/Array'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { Tree } from 'fp-ts/lib/Tree'
+import { isOptionNode } from '../document/DocumentNode'
 import * as D from '../document/DocumentNode'
 import * as M from '../model/Model'
 import * as MAP from 'fp-ts/lib/Map'
-import { isEmptyObject, Ref } from '../shared'
+import {
+	CLOSE_PAREN,
+	COLON,
+	DOLLAR_SIGN,
+	EXCLAMATION,
+	isEmptyObject,
+	once,
+	OPEN_PAREN,
+	OPEN_SPACE,
+	Ref
+} from '../shared'
 
 export type TypeOf<T> = D.ExtractModelType<T>
+
+export type TypeOfVariables<T> = T extends Node ? M.TypeOf<T['variables']['model']> : never
 
 export type Node =
 	| PrimitiveNode<any>
@@ -29,18 +42,19 @@ export type Node =
 	| ScalarNode<any, any, any>
 	| MutationNode<any>
 
-// export interface Schema<T extends { [K in keyof T]: Node }> extends MergeProxy<D.Schema<T>> {}
+export type PrimitiveNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
 
-export type PrimitiveNode<V extends D.VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
+export interface StringNode<V extends VariablesNode = {}> extends MergeProxy<D.StringNode<V>> {}
 
-export interface StringNode<V extends D.VariablesNode = {}> extends MergeProxy<D.StringNode<V>> {}
+export interface BooleanNode<V extends VariablesNode = {}> extends MergeProxy<D.BooleanNode<V>> {}
 
-export interface BooleanNode<V extends D.VariablesNode = {}> extends MergeProxy<D.BooleanNode<V>> {}
+export interface NumberNode<V extends VariablesNode = {}> extends MergeProxy<D.NumberNode<V>> {}
 
-export interface NumberNode<V extends D.VariablesNode = {}> extends MergeProxy<D.NumberNode<V>> {}
-
-export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, V extends D.VariablesNode = {}>
+export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, V extends VariablesNode = {}>
 	extends MergeProxy<D.TypeNode<N, T, V>> {}
+
+export type SchemaNode<N extends string, T extends { [K in keyof T]: Node }> = D.SchemaNode<N, T> &
+	Proxy<D.SchemaNode<N, T>>
 
 export type WrappedNode =
 	| ArrayNode<any, any>
@@ -48,23 +62,22 @@ export type WrappedNode =
 	| OptionNode<any, any>
 	| NonEmptyArrayNode<any, any>
 
-export interface ArrayNode<T extends Node, V extends D.VariablesNode = {}> extends MergeProxy<D.ArrayNode<T, V>> {}
+export interface ArrayNode<T extends Node, V extends VariablesNode = {}> extends MergeProxy<D.ArrayNode<T, V>> {}
 
-export interface MapNode<K extends Node, T extends Node, V extends D.VariablesNode = {}>
+export interface MapNode<K extends Node, T extends Node, V extends VariablesNode = {}>
 	extends MergeProxy<D.MapNode<K, T, V>> {}
 
-export interface OptionNode<T extends Node, V extends D.VariablesNode = {}> extends MergeProxy<D.OptionNode<T, V>> {}
+export interface OptionNode<T extends Node, V extends VariablesNode = {}> extends MergeProxy<D.OptionNode<T, V>> {}
 
-export interface NonEmptyArrayNode<T extends Node, V extends D.VariablesNode = {}>
+export interface NonEmptyArrayNode<T extends Node, V extends VariablesNode = {}>
 	extends MergeProxy<D.NonEmptyArrayNode<T, V>> {}
 
-export interface SumNode<T extends { [K in keyof T]: TypeNode<string, any> }, V extends D.VariablesNode = {}>
+export interface SumNode<T extends { [K in keyof T]: TypeNode<string, any> }, V extends VariablesNode = {}>
 	extends MergeProxy<D.SumNode<T, V>> {}
 
-export interface MutationNode<T extends Node, V extends D.VariablesNode = {}>
-	extends MergeProxy<D.MutationNode<T, V>> {}
+export interface MutationNode<T extends Node, V extends VariablesNode = {}> extends MergeProxy<D.MutationNode<T, V>> {}
 
-export interface ScalarNode<N extends string, T, V extends D.VariablesNode = {}>
+export interface ScalarNode<N extends string, T, V extends VariablesNode = {}>
 	extends MergeProxy<D.ScalarNode<N, T, V>> {}
 
 export type MergeProxy<T extends D.Node = D.Node> = T & Proxy<T>
@@ -97,7 +110,7 @@ export interface StoreProxy<N> {
 }
 
 export type ExtractSelection<T> = T extends D.TypeNode<string, any>
-	? D.TypeNode<string, any>
+	? D.TypeNode<any, any>
 	: T extends D.ArrayNode<any>
 	? D.ArrayNode<any>
 	: T extends D.MapNode<any, any>
@@ -146,6 +159,10 @@ export interface OfRef {
 export interface Persist {
 	store(key: string, value: string): TE.TaskEither<CacheError, void>
 	restore<T>(key: string): TE.TaskEither<CacheError, O.Option<T>>
+}
+
+export interface VariablesNode {
+	[K: string]: Node
 }
 
 export type ExtractDataProxyType<T> = T extends MergeProxy<infer A> ? DataProxy<A> : never
@@ -244,7 +261,7 @@ class Store<T extends D.Node> implements StoreProxy<T> {
 	}
 }
 
-class LiteralProxy<T, V extends D.VariablesNode = {}> implements DataProxy<D.DocumentNode<T, T, Ref<T>, V>> {
+class LiteralProxy<T, V extends VariablesNode = {}> implements DataProxy<D.DocumentNode<T, T, Ref<T>, V>> {
 	readonly ref: Ref<T>
 	constructor(private readonly deps: DataProxyDependencies<D.DocumentNode<T, T, Ref<T>, V>>) {
 		this.ref = this.deps.ofRef()
@@ -291,8 +308,8 @@ class LiteralProxy<T, V extends D.VariablesNode = {}> implements DataProxy<D.Doc
 }
 
 export function number(): NumberNode
-export function number<V extends D.VariablesNode>(variables: V): NumberNode<V>
-export function number<V extends D.VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES): NumberNode<V> {
+export function number<V extends VariablesNode>(variables: V): NumberNode<V>
+export function number<V extends VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES): NumberNode<V> {
 	const node = D.number(variables)
 	const data = (deps: DataProxyDependencies<D.NumberNode<V>>) => new LiteralProxy({ ...deps, node })
 	return {
@@ -305,8 +322,8 @@ export function number<V extends D.VariablesNode = {}>(variables: V = D.EMPTY_VA
 export const staticNumber = number()
 
 export function string(): StringNode
-export function string<V extends D.VariablesNode>(variables: V): StringNode<V>
-export function string<V extends D.VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES): StringNode<V> {
+export function string<V extends VariablesNode>(variables: V): StringNode<V>
+export function string<V extends VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES): StringNode<V> {
 	const node = D.string(variables)
 	const data = (deps: DataProxyDependencies<D.StringNode<V>>) => new LiteralProxy({ ...deps, node })
 	return {
@@ -319,8 +336,8 @@ export function string<V extends D.VariablesNode = {}>(variables: V = D.EMPTY_VA
 export const staticString = string()
 
 export function boolean(): BooleanNode
-export function boolean<V extends D.VariablesNode>(variables: V): BooleanNode<V>
-export function boolean<V extends D.VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES): BooleanNode<V> {
+export function boolean<V extends VariablesNode>(variables: V): BooleanNode<V>
+export function boolean<V extends VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES): BooleanNode<V> {
 	const node = D.boolean(variables)
 	const data = (deps: DataProxyDependencies<D.BooleanNode<V>>) => new LiteralProxy({ ...deps, node })
 	return {
@@ -333,12 +350,12 @@ export function boolean<V extends D.VariablesNode = {}>(variables: V = D.EMPTY_V
 export const staticBoolean = boolean()
 
 export function scalar<N extends string, T>(name: N, model: M.Model<T>): ScalarNode<N, T>
-export function scalar<N extends string, T, V extends D.VariablesNode>(
+export function scalar<N extends string, T, V extends VariablesNode>(
 	name: N,
 	model: M.Model<T>,
 	variables: V
 ): ScalarNode<N, T, V>
-export function scalar<N extends string, T, V extends D.VariablesNode = {}>(
+export function scalar<N extends string, T, V extends VariablesNode = {}>(
 	name: N,
 	model: M.Model<T>,
 	variables: V = D.EMPTY_VARIABLES
@@ -440,24 +457,37 @@ class TypeProxy<T extends D.TypeNode<any, any, any>> extends BaseProxy<T> {
 }
 
 export function type<N extends string, T extends { [K in keyof T]: Node }>(__typename: N, members: T): TypeNode<N, T>
-export function type<N extends string, T extends { [K in keyof T]: Node }, V extends D.VariablesNode>(
+export function type<N extends string, T extends { [K in keyof T]: Node }, V extends VariablesNode>(
 	__typename: N,
 	members: T,
 	variables: V
 ): TypeNode<N, T, V>
-export function type<N extends string, T extends { [K in keyof T]: Node }, V extends D.VariablesNode = {}>(
+export function type<N extends string, T extends { [K in keyof T]: Node }, V extends VariablesNode = {}>(
 	__typename: N,
 	members: T,
 	variables: V = D.EMPTY_VARIABLES
 ): TypeNode<N, T, V> {
 	const node = D.type(__typename, members, variables)
 	const data = (deps: DataProxyDependencies<D.TypeNode<N, T, V>>) =>
-		new TypeProxy<D.TypeNode<N, T, V>>({ ...deps, node }) as any
+		new TypeProxy<D.TypeNode<N, T, V>>({ ...deps, node })
 	return {
 		...node,
 		data,
 		store: (deps) => (isEmptyObject(node.variables) ? data(deps) : new Store({ node, data, ...deps }))
 	}
+}
+
+export function schema<N extends string, T extends { [K in keyof T]: Node }>(
+	__typename: N,
+	members: T
+): SchemaNode<N, T> {
+	const node = D.schema(__typename, members) as any
+	const data = (deps: DataProxyDependencies<D.TypeNode<N, T>>) => new TypeProxy<D.TypeNode<N, T>>({ ...deps, node })
+	return {
+		...node,
+		data,
+		store: data
+	} as SchemaNode<N, T>
 }
 
 const withMap = MAP.getWitherable(fromCompare(constant(0)))
@@ -530,12 +560,12 @@ class MapProxy<T extends D.MapNode<any, any, any>> extends BaseProxy<T> {
 }
 
 export function map<K extends Node, T extends Node>(key: K, value: T): MapNode<K, T>
-export function map<K extends Node, T extends Node, V extends D.VariablesNode>(
+export function map<K extends Node, T extends Node, V extends VariablesNode>(
 	key: K,
 	value: T,
 	variables: V
 ): MapNode<K, T, V>
-export function map<K extends Node, T extends Node, V extends D.VariablesNode = {}>(
+export function map<K extends Node, T extends Node, V extends VariablesNode = {}>(
 	key: K,
 	value: T,
 	variables: V = D.EMPTY_VARIABLES
@@ -607,8 +637,8 @@ class ArrayProxy<T extends D.ArrayNode<any, any>> extends BaseProxy<T> {
 }
 
 export function array<T extends Node>(wrapped: T): ArrayNode<T>
-export function array<T extends Node, V extends D.VariablesNode>(wrapped: T, variables: V): ArrayNode<T, V>
-export function array<T extends Node, V extends D.VariablesNode = {}>(
+export function array<T extends Node, V extends VariablesNode>(wrapped: T, variables: V): ArrayNode<T, V>
+export function array<T extends Node, V extends VariablesNode = {}>(
 	wrapped: T,
 	variables: V = D.EMPTY_VARIABLES
 ): ArrayNode<T, V> {
@@ -679,11 +709,11 @@ class SumProxy<T extends D.SumNode<any, any>> extends BaseProxy<T> {
 }
 
 export function sum<T extends { [K in keyof T]: TypeNode<any, any, any> }>(members: T): SumNode<T>
-export function sum<T extends { [K in keyof T]: TypeNode<any, any, any> }, V extends D.VariablesNode>(
+export function sum<T extends { [K in keyof T]: TypeNode<any, any, any> }, V extends VariablesNode>(
 	members: T,
 	variables: V
 ): SumNode<T, V>
-export function sum<T extends { [K in keyof T]: TypeNode<any, any, any> }, V extends D.VariablesNode = {}>(
+export function sum<T extends { [K in keyof T]: TypeNode<any, any, any> }, V extends VariablesNode = {}>(
 	members: T,
 	variables: V = D.EMPTY_VARIABLES
 ): SumNode<T, V> {
@@ -765,8 +795,8 @@ class OptionProxy<T extends D.OptionNode<any, any>> extends BaseProxy<T> {
 }
 
 export function option<T extends Node>(wrapped: T): OptionNode<T>
-export function option<T extends Node, V extends D.VariablesNode>(wrapped: T, variables: V): OptionNode<T, V>
-export function option<T extends Node, V extends D.VariablesNode = {}>(
+export function option<T extends Node, V extends VariablesNode>(wrapped: T, variables: V): OptionNode<T, V>
+export function option<T extends Node, V extends VariablesNode = {}>(
 	wrapped: T,
 	variables: V = D.EMPTY_VARIABLES
 ): OptionNode<T, V> {
@@ -841,15 +871,15 @@ class NonEmptyArrayProxy<T extends D.NonEmptyArrayNode<any, any>> extends BasePr
 	}
 }
 
-export function nonEmptyArray<T extends Node>(wrapped: T): MergeProxy<D.NonEmptyArrayNode<T>>
-export function nonEmptyArray<T extends Node, V extends D.VariablesNode>(
+export function nonEmptyArray<T extends Node>(wrapped: T): NonEmptyArrayNode<T>
+export function nonEmptyArray<T extends Node, V extends VariablesNode>(
 	wrapped: T,
 	variables: V
-): MergeProxy<D.NonEmptyArrayNode<T, V>>
-export function nonEmptyArray<T extends Node, V extends D.VariablesNode = {}>(
+): NonEmptyArrayNode<T, V>
+export function nonEmptyArray<T extends Node, V extends VariablesNode = {}>(
 	wrapped: T,
 	variables: V = D.EMPTY_VARIABLES
-): MergeProxy<D.NonEmptyArrayNode<T, V>> {
+): NonEmptyArrayNode<T, V> {
 	const node = D.nonEmptyArray(wrapped, variables)
 	const data = (deps: DataProxyDependencies<D.NonEmptyArrayNode<T, V>>) => new NonEmptyArrayProxy({ ...deps, node })
 	return {
@@ -857,4 +887,59 @@ export function nonEmptyArray<T extends Node, V extends D.VariablesNode = {}>(
 		data,
 		store: (deps) => (isEmptyObject(node.variables) ? data(deps) : new Store({ node, data, ...deps }))
 	}
+}
+
+export function printVariables<V extends VariablesNode>(variables: V): string {
+	const tokens: string[] = [OPEN_PAREN]
+	const keys = Object.keys(variables)
+	const length = keys.length
+	const last = length - 1
+	let i = 0
+	for (; i < length; i++) {
+		const key = keys[i]
+		tokens.push(DOLLAR_SIGN, key, COLON, OPEN_SPACE, printVariableName(variables[key]), i === last ? '' : ', ')
+	}
+	tokens.push(CLOSE_PAREN)
+	return tokens.join('')
+}
+
+function printVariableName(node: Node, isOptional: boolean = false): string {
+	const optionalString = isOptional ? '' : EXCLAMATION
+	switch (node.tag) {
+		case 'Array':
+		case 'NonEmptyArray':
+			return `[${printVariableName(node.wrapped, isOptionNode(node.wrapped))}]${optionalString}`
+		case 'Map':
+			return `Map[${printVariableName(node.key)}, ${printVariableName(
+				node.wrapped,
+				isOptionNode(node.wrapped)
+			)}]${optionalString}`
+		case 'Option':
+			return printVariableName(node.wrapped, true)
+		case 'Boolean':
+		case 'Number':
+		case 'String':
+			return `${node.tag}${optionalString}`
+		case 'Scalar':
+			return `${node.name}${optionalString}`
+		case 'Type':
+			return `${node.__typename}${optionalString}`
+		default:
+			return ''
+	}
+}
+
+export function print<N extends string, T extends { [K in keyof T]: Node }>(
+	schema: SchemaNode<N, T>,
+	operation: string,
+	operationName: string
+): Lazy<string> {
+	return once(() => {
+		const tokens = [operation, ' ', operationName]
+		if (!isEmptyObject(schema.variables.children)) {
+			tokens.push(printVariables(schema.variables.children))
+		}
+		tokens.push(OPEN_SPACE, schema.print())
+		return tokens.join('')
+	})
 }

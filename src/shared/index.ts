@@ -18,7 +18,7 @@ export function once<T>(fn: Lazy<T>): Lazy<T> {
 }
 
 export function isEmptyString(str: string) {
-	return str === '';
+	return str === ''
 }
 
 export const constEmptyString = constant('')
@@ -30,3 +30,25 @@ export interface Ref<T> {
 export function isFunction(u: unknown): u is Function {
 	return typeof u === 'function'
 }
+
+export const OPEN_BRACKET = '{'
+
+export const CLOSE_BRACKET = '}'
+
+export const OPEN_PAREN = '('
+
+export const CLOSE_PAREN = ')'
+
+export const COLON = ':'
+
+export const DOLLAR_SIGN = '$'
+
+export const EXCLAMATION = '!'
+
+export const ELLIPSIS = '...'
+
+export const OPEN_SPACE = ' '
+
+export const TYPENAME = '__typename'
+
+export const ON = 'on'

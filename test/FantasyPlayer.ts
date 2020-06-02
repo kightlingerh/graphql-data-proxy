@@ -1,16 +1,17 @@
-import * as M from '../src/model/Model'
+import * as M from '../src/model'
 import * as N from '../src/node'
-import * as D from '../src/document/DocumentNode'
 
 const FantasyPlayerId = N.scalar('FantasyPlayerId', M.string)
 
 const FantasyPlayerPersonalInfo = N.type('FantasyPlayerPersonalInfo', {
 	pictureUrl: N.option(N.staticString),
-	firstName: N.array(N.staticString)
+	firstName: N.staticString,
+	lastName: N.staticString,
+	highSchool: N.option(N.staticString)
 })
 
 const FantasyPlayerStatisticsQueryVariables = {
-	statisticIds: D.array(D.staticString)
+	statisticIds: N.array(N.staticString)
 }
 
 const FantasyPlayerFantasyInfo = N.type(
@@ -18,13 +19,22 @@ const FantasyPlayerFantasyInfo = N.type(
 	{
 		ownerFantasyTeamId: N.option(N.staticString)
 	},
+	{
+		fantasyPlayerIds: N.nonEmptyArray(N.staticString)
+	}
+)
+
+const FantasyPlayerStatisticsMap = N.map(
+	N.staticString,
+	FantasyPlayerPersonalInfo,
 	FantasyPlayerStatisticsQueryVariables
 )
 
-const FantasyPlayerStatisticsMap = N.map(N.staticNumber, FantasyPlayerFantasyInfo)
+export type FantasyPlayerStatisticsVariables = N.TypeOfVariables<typeof FantasyPlayerFantasyInfo>
 
+export type FantasyPlayerStatistics = N.TypeOf<typeof FantasyPlayerStatisticsMap>
 
-export const FantasyPlayer = N.type('FantasyPlayer', {
+export const FantasyPlayer = N.schema('FantasyPlayer', {
 	id: FantasyPlayerId,
 	statistics: FantasyPlayerStatisticsMap,
 	personalInfo: FantasyPlayerPersonalInfo,
