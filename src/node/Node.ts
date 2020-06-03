@@ -889,7 +889,7 @@ export function nonEmptyArray<T extends Node, V extends VariablesNode = {}>(
 	}
 }
 
-export function printVariables<V extends VariablesNode>(variables: V): string {
+function printVariables<V extends VariablesNode>(variables: V): string {
 	const tokens: string[] = [OPEN_PAREN]
 	const keys = Object.keys(variables)
 	const length = keys.length
