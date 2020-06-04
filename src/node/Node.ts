@@ -14,9 +14,8 @@ import * as A from 'fp-ts/lib/Array'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { Tree } from 'fp-ts/lib/Tree'
-import {tree} from 'io-ts/lib/Decoder';
-import {CacheDependencies} from '../cache';
-import { isOptionNode } from '../document/DocumentNode'
+import { tree } from 'io-ts/lib/Decoder'
+import { CacheDependencies } from '../cache'
 import * as D from '../document/DocumentNode'
 import * as M from '../model/Model'
 import * as MAP from 'fp-ts/lib/Map'
@@ -36,7 +35,9 @@ export type TypeOf<T> = D.ExtractModelType<T>
 
 export type TypeOfVariables<T> = T extends Node ? M.TypeOf<T['variables']['model']> : never
 
-export type TypeOfSchemaVariables<T> = T extends SchemaNode<any, any> ? D.ExtractDefinitionType<T['variables']['children']> : never
+export type TypeOfSchemaVariables<T> = T extends SchemaNode<any, any>
+	? D.ExtractDefinitionType<T['variables']['children']>
+	: never
 
 export type Node =
 	| PrimitiveNode<any>
@@ -44,7 +45,7 @@ export type Node =
 	| WrappedNode
 	| SumNode<any, any>
 	| ScalarNode<any, any, any>
-	| MutationNode<any>
+	| MutationNode<any, any>
 
 export type PrimitiveNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
 
@@ -312,8 +313,9 @@ class LiteralProxy<T, V extends VariablesNode = {}> implements DataProxy<D.Docum
 
 export function number(): NumberNode
 export function number<V extends VariablesNode>(variables: V): NumberNode<V>
-export function number<V extends VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES): NumberNode<V> {
-	const node = D.number(variables)
+export function number<V extends VariablesNode>(variables: V, precision?: D.NumberPrecision): NumberNode<V>
+export function number<V extends VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES, precision?: D.NumberPrecision): NumberNode<V> {
+	const node = D.number(variables, precision)
 	const data = (deps: DataProxyDependencies<D.NumberNode<V>>) => new LiteralProxy({ ...deps, node })
 	return {
 		...node,
@@ -894,7 +896,7 @@ export function nonEmptyArray<T extends Node, V extends VariablesNode = {}>(
 
 const EMPTY_PROXY_ERROR: CacheResult<any> = TE.left([tree('no proxy exists for this node')])
 
-const CONST_EMPTY_PROXY_ERROR = constant(constant(EMPTY_PROXY_ERROR));
+const CONST_EMPTY_PROXY_ERROR = constant(constant(EMPTY_PROXY_ERROR))
 
 const EMPTY_PROXY: DataProxy<any> = {
 	write: CONST_EMPTY_PROXY_ERROR,
@@ -903,17 +905,20 @@ const EMPTY_PROXY: DataProxy<any> = {
 	toRef: CONST_EMPTY_PROXY_ERROR
 }
 
-const CONST_EMPTY_PROXY = constant(EMPTY_PROXY);
+const CONST_EMPTY_PROXY = constant(EMPTY_PROXY)
 
-export function mutation<T extends Node>(result: T): MutationNode<T>;
-export function mutation<T extends Node, V extends VariablesNode>(result: T, variables: V): MutationNode<T,  V>;
-export function mutation<T extends Node, V extends VariablesNode = {}>(result: T, variables: V = D.EMPTY_VARIABLES): MutationNode<T,  V> {
-	const node = D.mutation(result, variables);
+export function mutation<T extends Node>(result: T): MutationNode<T>
+export function mutation<T extends Node, V extends VariablesNode>(result: T, variables: V): MutationNode<T, V>
+export function mutation<T extends Node, V extends VariablesNode = {}>(
+	result: T,
+	variables: V = D.EMPTY_VARIABLES
+): MutationNode<T, V> {
+	const node = D.mutation(result, variables)
 	return {
 		...node,
 		data: CONST_EMPTY_PROXY,
 		store: CONST_EMPTY_PROXY as Reader<CacheDependencies, StoreProxy<any>>
-	};
+	}
 }
 
 function printVariables<V extends VariablesNode>(variables: V): string {
@@ -935,18 +940,19 @@ function printVariableName(node: Node, isOptional: boolean = false): string {
 	switch (node.tag) {
 		case 'Array':
 		case 'NonEmptyArray':
-			return `[${printVariableName(node.wrapped, isOptionNode(node.wrapped))}]${optionalString}`
+			return `[${printVariableName(node.wrapped, D.isOptionNode(node.wrapped))}]${optionalString}`
 		case 'Map':
 			return `Map[${printVariableName(node.key)}, ${printVariableName(
 				node.wrapped,
-				isOptionNode(node.wrapped)
+				D.isOptionNode(node.wrapped)
 			)}]${optionalString}`
 		case 'Option':
 			return printVariableName(node.wrapped, true)
 		case 'Boolean':
-		case 'Number':
 		case 'String':
 			return `${node.tag}${optionalString}`
+		case 'Number':
+			return `${node.precision}${optionalString}`;
 		case 'Scalar':
 			return `${node.name}${optionalString}`
 		case 'Type':

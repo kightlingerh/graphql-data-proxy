@@ -59,8 +59,11 @@ export interface BooleanNode<V extends VariablesNode = {}> extends DocumentNode<
 	readonly tag: 'Boolean'
 }
 
+export type NumberPrecision = 'Float' | 'Int'
+
 export interface NumberNode<V extends VariablesNode = {}> extends DocumentNode<number, number, Ref<number>, V> {
 	readonly tag: 'Number'
+	readonly precision: NumberPrecision
 }
 
 export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, V extends VariablesNode = {}>
@@ -255,9 +258,11 @@ export const EMPTY_VARIABLES: any = {}
 
 export function number(): NumberNode
 export function number<V extends VariablesNode>(variables: V): NumberNode<V>
-export function number<V extends VariablesNode = {}>(variables: V = EMPTY_VARIABLES): NumberNode<V> {
+export function number<V extends VariablesNode>(variables: V, precision?: NumberPrecision): NumberNode<V>
+export function number<V extends VariablesNode = {}>(variables: V = EMPTY_VARIABLES, precision: NumberPrecision = 'Float'): NumberNode<V> {
 	return {
 		tag: 'Number',
+		precision,
 		print: constEmptyString,
 		variables: {
 			children: EMPTY_VARIABLES,
@@ -451,7 +456,7 @@ export function schema<N extends string, T extends { [K in keyof T]: Node }>(
 }
 
 export function isSchemaNode(u: Node): u is SchemaNode<any, any> {
-	return isTypeNode(u) && isEmptyObject(u.variables.definition);
+	return isTypeNode(u) && isEmptyObject(u.variables.definition)
 }
 
 export function map<K extends Node, T extends Node>(key: K, value: T): MapNode<K, T, {}>
@@ -720,5 +725,5 @@ export function mutation<T extends Node, V extends VariablesNode = {}>(
 }
 
 export function isMutationNode(u: Node): u is MutationNode<any, any> {
-	return u.tag === 'Mutation';
+	return u.tag === 'Mutation'
 }
