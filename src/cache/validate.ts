@@ -1,23 +1,30 @@
 import { isNonEmpty } from 'fp-ts/lib/Array'
 import { Tree } from 'fp-ts/lib/Tree'
 import { tree } from 'io-ts/lib/Decoder'
-import * as D from '../document/DocumentNode'
+import * as N from '../node'
+import * as D from '../document'
 
-export function validate<S extends D.TypeNode<string, any>>(schema: S) {
-	const validations: Map<D.TypeNode<string, any>, Array<Tree<string>>> = new Map()
-	return <R extends D.TypeNode<string, any>>(request: R): Array<Tree<string>> => {
-		const validation = validations.get(request)
-		if (validation) {
-			return validation
+const VALIDATIONS: WeakMap<N.SchemaNode<any, any>, WeakMap<N.SchemaNode<any, any>, Array<Tree<string>>>> = new WeakMap()
+
+export function validate(schema: N.SchemaNode<any, any>, request: N.SchemaNode<any, any>) {
+	const schemaValidations = VALIDATIONS.get(schema)
+	if (schemaValidations) {
+		const requestValidation = schemaValidations.get(request)
+		if (requestValidation) {
+			return requestValidation
 		} else {
-			const newValidation = validateTypeNode(schema, request)
-			validations.set(request, newValidation)
+			const newValidation = validateTypeNode(schema as any, request as any)
+			schemaValidations.set(request, newValidation)
 			return newValidation
 		}
+	} else {
+		const newValidations = validateTypeNode(schema as any, request as any)
+		VALIDATIONS.set(schema, new WeakMap([[request, newValidations]]))
+		return newValidations
 	}
 }
 
-function validateNode(x: D.Node, y: D.Node): Array<Tree<string>> {
+function validateNode(x: N.Node, y: N.Node): Array<Tree<string>> {
 	if (D.isWrappedNode(x) && D.isWrappedNode(y)) {
 		return validateWrappedNode(x.wrapped, y.wrapped)
 	} else if (D.isTypeNode(x) && D.isTypeNode(y)) {
@@ -31,7 +38,7 @@ function validateNode(x: D.Node, y: D.Node): Array<Tree<string>> {
 	}
 }
 
-function validateTypeNode<SchemaNode extends D.TypeNode<any, any, any>, RequestNode extends D.TypeNode<any, any, any>>(
+function validateTypeNode<SchemaNode extends N.TypeNode<any, any, any>, RequestNode extends N.TypeNode<any, any, any>>(
 	x: SchemaNode,
 	y: RequestNode
 ): Array<Tree<string>> {
@@ -53,7 +60,7 @@ function validateTypeNode<SchemaNode extends D.TypeNode<any, any, any>, RequestN
 	return errors
 }
 
-function validateWrappedNode<SchemaNode extends D.WrappedNode<any>, RequestNode extends D.WrappedNode<any>>(
+function validateWrappedNode<SchemaNode extends N.WrappedNode, RequestNode extends N.WrappedNode>(
 	x: SchemaNode,
 	y: RequestNode
 ): Array<Tree<string>> {
@@ -73,8 +80,8 @@ function validateWrappedNode<SchemaNode extends D.WrappedNode<any>, RequestNode 
 }
 
 function validateScalarNode<
-	SchemaNode extends D.ScalarNode<string, any, D.VariablesNode>,
-	RequestNode extends D.ScalarNode<string, any, D.VariablesNode>
+	SchemaNode extends N.ScalarNode<string, any, N.VariablesNode>,
+	RequestNode extends N.ScalarNode<string, any, N.VariablesNode>
 >(x: SchemaNode, y: RequestNode): Array<Tree<string>> {
 	const errors = []
 	if (x.name !== y.name) {
@@ -86,7 +93,7 @@ function validateScalarNode<
 	return errors
 }
 
-function validateSumNode<SchemaNode extends D.SumNode<any, any>, RequestNode extends D.SumNode<any, any>>(
+function validateSumNode<SchemaNode extends N.SumNode<any, any>, RequestNode extends N.SumNode<any, any>>(
 	x: SchemaNode,
 	y: RequestNode
 ): Array<Tree<string>> {

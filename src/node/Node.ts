@@ -14,6 +14,8 @@ import * as A from 'fp-ts/lib/Array'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { Tree } from 'fp-ts/lib/Tree'
+import {tree} from 'io-ts/lib/Decoder';
+import {CacheDependencies} from '../cache';
 import { isOptionNode } from '../document/DocumentNode'
 import * as D from '../document/DocumentNode'
 import * as M from '../model/Model'
@@ -34,6 +36,8 @@ export type TypeOf<T> = D.ExtractModelType<T>
 
 export type TypeOfVariables<T> = T extends Node ? M.TypeOf<T['variables']['model']> : never
 
+export type TypeOfSchemaVariables<T> = T extends SchemaNode<any, any> ? D.ExtractDefinitionType<T['variables']['children']> : never
+
 export type Node =
 	| PrimitiveNode<any>
 	| TypeNode<any, any, any>
@@ -53,8 +57,7 @@ export interface NumberNode<V extends VariablesNode = {}> extends MergeProxy<D.N
 export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, V extends VariablesNode = {}>
 	extends MergeProxy<D.TypeNode<N, T, V>> {}
 
-export type SchemaNode<N extends string, T extends { [K in keyof T]: Node }> = D.SchemaNode<N, T> &
-	Proxy<D.SchemaNode<N, T>>
+export type SchemaNode<N extends string, T extends { [K in keyof T]: Node }> = TypeNode<N, T>
 
 export type WrappedNode =
 	| ArrayNode<any, any>
@@ -480,14 +483,14 @@ export function type<N extends string, T extends { [K in keyof T]: Node }, V ext
 export function schema<N extends string, T extends { [K in keyof T]: Node }>(
 	__typename: N,
 	members: T
-): SchemaNode<N, T> {
+): TypeNode<N, T> & { readonly tag: 'Schema' } {
 	const node = D.schema(__typename, members) as any
 	const data = (deps: DataProxyDependencies<D.TypeNode<N, T>>) => new TypeProxy<D.TypeNode<N, T>>({ ...deps, node })
 	return {
 		...node,
 		data,
 		store: data
-	} as SchemaNode<N, T>
+	}
 }
 
 const withMap = MAP.getWitherable(fromCompare(constant(0)))
@@ -887,6 +890,30 @@ export function nonEmptyArray<T extends Node, V extends VariablesNode = {}>(
 		data,
 		store: (deps) => (isEmptyObject(node.variables) ? data(deps) : new Store({ node, data, ...deps }))
 	}
+}
+
+const EMPTY_PROXY_ERROR: CacheResult<any> = TE.left([tree('no proxy exists for this node')])
+
+const CONST_EMPTY_PROXY_ERROR = constant(constant(EMPTY_PROXY_ERROR));
+
+const EMPTY_PROXY: DataProxy<any> = {
+	write: CONST_EMPTY_PROXY_ERROR,
+	read: CONST_EMPTY_PROXY_ERROR,
+	toRefs: CONST_EMPTY_PROXY_ERROR,
+	toRef: CONST_EMPTY_PROXY_ERROR
+}
+
+const CONST_EMPTY_PROXY = constant(EMPTY_PROXY);
+
+export function mutation<T extends Node>(result: T): MutationNode<T>;
+export function mutation<T extends Node, V extends VariablesNode>(result: T, variables: V): MutationNode<T,  V>;
+export function mutation<T extends Node, V extends VariablesNode = {}>(result: T, variables: V = D.EMPTY_VARIABLES): MutationNode<T,  V> {
+	const node = D.mutation(result, variables);
+	return {
+		...node,
+		data: CONST_EMPTY_PROXY,
+		store: CONST_EMPTY_PROXY as Reader<CacheDependencies, StoreProxy<any>>
+	};
 }
 
 function printVariables<V extends VariablesNode>(variables: V): string {

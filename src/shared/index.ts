@@ -1,5 +1,5 @@
 import { constant, Lazy } from 'fp-ts/lib/function'
-import { Option } from 'fp-ts/lib/Option'
+import { Option, Some } from 'fp-ts/lib/Option'
 
 export function isEmptyObject(obj: object): obj is {} {
 	return Object.keys(obj).length === 0
@@ -17,14 +17,18 @@ export function once<T>(fn: Lazy<T>): Lazy<T> {
 	}
 }
 
-export function isEmptyString(str: string) {
-	return str === ''
+export function isEmptyString(x: any) {
+	return x === ''
 }
 
 export const constEmptyString = constant('')
 
 export interface Ref<T> {
 	value: Option<T>
+}
+
+export interface SomeRef<T> {
+	value: Some<T>
 }
 
 export function isFunction(u: unknown): u is Function {

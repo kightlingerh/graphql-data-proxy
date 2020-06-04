@@ -78,20 +78,7 @@ export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, 
 	readonly members: T
 }
 
-export interface SchemaNode<N extends string, T extends { [K in keyof T]: Node }>
-	extends DocumentNode<
-		{ [K in keyof T]: ExtractModelType<T[K]> },
-		Partial<{ [K in keyof T]: ExtractModelType<T[K]> }>,
-		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }>,
-		{},
-		{} & Intersection<
-			Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
-		>
-	> {
-	readonly __typename: N
-	readonly tag: 'Schema'
-	readonly members: T
-}
+export interface SchemaNode<N extends string, T extends { [K in keyof T]: Node }> extends TypeNode<N, T> {}
 
 export type WrappedNode<T extends Node> =
 	| ArrayNode<T, any>
@@ -416,7 +403,7 @@ function printTypeNodeMembers(members: { [K: string]: Node }): Lazy<string> {
 				tokens.push(printVariablesNode(value.variables.definition))
 			}
 			const val = value.print()
-			tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [COLON, OPEN_SPACE, val, OPEN_SPACE]))
+			tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [OPEN_SPACE, val, OPEN_SPACE]))
 		}
 		tokens.push(CLOSE_BRACKET)
 		return tokens.join('')
@@ -448,7 +435,7 @@ export function schema<N extends string, T extends { [K in keyof T]: Node }>(
 	const models = extractTypeMemberModels(members) as any
 	return {
 		__typename,
-		tag: 'Schema',
+		tag: 'Type',
 		members,
 		variables: {
 			children: extractTypeChildrenVariables(members),
@@ -461,6 +448,10 @@ export function schema<N extends string, T extends { [K in keyof T]: Node }>(
 			partial: M.partial(models)
 		}
 	}
+}
+
+export function isSchemaNode(u: Node): u is SchemaNode<any, any> {
+	return isTypeNode(u) && isEmptyObject(u.variables.definition);
 }
 
 export function map<K extends Node, T extends Node>(key: K, value: T): MapNode<K, T, {}>
@@ -704,4 +695,30 @@ export function scalar<N extends string, T, V extends VariablesNode = {}>(
 
 export function isScalarNode(x: Node): x is ScalarNode<string, any> {
 	return x.tag === 'Scalar'
+}
+
+export function mutation<T extends Node>(node: T): MutationNode<T>
+export function mutation<T extends Node, V extends VariablesNode>(node: T, variables: V): MutationNode<T, V>
+export function mutation<T extends Node, V extends VariablesNode = {}>(
+	node: T,
+	variables: V = EMPTY_VARIABLES
+): MutationNode<T, V> {
+	return {
+		tag: 'Mutation',
+		result: node,
+		model: {
+			whole: node.model.whole as ExtractModelType<T>,
+			partial: node.model.partial as ExtractPartialModelType<T>
+		},
+		variables: {
+			children: mergeVariablesDefinitionWithChildren(node),
+			model: getVariablesModel(variables),
+			definition: variables
+		},
+		print: node.print
+	}
+}
+
+export function isMutationNode(u: Node): u is MutationNode<any, any> {
+	return u.tag === 'Mutation';
 }
