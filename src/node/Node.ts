@@ -314,7 +314,10 @@ class LiteralProxy<T, V extends VariablesNode = {}> implements DataProxy<D.Docum
 export function number(): NumberNode
 export function number<V extends VariablesNode>(variables: V): NumberNode<V>
 export function number<V extends VariablesNode>(variables: V, precision?: D.NumberPrecision): NumberNode<V>
-export function number<V extends VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES, precision?: D.NumberPrecision): NumberNode<V> {
+export function number<V extends VariablesNode = {}>(
+	variables: V = D.EMPTY_VARIABLES,
+	precision?: D.NumberPrecision
+): NumberNode<V> {
 	const node = D.number(variables, precision)
 	const data = (deps: DataProxyDependencies<D.NumberNode<V>>) => new LiteralProxy({ ...deps, node })
 	return {
@@ -324,7 +327,11 @@ export function number<V extends VariablesNode = {}>(variables: V = D.EMPTY_VARI
 	}
 }
 
-export const staticNumber = number()
+export const staticNumber = number();
+
+export const staticFloat = number({}, 'Float');
+
+export const staticInt = number({}, 'Int');
 
 export function string(): StringNode
 export function string<V extends VariablesNode>(variables: V): StringNode<V>
@@ -952,7 +959,7 @@ function printVariableName(node: Node, isOptional: boolean = false): string {
 		case 'String':
 			return `${node.tag}${optionalString}`
 		case 'Number':
-			return `${node.precision}${optionalString}`;
+			return `${node.precision}${optionalString}`
 		case 'Scalar':
 			return `${node.name}${optionalString}`
 		case 'Type':

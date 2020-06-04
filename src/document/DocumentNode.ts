@@ -259,7 +259,10 @@ export const EMPTY_VARIABLES: any = {}
 export function number(): NumberNode
 export function number<V extends VariablesNode>(variables: V): NumberNode<V>
 export function number<V extends VariablesNode>(variables: V, precision?: NumberPrecision): NumberNode<V>
-export function number<V extends VariablesNode = {}>(variables: V = EMPTY_VARIABLES, precision: NumberPrecision = 'Float'): NumberNode<V> {
+export function number<V extends VariablesNode = {}>(
+	variables: V = EMPTY_VARIABLES,
+	precision: NumberPrecision = 'Float'
+): NumberNode<V> {
 	return {
 		tag: 'Number',
 		precision,
