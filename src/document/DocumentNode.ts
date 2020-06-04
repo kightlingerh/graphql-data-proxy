@@ -140,8 +140,8 @@ export interface OptionNode<T extends Node, V extends VariablesNode = {}>
 
 export interface SumNode<T extends { [K in keyof T]: TypeNode<any, any, any> }, V extends VariablesNode = {}>
 	extends DocumentNode<
-		{ [K in keyof T]: ExtractModelType<T[K]> }[keyof T],
-		{ [K in keyof T]: ExtractPartialModelType<T[K]> }[keyof T],
+		{ [K in keyof T]: ExtractModelType<T[K]> & { __typename: T[K]['__typename'] } }[keyof T],
+		{ [K in keyof T]: ExtractPartialModelType<T[K]> & { __typename: T[K]['__typename'] } }[keyof T],
 		Ref<{ [K in keyof T]: ExtractRefType<T[K]> }[keyof T]>,
 		V,
 		{} & Intersection<
@@ -575,7 +575,7 @@ export function isSumNode(x: Node): x is SumNode<any, any> {
 
 function getSumModel<T extends { [K in keyof T]: TypeNode<string, any> }>(
 	members: T
-): M.Model<{ [K in keyof T]: ExtractModelType<T[K]> }[keyof T]> {
+): M.Model<{ [K in keyof T]: ExtractModelType<T[K]> & { __typename: T[K]['__typename'] } }[keyof T]> {
 	const m: any = {}
 	Object.keys(m).forEach((key) => {
 		const sumNode = members[key as keyof T]
@@ -589,7 +589,7 @@ function getSumModel<T extends { [K in keyof T]: TypeNode<string, any> }>(
 
 function getSumPartialModel<T extends { [K in keyof T]: TypeNode<string, any> }>(
 	members: T
-): M.Model<{ [K in keyof T]: ExtractPartialModelType<T[K]> }[keyof T]> {
+): M.Model<{ [K in keyof T]: ExtractPartialModelType<T[K]> & { __typename: T[K]['__typename'] } }[keyof T]> {
 	const m: any = {}
 	Object.keys(m).forEach((key) => {
 		const sumNode = members[key as keyof T]

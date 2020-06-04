@@ -327,11 +327,11 @@ export function number<V extends VariablesNode = {}>(
 	}
 }
 
-export const staticNumber = number();
+export const staticNumber = number()
 
-export const staticFloat = number({}, 'Float');
+export const staticFloat = number({}, 'Float')
 
-export const staticInt = number({}, 'Int');
+export const staticInt = number({}, 'Int')
 
 export function string(): StringNode
 export function string<V extends VariablesNode>(variables: V): StringNode<V>
