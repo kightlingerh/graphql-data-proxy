@@ -268,7 +268,7 @@ export function sum<T extends string>(
 	tag: T
 ): <A>(members: { [K in keyof A]: Model<A[K] & Record<T, K>> }) => Model<A[keyof A]> {
 	return (members) => {
-		const equals = (a: any, b: any): boolean => {
+		const equals = (a: unknown, b: unknown): boolean => {
 			for (const key in members) {
 				const m = members[key]
 				if (m.is(a) && m.is(b)) {
