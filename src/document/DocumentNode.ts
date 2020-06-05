@@ -49,7 +49,7 @@ export type Node =
 	| ScalarNode<string, any, any>
 	| MutationNode<any, any>
 
-export type PrimitiveNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
+export type PrimitiveNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | IntNode<V> | FloatNode<V>
 
 export interface StringNode<V extends VariablesNode = {}> extends DocumentNode<string, string, Ref<string>, V> {
 	readonly tag: 'String'
@@ -59,11 +59,12 @@ export interface BooleanNode<V extends VariablesNode = {}> extends DocumentNode<
 	readonly tag: 'Boolean'
 }
 
-export type NumberPrecision = 'Float' | 'Int'
+export interface IntNode<V extends VariablesNode = {}> extends DocumentNode<number, number, Ref<number>, V> {
+	readonly tag: 'Int'
+}
 
-export interface NumberNode<V extends VariablesNode = {}> extends DocumentNode<number, number, Ref<number>, V> {
-	readonly tag: 'Number'
-	readonly precision: NumberPrecision
+export interface FloatNode<V extends VariablesNode = {}> extends DocumentNode<number, number, Ref<number>, V> {
+	readonly tag: 'Float'
 }
 
 export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, V extends VariablesNode = {}>
@@ -207,7 +208,8 @@ export const showNode: Show<Node> = {
 	show: (node) => {
 		switch (node.tag) {
 			case 'Boolean':
-			case 'Number':
+			case 'Int':
+			case 'Float':
 			case 'String':
 				return node.tag
 			case 'Scalar':
@@ -256,16 +258,13 @@ export function getVariablesModel<V extends VariablesNode>(
 
 export const EMPTY_VARIABLES: any = {}
 
-export function number(): NumberNode
-export function number<V extends VariablesNode>(variables: V): NumberNode<V>
-export function number<V extends VariablesNode>(variables: V, precision?: NumberPrecision): NumberNode<V>
-export function number<V extends VariablesNode = {}>(
+export function int(): IntNode
+export function int<V extends VariablesNode>(variables: V): IntNode<V>
+export function int<V extends VariablesNode = {}>(
 	variables: V = EMPTY_VARIABLES,
-	precision: NumberPrecision = 'Float'
-): NumberNode<V> {
+): IntNode<V> {
 	return {
-		tag: 'Number',
-		precision,
+		tag: 'Int',
 		print: constEmptyString,
 		variables: {
 			children: EMPTY_VARIABLES,
@@ -279,10 +278,32 @@ export function number<V extends VariablesNode = {}>(
 	}
 }
 
-export const staticNumber = number()
+export function isIntNode(u: Node): u is IntNode<any> {
+	return u.tag === 'Int'
+}
 
-export function isNumberNode(u: Node): u is NumberNode {
-	return u.tag === 'Number'
+export function float(): FloatNode
+export function float<V extends VariablesNode>(variables: V): FloatNode<V>
+export function float<V extends VariablesNode = {}>(
+	variables: V = EMPTY_VARIABLES,
+): FloatNode<V> {
+	return {
+		tag: 'Float',
+		print: constEmptyString,
+		variables: {
+			children: EMPTY_VARIABLES,
+			definition: variables,
+			model: getVariablesModel(variables)
+		},
+		model: {
+			whole: M.number,
+			partial: M.number
+		}
+	}
+}
+
+export function isFloatNode(u: Node): u is FloatNode<any> {
+	return u.tag === 'Float'
 }
 
 export function string(): StringNode
@@ -302,8 +323,6 @@ export function string<V extends VariablesNode = {}>(variables: V = EMPTY_VARIAB
 		}
 	}
 }
-
-export const staticString = string()
 
 export function isStringNode(u: Node): u is StringNode {
 	return u.tag === 'String'
@@ -327,14 +346,12 @@ export function boolean<V extends VariablesNode = {}>(variables: V = EMPTY_VARIA
 	}
 }
 
-export const staticBoolean = boolean()
-
 export function isBooleanNode(u: Node): u is BooleanNode {
 	return u.tag === 'Boolean'
 }
 
 export function isPrimitiveNode(u: Node): u is PrimitiveNode {
-	return isNumberNode(u) || isStringNode(u) || isBooleanNode(u)
+	return isIntNode(u) || isFloatNode(u) || isStringNode(u) || isBooleanNode(u)
 }
 
 export function type<N extends string, T extends { [K in keyof T]: Node }>(__typename: N, members: T): TypeNode<N, T>

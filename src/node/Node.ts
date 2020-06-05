@@ -47,13 +47,15 @@ export type Node =
 	| ScalarNode<any, any, any>
 	| MutationNode<any, any>
 
-export type PrimitiveNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | NumberNode<V>
+export type PrimitiveNode<V extends VariablesNode = {}> = StringNode<V> | BooleanNode<V> | FloatNode<V> | IntNode<V>
 
 export interface StringNode<V extends VariablesNode = {}> extends MergeProxy<D.StringNode<V>> {}
 
 export interface BooleanNode<V extends VariablesNode = {}> extends MergeProxy<D.BooleanNode<V>> {}
 
-export interface NumberNode<V extends VariablesNode = {}> extends MergeProxy<D.NumberNode<V>> {}
+export interface IntNode<V extends VariablesNode = {}> extends MergeProxy<D.IntNode<V>> {}
+
+export interface FloatNode<V extends VariablesNode = {}> extends MergeProxy<D.FloatNode<V>> {}
 
 export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, V extends VariablesNode = {}>
 	extends MergeProxy<D.TypeNode<N, T, V>> {}
@@ -311,15 +313,13 @@ class LiteralProxy<T, V extends VariablesNode = {}> implements DataProxy<D.Docum
 	}
 }
 
-export function number(): NumberNode
-export function number<V extends VariablesNode>(variables: V): NumberNode<V>
-export function number<V extends VariablesNode>(variables: V, precision?: D.NumberPrecision): NumberNode<V>
-export function number<V extends VariablesNode = {}>(
+export function int(): IntNode
+export function int<V extends VariablesNode>(variables: V): IntNode<V>
+export function int<V extends VariablesNode = {}>(
 	variables: V = D.EMPTY_VARIABLES,
-	precision?: D.NumberPrecision
-): NumberNode<V> {
-	const node = D.number(variables, precision)
-	const data = (deps: DataProxyDependencies<D.NumberNode<V>>) => new LiteralProxy({ ...deps, node })
+): IntNode<V> {
+	const node = D.int(variables)
+	const data = (deps: DataProxyDependencies<D.IntNode<V>>) => new LiteralProxy({ ...deps, node })
 	return {
 		...node,
 		data,
@@ -327,11 +327,24 @@ export function number<V extends VariablesNode = {}>(
 	}
 }
 
-export const staticNumber = number()
 
-export const staticFloat = number({}, 'Float')
+export const staticInt = int();
 
-export const staticInt = number({}, 'Int')
+export function float(): FloatNode
+export function float<V extends VariablesNode>(variables: V): FloatNode<V>
+export function float<V extends VariablesNode = {}>(
+	variables: V = D.EMPTY_VARIABLES,
+): FloatNode<V> {
+	const node = D.float(variables)
+	const data = (deps: DataProxyDependencies<D.FloatNode<V>>) => new LiteralProxy({ ...deps, node })
+	return {
+		...node,
+		data,
+		store: (deps) => (isEmptyObject(node.variables) ? data(deps) : new Store({ node, data, ...deps }))
+	}
+}
+
+export const staticFloat = float();
 
 export function string(): StringNode
 export function string<V extends VariablesNode>(variables: V): StringNode<V>
@@ -957,9 +970,9 @@ function printVariableName(node: Node, isOptional: boolean = false): string {
 			return printVariableName(node.wrapped, true)
 		case 'Boolean':
 		case 'String':
+		case 'Int':
+		case 'Float':
 			return `${node.tag}${optionalString}`
-		case 'Number':
-			return `${node.precision}${optionalString}`
 		case 'Scalar':
 			return `${node.name}${optionalString}`
 		case 'Type':
