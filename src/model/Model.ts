@@ -4,7 +4,7 @@ import { constant, constNull, flow, Lazy } from 'fp-ts/lib/function'
 import { pipe } from 'fp-ts/lib/pipeable'
 import { Tree } from 'fp-ts/lib/Tree'
 import * as C from 'io-ts/lib/Codec'
-import {DecodeError} from 'io-ts/lib/Decoder';
+import { DecodeError } from 'io-ts/lib/Decoder'
 import * as E from 'io-ts/lib/Encoder'
 import * as G from 'io-ts/lib/Guard'
 import * as O from 'fp-ts/lib/Option'
@@ -307,17 +307,17 @@ export function either<E, A>(left: Model<E>, right: Model<A>): Model<EITHER.Eith
 	return {
 		equals: EITHER.getEq(left, right).equals,
 		is: getEitherGuard(left, right).is,
-		decode: u => {
-			const l = left.decode(u);
+		decode: (u) => {
+			const l = left.decode(u)
 			if (EITHER.isRight(l)) {
 				return EITHER.right(EITHER.left(l.right))
 			}
-			const r = right.decode(u);
+			const r = right.decode(u)
 			if (EITHER.isRight(r)) {
 				return EITHER.right(r)
 			}
-			return EITHER.left([...l.left, ...r.left] as DecodeError);
+			return EITHER.left([...l.left, ...r.left] as DecodeError)
 		},
-		encode: a =>  EITHER.isRight(a) ? right.encode(a.right) : left.encode(a.left)
+		encode: (a) => (EITHER.isRight(a) ? right.encode(a.right) : left.encode(a.left))
 	}
 }

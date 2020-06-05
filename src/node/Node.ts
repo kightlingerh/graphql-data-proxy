@@ -315,9 +315,7 @@ class LiteralProxy<T, V extends VariablesNode = {}> implements DataProxy<D.Docum
 
 export function int(): IntNode
 export function int<V extends VariablesNode>(variables: V): IntNode<V>
-export function int<V extends VariablesNode = {}>(
-	variables: V = D.EMPTY_VARIABLES,
-): IntNode<V> {
+export function int<V extends VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES): IntNode<V> {
 	const node = D.int(variables)
 	const data = (deps: DataProxyDependencies<D.IntNode<V>>) => new LiteralProxy({ ...deps, node })
 	return {
@@ -327,14 +325,11 @@ export function int<V extends VariablesNode = {}>(
 	}
 }
 
-
-export const staticInt = int();
+export const staticInt = int()
 
 export function float(): FloatNode
 export function float<V extends VariablesNode>(variables: V): FloatNode<V>
-export function float<V extends VariablesNode = {}>(
-	variables: V = D.EMPTY_VARIABLES,
-): FloatNode<V> {
+export function float<V extends VariablesNode = {}>(variables: V = D.EMPTY_VARIABLES): FloatNode<V> {
 	const node = D.float(variables)
 	const data = (deps: DataProxyDependencies<D.FloatNode<V>>) => new LiteralProxy({ ...deps, node })
 	return {
@@ -344,7 +339,7 @@ export function float<V extends VariablesNode = {}>(
 	}
 }
 
-export const staticFloat = float();
+export const staticFloat = float()
 
 export function string(): StringNode
 export function string<V extends VariablesNode>(variables: V): StringNode<V>

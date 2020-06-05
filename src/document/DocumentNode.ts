@@ -260,9 +260,7 @@ export const EMPTY_VARIABLES: any = {}
 
 export function int(): IntNode
 export function int<V extends VariablesNode>(variables: V): IntNode<V>
-export function int<V extends VariablesNode = {}>(
-	variables: V = EMPTY_VARIABLES,
-): IntNode<V> {
+export function int<V extends VariablesNode = {}>(variables: V = EMPTY_VARIABLES): IntNode<V> {
 	return {
 		tag: 'Int',
 		print: constEmptyString,
@@ -284,9 +282,7 @@ export function isIntNode(u: Node): u is IntNode<any> {
 
 export function float(): FloatNode
 export function float<V extends VariablesNode>(variables: V): FloatNode<V>
-export function float<V extends VariablesNode = {}>(
-	variables: V = EMPTY_VARIABLES,
-): FloatNode<V> {
+export function float<V extends VariablesNode = {}>(variables: V = EMPTY_VARIABLES): FloatNode<V> {
 	return {
 		tag: 'Float',
 		print: constEmptyString,
