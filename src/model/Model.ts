@@ -308,16 +308,25 @@ export function either<E, A>(left: Model<E>, right: Model<A>): Model<EITHER.Eith
 		equals: EITHER.getEq(left, right).equals,
 		is: getEitherGuard(left, right).is,
 		decode: (u) => {
-			const l = left.decode(u)
-			if (EITHER.isRight(l)) {
-				return EITHER.right(EITHER.left(l.right))
-			}
 			const r = right.decode(u)
 			if (EITHER.isRight(r)) {
 				return EITHER.right(r)
+			}
+			const l = left.decode(u)
+			if (EITHER.isRight(l)) {
+				return EITHER.right(EITHER.left(l.right))
 			}
 			return EITHER.left([...l.left, ...r.left] as DecodeError)
 		},
 		encode: (a) => (EITHER.isRight(a) ? right.encode(a.right) : left.encode(a.left))
 	}
+}
+
+export function tuple<A extends ReadonlyArray<unknown>>(...models: { [K in keyof A]: Model<A[K]> }): Model<A> {
+	return {
+		equals: EQ.getTupleEq(...models).equals,
+		is: G.tuple(...models).is,
+		decode: D.tuple(...models).decode,
+		encode: E.tuple(...models).encode,
+	} as any;
 }
