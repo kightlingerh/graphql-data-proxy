@@ -327,6 +327,6 @@ export function tuple<A extends ReadonlyArray<unknown>>(...models: { [K in keyof
 		equals: EQ.getTupleEq(...models).equals,
 		is: G.tuple(...models).is,
 		decode: D.tuple(...models).decode,
-		encode: E.tuple(...models).encode,
-	} as any;
+		encode: E.tuple(...models).encode
+	} as any
 }
