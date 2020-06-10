@@ -22,12 +22,10 @@ export interface Cache<R> {
 
 export interface RequestCache<R> extends Reader<R, Cache<R>> {}
 
-export function make<S extends N.SchemaNode<any, any>>(
-	c: S
-) {
+export function make<S extends N.SchemaNode<any, any>>(c: S) {
 	return (deps: CacheDependencies) => {
 		const store = c.store({ persist: deps.persist, ofRef: deps.ofRef, path: deps.id || 'root' })
-		return <R extends N.SchemaNode<any, any>>(r: R) =>  {
+		return <R extends N.SchemaNode<any, any>>(r: R) => {
 			const errors = validate(c, r)
 			if (isNonEmpty(errors)) {
 				return left<N.CacheError, Cache<R>>(errors)
@@ -43,6 +41,5 @@ export function make<S extends N.SchemaNode<any, any>>(
 				})
 			}
 		}
-
-	};
+	}
 }

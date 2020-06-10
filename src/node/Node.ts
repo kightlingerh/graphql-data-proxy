@@ -991,3 +991,32 @@ export function print<N extends string, T extends { [K in keyof T]: Node }>(
 		return tokens.join('')
 	})
 }
+
+export function pickFromType<
+	Name extends string,
+	T extends { [K in keyof T]: Node },
+	V extends VariablesNode,
+	P extends keyof T
+	>(node: TypeNode<Name, T, V>, ...keys: P[]): TypeNode<Name, Pick<T, P>, V> {
+	const n: any = {};
+	keys.forEach(k => {
+		n[k] = node.members[k]
+	});
+	return type(node.__typename, n, node.variables.definition)
+}
+
+export function omitFromType<
+	Name extends string,
+	T extends { [K in keyof T]: Node },
+	V extends VariablesNode,
+	P extends keyof T
+	>(node: TypeNode<Name, T, V>, ...keys: P[]): TypeNode<Name, Omit<T, P>, V> {
+	const n: any = {};
+	const members = node.members;
+	Object.keys(members).forEach(k => {
+		if (!keys.includes(k as P)) {
+			n[k] = members[k as keyof T]
+		}
+	})
+	return type(node.__typename, n, node.variables.definition)
+}
