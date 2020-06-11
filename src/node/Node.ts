@@ -43,11 +43,11 @@ import {
 
 export type TypeOf<T> = ExtractModelType<T>
 
-export type TypeOfVariables<T> = T extends Node ? M.TypeOf<T['variables']['model']> : never
+export type TypeOfVariables<T> = ExtractVariablesType<T>
 
-export type TypeOfChildrenVariables<T> = T extends Node ? ExtractDefinitionType<T['variables']['children']> : never
+export type TypeOfChildrenVariables<T> = ExtractChildrenVariablesType<T>
 
-export type TypeOfMergedVariables<T> = T extends Node ? TypeOfVariables<T> & TypeOfChildrenVariables<T> : never
+export type TypeOfMergedVariables<T> = TypeOfVariables<T> & TypeOfChildrenVariables<T>
 
 export type Node =
 	| PrimitiveNode<any>
