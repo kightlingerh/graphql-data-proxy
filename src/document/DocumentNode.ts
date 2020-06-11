@@ -1,7 +1,6 @@
-import { Lazy } from 'fp-ts/lib/function'
-import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
-import { Option } from 'fp-ts/lib/Option'
-import { Show } from 'fp-ts/lib/Show'
+import {Lazy} from 'fp-ts/lib/function'
+import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray'
+import {Option} from 'fp-ts/lib/Option'
 import * as M from '../model/Model'
 
 import {
@@ -202,50 +201,6 @@ export type ExtractVariablesDefinition<T> = T extends { readonly variables: Docu
 
 export type ExtractDefinitionType<V> = {
 	[K in keyof V]: ExtractModelType<V[K]>
-}
-
-export const showNode: Show<Node> = {
-	show: (node) => {
-		switch (node.tag) {
-			case 'Boolean':
-			case 'Int':
-			case 'Float':
-			case 'String':
-				return node.tag
-			case 'Scalar':
-				return `Scalar: ${node.name}`
-			case 'Map':
-				return `Map<${showNode.show(node.key)}, ${showNode.show(node.wrapped)}>`
-			case 'Option':
-				return `Option<${showNode.show(node.wrapped)}>`
-			case 'Array':
-				return `Array<${showNode.show(node.wrapped)}`
-			case 'NonEmptyArray':
-				return `NonEmptyArray<${showNode.show(node.wrapped)}`
-			case 'Sum':
-				return showSumNode.show(node)
-			case 'Type':
-				return showTypeNode.show(node)
-			default:
-				return node.tag
-		}
-	}
-}
-
-export const showSumNode: Show<SumNode<any>> = {
-	show: (node) =>
-		`{ ${Object.keys(node.members)
-			.map((k) => `${k}: ${node.members[k].__typename}`)
-			.join(', ')} }`
-}
-
-export const showTypeNode: Show<TypeNode<string, any, any>> = {
-	show: (node) =>
-		`{ ${Object.keys(node.members)
-			.map((k) =>
-				`${k}: ${node.members[k].tag} ${node.members[k].__typename || node.members[k].name || ''}`.trimEnd()
-			)
-			.join(', ')} }`
 }
 
 export const EMPTY_VARIABLES_MODEL = M.type({})

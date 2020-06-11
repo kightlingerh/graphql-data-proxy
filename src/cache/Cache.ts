@@ -2,7 +2,6 @@ import { isNonEmpty } from 'fp-ts/lib/Array'
 import { left, right } from 'fp-ts/lib/Either'
 import * as O from 'fp-ts/lib/Option'
 import { Reader } from 'fp-ts/lib/Reader'
-import * as D from '../document/DocumentNode'
 import { Ref } from '../shared'
 import * as N from '../node/Node'
 import { validate } from './validate'
@@ -14,10 +13,10 @@ export interface CacheDependencies {
 }
 
 export interface Cache<R> {
-	write(variables: N.TypeOfSchemaVariables<R>): Reader<D.ExtractPartialModelType<R>, N.CacheWriteResult>
-	read(variables: N.TypeOfSchemaVariables<R>): N.CacheResult<O.Option<D.ExtractModelType<R>>>
-	toRefs(variables: N.TypeOfSchemaVariables<R>): N.CacheResult<D.ExtractRefType<R>>
-	toRef(variables: N.TypeOfSchemaVariables<R>): N.CacheResult<Ref<D.ExtractModelType<R>>>
+	write(variables: N.TypeOfMergedVariables<R>): Reader<N.ExtractPartialModelType<R>, N.CacheWriteResult>
+	read(variables: N.TypeOfMergedVariables<R>): N.CacheResult<O.Option<N.ExtractModelType<R>>>
+	toRefs(variables: N.TypeOfMergedVariables<R>): N.CacheResult<N.ExtractRefsType<R>>
+	toRef(variables: N.TypeOfMergedVariables<R>): N.CacheResult<Ref<N.ExtractModelType<R>>>
 }
 
 export interface RequestCache<R> extends Reader<R, Cache<R>> {}
@@ -35,9 +34,9 @@ export function make<S extends N.SchemaNode<any, any>>(c: S) {
 				const toRefC = store.toRef(r)
 				return right<N.CacheError, Cache<R>>({
 					write: store.write,
-					read: (variables) => readC(variables) as N.CacheResult<O.Option<D.ExtractModelType<R>>>,
-					toRefs: (variables) => toRefsC(variables) as N.CacheResult<D.ExtractRefType<R>>,
-					toRef: (variables) => toRefC(variables) as N.CacheResult<Ref<D.ExtractModelType<R>>>
+					read: (variables) => readC(variables) as N.CacheResult<O.Option<N.ExtractModelType<R>>>,
+					toRefs: (variables) => toRefsC(variables) as N.CacheResult<N.ExtractRefsType<R>>,
+					toRef: (variables) => toRefC(variables) as N.CacheResult<Ref<N.ExtractModelType<R>>>
 				})
 			}
 		}
