@@ -39,6 +39,6 @@ export const FantasyPlayer = N.schema('FantasyPlayer', {
 	statistics: FantasyPlayerStatisticsMap,
 	personalInfo: FantasyPlayerPersonalInfo,
 	fantasyInfo: FantasyPlayerFantasyInfo
-});
+})
 
 type MergedVariables = N.TypeOfMergedVariables<typeof FantasyPlayer>

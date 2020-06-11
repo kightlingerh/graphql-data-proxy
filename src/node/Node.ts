@@ -1,22 +1,22 @@
-import {sequenceT} from 'fp-ts/lib/Apply'
+import { sequenceT } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
-import {isNonEmpty} from 'fp-ts/lib/Array'
-import {constant, Lazy} from 'fp-ts/lib/function'
-import {IO} from 'fp-ts/lib/IO'
+import { isNonEmpty } from 'fp-ts/lib/Array'
+import { constant, Lazy } from 'fp-ts/lib/function'
+import { IO } from 'fp-ts/lib/IO'
 import * as MAP from 'fp-ts/lib/Map'
-import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray'
+import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import {Option} from 'fp-ts/lib/Option'
-import {fromCompare} from 'fp-ts/lib/Ord'
-import {pipe} from 'fp-ts/lib/pipeable'
-import {Reader} from 'fp-ts/lib/Reader'
-import {sequence, traverseWithIndex} from 'fp-ts/lib/Record'
-import {Show} from 'fp-ts/lib/Show';
+import { Option } from 'fp-ts/lib/Option'
+import { fromCompare } from 'fp-ts/lib/Ord'
+import { pipe } from 'fp-ts/lib/pipeable'
+import { Reader } from 'fp-ts/lib/Reader'
+import { sequence, traverseWithIndex } from 'fp-ts/lib/Record'
+import { Show } from 'fp-ts/lib/Show'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
-import {Tree} from 'fp-ts/lib/Tree'
-import {tree} from 'io-ts/lib/Decoder'
-import {VariablesNode} from '../document';
+import { Tree } from 'fp-ts/lib/Tree'
+import { tree } from 'io-ts/lib/Decoder'
+import { VariablesNode } from '../document'
 import * as M from '../model/Model'
 import {
 	cacheErrorApplicativeValidation,
@@ -475,7 +475,6 @@ export function isIntNode(u: Node): u is IntNode<any> {
 	return u.tag === 'Int'
 }
 
-
 export const staticInt = int()
 
 export function float(): FloatNode
@@ -490,7 +489,6 @@ export function float<V extends VariablesDefinition = {}>(variables: V = EMPTY_V
 export function isFloatNode(u: Node): u is FloatNode<any> {
 	return u.tag === 'Float'
 }
-
 
 export const staticFloat = float()
 
@@ -528,7 +526,6 @@ export const staticString = string()
 export function isStringNode(u: Node): u is StringNode {
 	return u.tag === 'String'
 }
-
 
 export function boolean(): BooleanNode
 export function boolean<V extends VariablesDefinition>(variables: V): BooleanNode<V>
@@ -569,7 +566,6 @@ export function isPrimitiveNode(u: Node): u is PrimitiveNode {
 	return isIntNode(u) || isFloatNode(u) || isStringNode(u) || isBooleanNode(u)
 }
 
-
 export function scalar<N extends string, T>(name: N, model: M.Model<T>): ScalarNode<N, T>
 export function scalar<N extends string, T, V extends VariablesDefinition>(
 	name: N,
@@ -600,7 +596,7 @@ export function scalar<N extends string, T, V extends VariablesDefinition = {}>(
 				? node.data({ ...deps, node: deps.node || node })
 				: new Store({ ...deps, data: node.data, node: deps.node || node })
 	}
-	return node;
+	return node
 }
 
 export function isScalarNode(x: Node): x is ScalarNode<string, any> {
@@ -623,18 +619,12 @@ abstract class BaseProxy<T extends NodeBase<any, any, any, any, any>> implements
 		selection: unknown
 	): Reader<ExtractChildrenVariablesType<T>, CacheResult<O.Option<ExtractModelType<T>>>>
 
-	abstract toRefs(
-		selection: unknown
-	): Reader<ExtractChildrenVariablesType<T>, CacheResult<ExtractRefsType<T>>>
+	abstract toRefs(selection: unknown): Reader<ExtractChildrenVariablesType<T>, CacheResult<ExtractRefsType<T>>>
 
-	abstract write(
-		variables: ExtractChildrenVariablesType<T>
-	): Reader<ExtractPartialModelType<T>, CacheWriteResult>
+	abstract write(variables: ExtractChildrenVariablesType<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult>
 
 	toRef(selection: unknown) {
-		return (
-			variables: ExtractChildrenVariablesType<T>
-		): CacheResult<Ref<ExtractModelType<T>>> => {
+		return (variables: ExtractChildrenVariablesType<T>): CacheResult<Ref<ExtractModelType<T>>> => {
 			return pipe(
 				variables,
 				this.read(selection),
@@ -651,9 +641,7 @@ class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
 		this.proxy = this.getProxy()
 	}
 	read<Selection extends TypeNode<any, any, any>>(selection: Selection) {
-		return (
-			variables: ExtractChildrenVariablesType<T>
-		): CacheResult<O.Option<ExtractModelType<T>>> => {
+		return (variables: ExtractChildrenVariablesType<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return pipe(
 				selection.members as Record<keyof T, any>,
 				recordTraverse((k, _) => this.proxy[k as keyof T].read(selection.members[k])(variables as any)),
@@ -662,9 +650,7 @@ class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
 		}
 	}
 
-	write(
-		variables: ExtractChildrenVariablesType<T>
-	): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
+	write(variables: ExtractChildrenVariablesType<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
 		return (data) => {
 			let proxyWrite: CacheWriteResult = cacheWriteResultMonoid.empty
 			for (const key in data) {
@@ -678,9 +664,7 @@ class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
 	}
 
 	toRefs<Selection extends TypeNode<any, any, any>>(selection: Selection) {
-		return (
-			variables: ExtractChildrenVariablesType<T>
-		): CacheResult<ExtractRefsType<T>> => {
+		return (variables: ExtractChildrenVariablesType<T>): CacheResult<ExtractRefsType<T>> => {
 			return pipe(
 				selection as Record<keyof T, any>,
 				recordTraverse((k, _) => this.proxy[k as keyof T].toRefs(selection.members[k])(variables as any)),
@@ -743,7 +727,6 @@ export function isTypeNode(u: Node): u is TypeNode<any, any, any> {
 	return u.tag === 'Type'
 }
 
-
 function extractTypeChildrenVariables<T extends { [K in keyof T]: Node }>(
 	members: T
 ): {} & Intersection<
@@ -794,7 +777,6 @@ export function printVariablesNode<V extends VariablesNode>(variables: V): strin
 	return tokens.join('')
 }
 
-
 function printTypeNodeMembers(members: { [K: string]: Node }): Lazy<string> {
 	return once(() => {
 		const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE]
@@ -821,7 +803,6 @@ export function schema<N extends string, T extends { [K in keyof T]: Node }>(
 export function isSchemaNode(u: Node): u is SchemaNode<any, any> {
 	return isTypeNode(u) && isEmptyObject(u.variables.definition)
 }
-
 
 const withMap = MAP.getWitherable(fromCompare(constant(0)))
 
@@ -914,7 +895,6 @@ function mergeVariablesDefinitionWithChildren<T extends Node>(
 	}
 	return x
 }
-
 
 export function map<K extends Node, T extends Node>(key: K, value: T): MapNode<K, T>
 export function map<K extends Node, T extends Node, V extends VariablesDefinition>(
@@ -1037,7 +1017,7 @@ export function array<T extends Node, V extends VariablesDefinition = {}>(
 				? node.data({ ...deps, node: deps.node || node })
 				: new Store({ ...deps, data: node.data, node: deps.node || node })
 	}
-	return node;
+	return node
 }
 
 export function isArrayNode(u: Node): u is ArrayNode<any> {
@@ -1149,7 +1129,6 @@ function printSumNode<T extends { [K in keyof T]: TypeNode<string, any> }>(membe
 	})
 }
 
-
 export function sum<T extends { [K in keyof T]: TypeNode<any, any, any> }>(members: T): SumNode<T>
 export function sum<T extends { [K in keyof T]: TypeNode<any, any, any> }, V extends VariablesDefinition>(
 	members: T,
@@ -1178,7 +1157,7 @@ export function sum<T extends { [K in keyof T]: TypeNode<any, any, any> }, V ext
 				? node.data({ ...deps, node: deps.node || node })
 				: new Store({ ...deps, data: node.data, node: deps.node || node })
 	}
-	return node;
+	return node
 }
 
 export function isSumNode(x: Node): x is SumNode<any, any> {
@@ -1272,20 +1251,18 @@ export function option<T extends Node, V extends VariablesDefinition = {}>(
 			definition: variables
 		},
 		print: wrapped.print,
-		data: deps => new OptionProxy({ ...deps, node }),
+		data: (deps) => new OptionProxy({ ...deps, node }),
 		store: (deps) =>
 			isEmptyObject(variables)
 				? node.data({ ...deps, node: deps.node || node })
 				: new Store({ ...deps, data: node.data, node: deps.node || node })
-
 	}
-	return node;
+	return node
 }
 
 export function isOptionNode(u: Node): u is OptionNode<any> {
 	return u.tag === 'Option'
 }
-
 
 class NonEmptyArrayProxy<T extends NonEmptyArrayNode<any, any>> extends BaseProxy<T> {
 	proxy: StoreProxyFromNode<T['wrapped']>[] = []
@@ -1371,14 +1348,13 @@ export function nonEmptyArray<T extends Node, V extends VariablesDefinition = {}
 			model: getVariablesModel(variables)
 		},
 		print: wrapped.print,
-		data: deps => new NonEmptyArrayProxy({ ...deps, node }),
+		data: (deps) => new NonEmptyArrayProxy({ ...deps, node }),
 		store: (deps) =>
 			isEmptyObject(variables)
 				? node.data({ ...deps, node: deps.node || node })
 				: new Store({ ...deps, data: node.data, node: deps.node || node })
-
 	}
-	return node;
+	return node
 }
 
 export function isNonEmptyArrayNode(u: Node): u is NonEmptyArrayNode<any, any> {
@@ -1425,7 +1401,7 @@ export function mutation<T extends Node, V extends VariablesDefinition = {}>(
 		data: CONST_EMPTY_PROXY,
 		store: CONST_EMPTY_PROXY
 	}
-	return node;
+	return node
 }
 
 export function isMutationNode(u: Node): u is MutationNode<any, any> {

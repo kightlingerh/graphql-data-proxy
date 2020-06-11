@@ -1,7 +1,7 @@
-import {isNonEmpty} from 'fp-ts/lib/Array'
-import {Tree} from 'fp-ts/lib/Tree'
-import {tree} from 'io-ts/lib/Decoder'
-import * as N from '../node';
+import { isNonEmpty } from 'fp-ts/lib/Array'
+import { Tree } from 'fp-ts/lib/Tree'
+import { tree } from 'io-ts/lib/Decoder'
+import * as N from '../node'
 
 const VALIDATIONS: WeakMap<N.SchemaNode<any, any>, WeakMap<N.SchemaNode<any, any>, Array<Tree<string>>>> = new WeakMap()
 
