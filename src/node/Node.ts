@@ -16,7 +16,6 @@ import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { Tree } from 'fp-ts/lib/Tree'
 import { tree } from 'io-ts/lib/Decoder'
-import { VariablesNode } from '../document'
 import * as M from '../model/Model'
 import {
 	cacheErrorApplicativeValidation,
@@ -763,7 +762,7 @@ function extractTypeMemberModels<T extends { [K in keyof T]: Node }>(members: T)
 	return x
 }
 
-export function printVariablesNode<V extends VariablesNode>(variables: V): string {
+export function printVariablesNode<V extends VariablesDefinition>(variables: V): string {
 	const tokens: string[] = [OPEN_PAREN]
 	const keys = Object.keys(variables)
 	const length = keys.length
