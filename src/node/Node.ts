@@ -1,12 +1,10 @@
 import { sequenceT } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
-import { isNonEmpty } from 'fp-ts/lib/Array'
 import { constant, Lazy } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
 import * as MAP from 'fp-ts/lib/Map'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import { Option } from 'fp-ts/lib/Option'
 import { fromCompare } from 'fp-ts/lib/Ord'
 import { pipe } from 'fp-ts/lib/pipeable'
 import { Reader } from 'fp-ts/lib/Reader'
@@ -42,9 +40,9 @@ import {
 
 export type TypeOf<T> = ExtractModelType<T>
 
-export type TypeOfVariables<T> = ExtractVariablesType<T>
+export type TypeOfVariables<T> = ExtractDefinitionType<ExtractVariablesDefinition<T>>
 
-export type TypeOfChildrenVariables<T> = ExtractChildrenVariablesType<T>
+export type TypeOfChildrenVariables<T> = ExtractDefinitionType<ExtractChildrenVariablesDefinition<T>>
 
 export type TypeOfMergedVariables<T> = TypeOfVariables<T> & TypeOfChildrenVariables<T>
 
@@ -131,9 +129,9 @@ export interface MapNode<K extends Node, T extends Node, V extends VariablesDefi
 
 export interface OptionNode<T extends Node, V extends VariablesDefinition = {}>
 	extends NodeBaseWithProxy<
-		Option<ExtractModelType<T>>,
-		Option<ExtractPartialModelType<T>>,
-		Ref<Option<ExtractRefsType<T>>>,
+		O.Option<ExtractModelType<T>>,
+		O.Option<ExtractPartialModelType<T>>,
+		Ref<O.Option<ExtractRefsType<T>>>,
 		V,
 		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
 	> {
@@ -264,17 +262,13 @@ export type ExtractModelType<T> = T extends { readonly model: NodeModel<infer A,
 
 export type ExtractPartialModelType<T> = T extends { readonly model: NodeModel<any, infer A, any> } ? A : never
 
-export type ExtractChildrenVariablesType<T> = ExtractDefinitionType<ExtractChildrenVariablesDefinition<T>>
-
 export type ExtractChildrenVariablesDefinition<T> = T extends { readonly variables: NodeVariables<any, infer A> }
 	? A
 	: never
 
-export type Values<T> = T[keyof T]
+type Values<T> = T[keyof T]
 
-export type Intersection<T> = (T extends unknown ? (x: T) => 0 : never) extends (x: infer R) => 0 ? R : never
-
-export type ExtractVariablesType<T> = ExtractDefinitionType<ExtractVariablesDefinition<T>>
+type Intersection<T> = (T extends unknown ? (x: T) => 0 : never) extends (x: infer R) => 0 ? R : never
 
 export type ExtractVariablesDefinition<T> = T extends { readonly variables: NodeVariables<infer A, any> } ? A : never
 
@@ -291,14 +285,14 @@ export interface Evict extends T.Task<void> {}
 export interface CacheError extends NonEmptyArray<Tree<string>> {}
 
 type DataProxyFromNode<T extends NodeBase<any, any, any, any, any>> = Proxy<
-	ExtractChildrenVariablesType<T>,
+	TypeOfChildrenVariables<T>,
 	ExtractModelType<T>,
 	ExtractPartialModelType<T>,
 	ExtractRefsType<T>
 >
 
 type StoreProxyFromNode<T extends NodeBase<any, any, any, any, any>> = Proxy<
-	ExtractChildrenVariablesType<T> & ExtractVariablesType<T>,
+	TypeOfChildrenVariables<T> & TypeOfVariables<T>,
 	ExtractModelType<T>,
 	ExtractPartialModelType<T>,
 	ExtractRefsType<T>
@@ -334,30 +328,26 @@ class Store<T extends NodeBase<any, any, any, any, any>> implements StoreProxyFr
 
 	read<Selection extends Node>(selection: Selection) {
 		return (
-			variables: ExtractChildrenVariablesType<T> & ExtractVariablesType<T>
+			variables: TypeOfChildrenVariables<T> & TypeOfVariables<T>
 		): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return this.extractProxy(this.encodeVariables(variables)).read(selection)(variables)
 		}
 	}
 
 	write(
-		variables: ExtractChildrenVariablesType<T> & ExtractVariablesType<T>
+		variables: TypeOfChildrenVariables<T> & TypeOfVariables<T>
 	): Reader<ExtractPartialModelType<T>, CacheResult<Evict>> {
 		return this.extractProxy(this.encodeVariables(variables)).write(variables)
 	}
 
 	toRef<Selection extends Node>(selection: Selection) {
-		return (
-			variables: ExtractChildrenVariablesType<T> & ExtractVariablesType<T>
-		): CacheResult<Ref<ExtractModelType<T>>> => {
+		return (variables: TypeOfChildrenVariables<T> & TypeOfVariables<T>): CacheResult<Ref<ExtractModelType<T>>> => {
 			return this.extractProxy(this.encodeVariables(variables)).toRef(selection)(variables)
 		}
 	}
 
 	toRefs<Selection extends Node>(selection: Selection) {
-		return (
-			variables: ExtractChildrenVariablesType<T> & ExtractVariablesType<T>
-		): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T> & TypeOfVariables<T>): CacheResult<ExtractRefsType<T>> => {
 			return this.extractProxy(this.encodeVariables(variables)).toRefs(selection)(variables)
 		}
 	}
@@ -380,7 +370,7 @@ class Store<T extends NodeBase<any, any, any, any, any>> implements StoreProxyFr
 		})
 	}
 
-	protected encodeVariables(variables: ExtractChildrenVariablesType<T> & ExtractVariablesType<T>): unknown {
+	protected encodeVariables(variables: TypeOfChildrenVariables<T> & TypeOfVariables<T>): unknown {
 		return this.deps.node.variables.model.encode(variables)
 	}
 }
@@ -614,16 +604,14 @@ abstract class BaseProxy<T extends NodeBase<any, any, any, any, any>> implements
 		this.toRef.bind(this)
 		this.toRefs.bind(this)
 	}
-	abstract read(
-		selection: unknown
-	): Reader<ExtractChildrenVariablesType<T>, CacheResult<O.Option<ExtractModelType<T>>>>
+	abstract read(selection: unknown): Reader<TypeOfChildrenVariables<T>, CacheResult<O.Option<ExtractModelType<T>>>>
 
-	abstract toRefs(selection: unknown): Reader<ExtractChildrenVariablesType<T>, CacheResult<ExtractRefsType<T>>>
+	abstract toRefs(selection: unknown): Reader<TypeOfChildrenVariables<T>, CacheResult<ExtractRefsType<T>>>
 
-	abstract write(variables: ExtractChildrenVariablesType<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult>
+	abstract write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult>
 
 	toRef(selection: unknown) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<Ref<ExtractModelType<T>>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<Ref<ExtractModelType<T>>> => {
 			return pipe(
 				variables,
 				this.read(selection),
@@ -640,7 +628,7 @@ class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
 		this.proxy = this.getProxy()
 	}
 	read<Selection extends TypeNode<any, any, any>>(selection: Selection) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return pipe(
 				selection.members as Record<keyof T, any>,
 				recordTraverse((k, _) => this.proxy[k as keyof T].read(selection.members[k])(variables as any)),
@@ -649,7 +637,7 @@ class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
 		}
 	}
 
-	write(variables: ExtractChildrenVariablesType<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
+	write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
 		return (data) => {
 			let proxyWrite: CacheWriteResult = cacheWriteResultMonoid.empty
 			for (const key in data) {
@@ -663,7 +651,7 @@ class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
 	}
 
 	toRefs<Selection extends TypeNode<any, any, any>>(selection: Selection) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
 			return pipe(
 				selection as Record<keyof T, any>,
 				recordTraverse((k, _) => this.proxy[k as keyof T].toRefs(selection.members[k])(variables as any)),
@@ -685,6 +673,72 @@ class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
 		}
 		return proxy as { [K in keyof T['members']]: StoreProxyFromNode<T['members'][K]> }
 	}
+}
+
+function extractTypeChildrenVariables<T extends { [K in keyof T]: Node }>(
+	members: T
+): {} & Intersection<
+	Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
+> {
+	const x: any = {}
+	Object.keys(members).forEach((key) => {
+		for (const [k, v] of Object.entries(members[key as keyof T].variables.children)) {
+			if (x[k] !== undefined) {
+				console.warn(
+					`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
+				)
+			}
+			x[k] = v
+		}
+
+		for (const [k, v] of Object.entries(members[key as keyof T].variables.definition)) {
+			if (x[k] !== undefined) {
+				console.warn(
+					`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
+				)
+			}
+			x[k] = v
+		}
+	})
+	return x
+}
+
+function extractTypeMemberModels<T extends { [K in keyof T]: Node }>(members: T): { [K in keyof T]: T[K]['model'] } {
+	const x: any = {}
+	Object.keys(members).forEach((key) => {
+		x[key as keyof T] = members[key as keyof T].model
+	})
+	return x
+}
+
+function printVariablesNode<V extends VariablesDefinition>(variables: V): string {
+	const tokens: string[] = [OPEN_PAREN]
+	const keys = Object.keys(variables)
+	const length = keys.length
+	const last = length - 1
+	let i = 0
+	for (; i < length; i++) {
+		const key = keys[i]
+		tokens.push(key, COLON, OPEN_SPACE, DOLLAR_SIGN, key, i === last ? '' : ', ')
+	}
+	tokens.push(CLOSE_PAREN)
+	return tokens.join('')
+}
+
+function printTypeNodeMembers(members: { [K: string]: Node }): Lazy<string> {
+	return once(() => {
+		const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE]
+		for (const [key, value] of Object.entries(members)) {
+			tokens.push(key)
+			if (!isEmptyObject(value.variables.definition)) {
+				tokens.push(printVariablesNode(value.variables.definition))
+			}
+			const val = value.print()
+			tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [OPEN_SPACE, val, OPEN_SPACE]))
+		}
+		tokens.push(CLOSE_BRACKET)
+		return tokens.join('')
+	})
 }
 
 export function type<N extends string, T extends { [K in keyof T]: Node }>(__typename: N, members: T): TypeNode<N, T>
@@ -726,72 +780,6 @@ export function isTypeNode(u: Node): u is TypeNode<any, any, any> {
 	return u.tag === 'Type'
 }
 
-function extractTypeChildrenVariables<T extends { [K in keyof T]: Node }>(
-	members: T
-): {} & Intersection<
-	Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
-> {
-	const x: any = {}
-	Object.keys(members).forEach((key) => {
-		for (const [k, v] of Object.entries(members[key as keyof T].variables.children)) {
-			if (x[k] !== undefined) {
-				console.warn(
-					`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
-				)
-			}
-			x[k] = v
-		}
-
-		for (const [k, v] of Object.entries(members[key as keyof T].variables.definition)) {
-			if (x[k] !== undefined) {
-				console.warn(
-					`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
-				)
-			}
-			x[k] = v
-		}
-	})
-	return x
-}
-
-function extractTypeMemberModels<T extends { [K in keyof T]: Node }>(members: T): { [K in keyof T]: T[K]['model'] } {
-	const x: any = {}
-	Object.keys(members).forEach((key) => {
-		x[key as keyof T] = members[key as keyof T].model
-	})
-	return x
-}
-
-export function printVariablesNode<V extends VariablesDefinition>(variables: V): string {
-	const tokens: string[] = [OPEN_PAREN]
-	const keys = Object.keys(variables)
-	const length = keys.length
-	const last = length - 1
-	let i = 0
-	for (; i < length; i++) {
-		const key = keys[i]
-		tokens.push(key, COLON, OPEN_SPACE, DOLLAR_SIGN, key, i === last ? '' : ', ')
-	}
-	tokens.push(CLOSE_PAREN)
-	return tokens.join('')
-}
-
-function printTypeNodeMembers(members: { [K: string]: Node }): Lazy<string> {
-	return once(() => {
-		const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE]
-		for (const [key, value] of Object.entries(members)) {
-			tokens.push(key)
-			if (!isEmptyObject(value.variables.definition)) {
-				tokens.push(printVariablesNode(value.variables.definition))
-			}
-			const val = value.print()
-			tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [OPEN_SPACE, val, OPEN_SPACE]))
-		}
-		tokens.push(CLOSE_BRACKET)
-		return tokens.join('')
-	})
-}
-
 export function schema<N extends string, T extends { [K in keyof T]: Node }>(
 	__typename: N,
 	members: T
@@ -818,7 +806,7 @@ class MapProxy<T extends MapNode<any, any, any>> extends BaseProxy<T> {
 	}
 
 	read<Selection extends MapNode<any, any, any>>(selection: Selection) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return pipe(
 				traverseMapCacheResult(this.proxy, (m) => m.read(selection.wrapped)(variables as any)),
 				TE.map(sequenceMapOption)
@@ -826,7 +814,7 @@ class MapProxy<T extends MapNode<any, any, any>> extends BaseProxy<T> {
 		}
 	}
 
-	write(variables: ExtractChildrenVariablesType<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
+	write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
 		return (data) => {
 			return traverseWithIndexMapCacheResult<
 				ExtractPartialModelType<T>,
@@ -846,7 +834,7 @@ class MapProxy<T extends MapNode<any, any, any>> extends BaseProxy<T> {
 	}
 
 	toRefs<Selection extends MapNode<any, any, any>>(selection: Selection) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
 			return pipe(
 				traverseMapCacheResult(this.proxy, (m) => m.toRefs(selection.wrapped)(variables as any)),
 				TE.map(this.deps.ofRef)
@@ -940,7 +928,7 @@ class ArrayProxy<T extends ArrayNode<any, any>> extends BaseProxy<T> {
 	}
 
 	read<Selection extends ArrayNode<any, any>>(selection: Selection) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return pipe(
 				A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) =>
 					m.read(selection.wrapped)(variables as any)
@@ -950,7 +938,7 @@ class ArrayProxy<T extends ArrayNode<any, any>> extends BaseProxy<T> {
 		}
 	}
 
-	write(variables: ExtractChildrenVariablesType<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
+	write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
 		return (data) => {
 			return pipe(
 				TE.rightIO(this.getProxy(data)),
@@ -965,7 +953,7 @@ class ArrayProxy<T extends ArrayNode<any, any>> extends BaseProxy<T> {
 	}
 
 	toRefs<Selection extends ArrayNode<any, any>>(selection: Selection) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
 			return pipe(
 				A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) =>
 					m.toRefs(selection.wrapped)(variables as any)
@@ -1031,7 +1019,7 @@ class SumProxy<T extends SumNode<any, any>> extends BaseProxy<T> {
 	}
 
 	read<Selection extends SumNode<any, any>>(selection: Selection) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return pipe(
 				optionSequenceT(this.proxy, this.type),
 				O.fold(constant(TE.right(O.none)), ([p, t]) => p.read(selection.members[t])(variables as any))
@@ -1039,7 +1027,7 @@ class SumProxy<T extends SumNode<any, any>> extends BaseProxy<T> {
 		}
 	}
 
-	write(variables: ExtractChildrenVariablesType<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
+	write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
 		return (data) => {
 			return pipe(
 				TE.rightIO(this.getProxy(data)),
@@ -1049,7 +1037,7 @@ class SumProxy<T extends SumNode<any, any>> extends BaseProxy<T> {
 	}
 
 	toRefs<Selection extends SumNode<any, any>>(selection: Selection) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
 			return pipe(
 				optionSequenceT(this.proxy, this.type),
 				O.fold(constant(TE.right(this.deps.ofRef())), ([p, k]) =>
@@ -1172,7 +1160,7 @@ class OptionProxy<T extends OptionNode<any, any>> extends BaseProxy<T> {
 	}
 
 	read<Selection extends OptionNode<any, any>>(selection: Selection) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return pipe(
 				this.proxy,
 				O.fold(constant(TE.right(O.none)), (p) => p.read(selection.wrapped)(variables as any))
@@ -1180,7 +1168,7 @@ class OptionProxy<T extends OptionNode<any, any>> extends BaseProxy<T> {
 		}
 	}
 
-	write(variables: ExtractChildrenVariablesType<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
+	write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
 		return (data) => {
 			return pipe(
 				TE.rightIO(this.getProxy(data)),
@@ -1197,7 +1185,7 @@ class OptionProxy<T extends OptionNode<any, any>> extends BaseProxy<T> {
 	}
 
 	toRefs<Selection extends OptionNode<any, any>>(selection: Selection) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
 			return pipe(
 				this.proxy,
 				O.fold(constant(TE.right(this.deps.ofRef())), (p) =>
@@ -1270,7 +1258,7 @@ class NonEmptyArrayProxy<T extends NonEmptyArrayNode<any, any>> extends BaseProx
 	}
 
 	read<Selection extends NonEmptyArrayNode<any, any>>(selection: Selection) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return pipe(
 				A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) =>
 					m.read(selection.wrapped)(variables as any)
@@ -1279,13 +1267,13 @@ class NonEmptyArrayProxy<T extends NonEmptyArrayNode<any, any>> extends BaseProx
 					pipe(
 						results,
 						A.array.sequence(O.option),
-						O.chain((value) => (isNonEmpty(value) ? O.some(value) : O.none))
+						O.chain((value) => (A.isNonEmpty(value) ? O.some(value) : O.none))
 					)
 				)
 			) as CacheResult<O.Option<ExtractModelType<T>>>
 		}
 	}
-	write(variables: ExtractChildrenVariablesType<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
+	write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
 		return (data) => {
 			return pipe(
 				TE.rightIO(this.getProxy(data)),
@@ -1300,12 +1288,12 @@ class NonEmptyArrayProxy<T extends NonEmptyArrayNode<any, any>> extends BaseProx
 	}
 
 	toRefs<Selection extends NonEmptyArrayNode<any, any>>(selection: Selection) {
-		return (variables: ExtractChildrenVariablesType<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
 			return pipe(
 				A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) =>
 					m.toRefs(selection.wrapped)(variables as any)
 				),
-				TE.map((val) => (isNonEmpty(val) ? this.deps.ofRef(val) : this.deps.ofRef()))
+				TE.map((val) => (A.isNonEmpty(val) ? this.deps.ofRef(val) : this.deps.ofRef()))
 			) as CacheResult<ExtractRefsType<T>>
 		}
 	}
@@ -1519,12 +1507,14 @@ export const showNode: Show<Node> = {
 		}
 	}
 }
+
 export const showSumNode: Show<SumNode<any>> = {
 	show: (node) =>
 		`{ ${Object.keys(node.members)
 			.map((k) => `${k}: ${node.members[k].__typename}`)
 			.join(', ')} }`
 }
+
 export const showTypeNode: Show<TypeNode<string, any, any>> = {
 	show: (node) =>
 		`{ ${Object.keys(node.members)
