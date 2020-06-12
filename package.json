@@ -20,8 +20,7 @@
   },
   "peerDependencies": {
     "fp-ts": "^2.6.0",
-    "io-ts": "^2.2.1",
-    "vue": "3.0.0-beta.14"
+    "io-ts": "^2.2.1"
   },
   "devDependencies": {
     "fp-ts": "^2.6.0",
@@ -29,7 +28,6 @@
     "prettier": "^2.0.5",
     "rimraf": "^3.0.2",
     "ts-node": "^8.10.2",
-    "typescript": "^3.9.1-rc",
-    "vue": "3.0.0-beta.14"
+    "typescript": "^3.9.1-rc"
   }
 }

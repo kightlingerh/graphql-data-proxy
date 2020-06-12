@@ -2,6 +2,7 @@ import { sequenceT } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
 import { constant, Lazy } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
+import * as IOE from 'fp-ts/lib/IOEither'
 import * as MAP from 'fp-ts/lib/Map'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
@@ -10,22 +11,25 @@ import { pipe } from 'fp-ts/lib/pipeable'
 import { Reader } from 'fp-ts/lib/Reader'
 import { sequence, traverseWithIndex } from 'fp-ts/lib/Record'
 import { Show } from 'fp-ts/lib/Show'
-import * as T from 'fp-ts/lib/Task'
-import * as TE from 'fp-ts/lib/TaskEither'
-import { Tree } from 'fp-ts/lib/Tree'
 import { tree } from 'io-ts/lib/Decoder'
-import { shallowRef, Ref } from 'vue';
 import * as M from '../model/Model'
 import {
+	CacheError,
 	cacheErrorApplicativeValidation,
+	CacheResult,
+	CacheWriteResult,
 	cacheWriteResultMonoid,
 	CLOSE_BRACKET,
 	CLOSE_PAREN,
 	COLON,
 	concatEvict,
+	constEmptyArray,
 	constEmptyString,
+	constMap,
+	constNone,
 	DOLLAR_SIGN,
 	ELLIPSIS,
+	Evict,
 	EXCLAMATION,
 	isEmptyObject,
 	isEmptyString,
@@ -34,6 +38,9 @@ import {
 	OPEN_BRACKET,
 	OPEN_PAREN,
 	OPEN_SPACE,
+	Persist,
+	Reactivity,
+	Ref,
 	taskVoid,
 	TYPENAME
 } from '../shared'
@@ -70,7 +77,8 @@ export interface BooleanNode<V extends VariablesDefinition = {}>
 	readonly tag: 'Boolean'
 }
 
-export interface IntNode<V extends VariablesDefinition = {}> extends NodeBaseWithProxy<number, number, Ref<O.Option<number>>, V> {
+export interface IntNode<V extends VariablesDefinition = {}>
+	extends NodeBaseWithProxy<number, number, Ref<O.Option<number>>, V> {
 	readonly tag: 'Int'
 }
 
@@ -83,7 +91,7 @@ export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, 
 	extends NodeBaseWithProxy<
 		{ [K in keyof T]: ExtractModelType<T[K]> },
 		Partial<{ [K in keyof T]: ExtractModelType<T[K]> }>,
-		Ref<O.Option<{ [K in keyof T]: ExtractRefsType<T[K]> }>>,
+		{ [K in keyof T]: ExtractRefsType<T[K]> },
 		V,
 		{} & Intersection<
 			Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
@@ -106,7 +114,7 @@ export interface ArrayNode<T extends Node, V extends VariablesDefinition = {}>
 	extends NodeBaseWithProxy<
 		ExtractModelType<T>[],
 		ExtractPartialModelType<T>[],
-		Ref<O.Option<ExtractRefsType<T>>[]>,
+		Ref<ExtractRefsType<T>[]>,
 		V,
 		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
 	> {
@@ -118,7 +126,7 @@ export interface MapNode<K extends Node, T extends Node, V extends VariablesDefi
 	extends NodeBaseWithProxy<
 		Map<ExtractModelType<K>, ExtractModelType<T>>,
 		Map<ExtractModelType<K>, ExtractPartialModelType<T>>,
-		Ref<O.Option<Map<unknown, ExtractRefsType<T>>>>,
+		Ref<Map<unknown, ExtractRefsType<T>>>,
 		V,
 		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
 	> {
@@ -228,7 +236,6 @@ export interface Proxy<Variables, Data, PartialData, Refs> {
 	write(variables: Variables): Reader<PartialData, CacheWriteResult>
 	read(selection: unknown): Reader<Variables, CacheResult<O.Option<Data>>>
 	toRefs(selection: unknown): Reader<Variables, CacheResult<Refs>>
-	toRef(selection: unknown): Reader<Variables, CacheResult<Ref<O.Option<Data>>>>
 }
 
 interface DataProxyDependencies<T extends NodeBase<any, any, any, any, any>> extends CacheNodeDependencies {
@@ -276,14 +283,6 @@ export type ExtractDefinitionType<V> = {
 	[K in keyof V]: ExtractModelType<V[K]>
 }
 
-export interface CacheWriteResult extends CacheResult<Evict> {}
-
-export interface CacheResult<T> extends TE.TaskEither<CacheError, T> {}
-
-export interface Evict extends T.Task<void> {}
-
-export interface CacheError extends NonEmptyArray<Tree<string>> {}
-
 type DataProxyFromNode<T extends NodeBase<any, any, any, any, any>> = Proxy<
 	TypeOfChildrenVariables<T>,
 	ExtractModelType<T>,
@@ -300,12 +299,8 @@ type StoreProxyFromNode<T extends NodeBase<any, any, any, any, any>> = Proxy<
 
 export interface CacheNodeDependencies {
 	path: string
+	reactivity: Reactivity
 	persist?: Persist
-}
-
-export interface Persist {
-	store(key: string, value: string): TE.TaskEither<CacheError, void>
-	restore<T>(key: string): TE.TaskEither<CacheError, O.Option<T>>
 }
 
 class Store<T extends NodeBase<any, any, any, any, any>> implements StoreProxyFromNode<T> {
@@ -317,7 +312,6 @@ class Store<T extends NodeBase<any, any, any, any, any>> implements StoreProxyFr
 	) {
 		this.read.bind(this)
 		this.write.bind(this)
-		this.toRef.bind(this)
 		this.toRefs.bind(this)
 	}
 
@@ -333,12 +327,6 @@ class Store<T extends NodeBase<any, any, any, any, any>> implements StoreProxyFr
 		variables: TypeOfChildrenVariables<T> & TypeOfVariables<T>
 	): Reader<ExtractPartialModelType<T>, CacheResult<Evict>> {
 		return this.extractProxy(this.encodeVariables(variables)).write(variables)
-	}
-
-	toRef<Selection extends Node>(selection: Selection) {
-		return (variables: TypeOfChildrenVariables<T> & TypeOfVariables<T>): CacheResult<Ref<O.Option<ExtractModelType<T>>>> => {
-			return this.extractProxy(this.encodeVariables(variables)).toRef(selection)(variables)
-		}
 	}
 
 	toRefs<Selection extends Node>(selection: Selection) {
@@ -371,47 +359,43 @@ class Store<T extends NodeBase<any, any, any, any, any>> implements StoreProxyFr
 }
 
 class LiteralProxy<T, V extends VariablesDefinition = {}> implements Proxy<{}, T, T, Ref<O.Option<T>>> {
-	readonly ref: Ref<O.Option<T>> = shallowRef(O.none)
-	constructor(private readonly deps: DataProxyDependencies<NodeBase<T, T, Ref<O.Option<T>>, V>>) {
+	readonly ref: Ref<O.Option<T>>
+	constructor(deps: DataProxyDependencies<NodeBase<T, T, Ref<O.Option<T>>, V>>) {
+		this.ref = deps.reactivity.shallowRef(O.none)
 		this.read.bind(this)
 		this.write.bind(this)
-		this.toRef.bind(this)
 		this.toRefs.bind(this)
 	}
 
 	read() {
-		return () => TE.rightIO(() => this.ref.value)
+		return () => IOE.right(this.ref.value)
 	}
 
 	write(): Reader<T, CacheResult<Evict>> {
 		return (num) =>
 			pipe(
 				this.read()(),
-				TE.chain((previousValue) => {
+				IOE.chain((previousValue) => {
 					const newValue = O.some(num)
 					return pipe(
-						TE.rightIO(() => {
+						IOE.rightIO(() => {
 							this.ref.value = newValue
 						}),
-						TE.apSecond(this.read()()),
-						TE.map((currentValue) => {
-							return T.fromIO(() => {
+						IOE.apSecond(this.read()()),
+						IOE.map((currentValue) => {
+							return () => {
 								if (newValue === currentValue) {
 									this.ref.value = previousValue
 								}
-							})
+							}
 						})
 					)
 				})
 			)
 	}
 
-	toRef() {
-		return () => TE.rightIO(() => this.ref)
-	}
-
 	toRefs() {
-		return this.toRef()
+		return () => IOE.right(this.ref)
 	}
 }
 
@@ -440,13 +424,13 @@ export function int<V extends VariablesDefinition = {}>(variables: V = EMPTY_VAR
 			partial: M.number
 		},
 		print: constEmptyString,
-		data: deps => new LiteralProxy({ ...deps, node }),
+		data: (deps) => new LiteralProxy({ ...deps, node }),
 		store: (deps) =>
 			isEmptyObject(variables)
 				? node.data({ ...deps, node: deps.node || node })
 				: new Store({ ...deps, data: node.data, node: deps.node || node })
 	}
-	return node;
+	return node
 }
 
 export function isIntNode(u: Node): u is IntNode<any> {
@@ -485,13 +469,13 @@ export function string<V extends VariablesDefinition = {}>(variables: V = EMPTY_
 			partial: M.string
 		},
 		print: constEmptyString,
-		data: deps => new LiteralProxy({ ...deps, node }),
+		data: (deps) => new LiteralProxy({ ...deps, node }),
 		store: (deps) =>
 			isEmptyObject(variables)
 				? node.data({ ...deps, node: deps.node || node })
 				: new Store({ ...deps, data: node.data, node: deps.node || node })
 	}
-	return node;
+	return node
 }
 
 export const staticString = string()
@@ -515,13 +499,13 @@ export function boolean<V extends VariablesDefinition = {}>(variables: V = EMPTY
 			partial: M.boolean
 		},
 		print: constEmptyString,
-		data: deps => new LiteralProxy({ ...deps, node }),
+		data: (deps) => new LiteralProxy({ ...deps, node }),
 		store: (deps) =>
 			isEmptyObject(variables)
 				? node.data({ ...deps, node: deps.node || node })
 				: new Store({ ...deps, data: node.data, node: deps.node || node })
 	}
-	return node;
+	return node
 }
 
 export const staticBoolean = boolean()
@@ -580,7 +564,6 @@ abstract class BaseProxy<T extends NodeBase<any, any, any, any, any>> implements
 	) {
 		this.read.bind(this)
 		this.write.bind(this)
-		this.toRef.bind(this)
 		this.toRefs.bind(this)
 	}
 	abstract read(selection: unknown): Reader<TypeOfChildrenVariables<T>, CacheResult<O.Option<ExtractModelType<T>>>>
@@ -588,8 +571,6 @@ abstract class BaseProxy<T extends NodeBase<any, any, any, any, any>> implements
 	abstract toRefs(selection: unknown): Reader<TypeOfChildrenVariables<T>, CacheResult<ExtractRefsType<T>>>
 
 	abstract write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult>
-
-	abstract toRef(selection: unknown): Reader<TypeOfChildrenVariables<T>, CacheResult<Ref<O.Option<ExtractModelType<T>>>>>
 }
 
 class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
@@ -603,7 +584,7 @@ class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
 			return pipe(
 				selection.members as Record<keyof T, any>,
 				recordTraverse((k, _) => this.proxy[k as keyof T].read(selection.members[k])(variables as any)),
-				TE.map(sequence(O.option))
+				IOE.map(sequence(O.option))
 			) as CacheResult<O.Option<ExtractModelType<T>>>
 		}
 	}
@@ -625,8 +606,7 @@ class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
 		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
 			return pipe(
 				selection as Record<keyof T, any>,
-				recordTraverse((k, _) => this.proxy[k as keyof T].toRefs(selection.members[k])(variables as any)),
-				TE.map(this.deps.ofRef)
+				recordTraverse((k, _) => this.proxy[k as keyof T].toRefs(selection.members[k])(variables as any))
 			) as CacheResult<ExtractRefsType<T>>
 		}
 	}
@@ -771,16 +751,18 @@ const traverseWithIndexMapCacheResult = withMap.traverseWithIndex(cacheErrorAppl
 const sequenceMapOption = withMap.sequence(O.option)
 
 class MapProxy<T extends MapNode<any, any, any>> extends BaseProxy<T> {
-	readonly proxy: Map<ExtractModelType<T['key']>, StoreProxyFromNode<T['wrapped']>> = new Map()
+	readonly proxy: Map<ExtractModelType<T['key']>, StoreProxyFromNode<T['wrapped']>>
 	constructor(deps: Pick<DataProxyDependencies<T>, 'persist'> & Required<Omit<DataProxyDependencies<T>, 'persist'>>) {
 		super(deps)
+		this.proxy = deps.reactivity.shallowReactive(new Map())
 	}
 
 	read<Selection extends MapNode<any, any, any>>(selection: Selection) {
 		return (variables: TypeOfChildrenVariables<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return pipe(
-				traverseMapCacheResult(this.proxy, (m) => m.read(selection.wrapped)(variables as any)),
-				TE.map(sequenceMapOption)
+				IOE.rightIO(() => this.proxy),
+				IOE.chain((p) => traverseMapCacheResult(p, (m) => m.read(selection.wrapped)(variables as any))),
+				IOE.map(sequenceMapOption)
 			) as CacheResult<O.Option<ExtractModelType<T>>>
 		}
 	}
@@ -796,8 +778,8 @@ class MapProxy<T extends MapNode<any, any, any>> extends BaseProxy<T> {
 				data as Map<unknown, ExtractPartialModelType<T>>,
 				((k: ExtractModelType<T['key']>, v: ExtractPartialModelType<T['wrapped']>) => {
 					return pipe(
-						TE.rightIO(this.getProxy(k as ExtractModelType<T['key']>)),
-						TE.chain((p) => p.write(variables as any)(v))
+						IOE.rightIO(this.getProxy(k as ExtractModelType<T['key']>)),
+						IOE.chain((p) => p.write(variables as any)(v))
 					)
 				}) as any
 			)
@@ -806,9 +788,13 @@ class MapProxy<T extends MapNode<any, any, any>> extends BaseProxy<T> {
 
 	toRefs<Selection extends MapNode<any, any, any>>(selection: Selection) {
 		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
-			return pipe(
-				traverseMapCacheResult(this.proxy, (m) => m.toRefs(selection.wrapped)(variables as any)),
-				TE.map(this.deps.ofRef)
+			return IOE.rightIO(() =>
+				this.deps.reactivity.computed(() => {
+					return pipe(
+						traverseMapCacheResult(this.proxy, (m) => m.toRefs(selection.wrapped)(variables as any)),
+						IOE.getOrElse<CacheError, Map<unknown, ExtractRefsType<T['wrapped']>>>(constant(constMap))
+					)()
+				})
 			) as CacheResult<ExtractRefsType<T>>
 		}
 	}
@@ -893,18 +879,22 @@ export function isMapNode(u: Node): u is MapNode<any, any> {
 }
 
 class ArrayProxy<T extends ArrayNode<any, any>> extends BaseProxy<T> {
-	proxy: StoreProxyFromNode<T['wrapped']>[] = []
+	proxy: Ref<StoreProxyFromNode<T['wrapped']>[]>
 	constructor(deps: Pick<DataProxyDependencies<T>, 'persist'> & Required<Omit<DataProxyDependencies<T>, 'persist'>>) {
 		super(deps)
+		this.proxy = deps.reactivity.shallowRef([])
 	}
 
 	read<Selection extends ArrayNode<any, any>>(selection: Selection) {
 		return (variables: TypeOfChildrenVariables<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return pipe(
-				A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) =>
-					m.read(selection.wrapped)(variables as any)
+				IOE.rightIO(() => this.proxy.value),
+				IOE.chain((p) =>
+					A.array.traverse(cacheErrorApplicativeValidation)(p, (m) =>
+						m.read(selection.wrapped)(variables as any)
+					)
 				),
-				TE.map(A.array.sequence(O.option))
+				IOE.map(A.array.sequence(O.option))
 			) as CacheResult<O.Option<ExtractModelType<T>>>
 		}
 	}
@@ -912,25 +902,30 @@ class ArrayProxy<T extends ArrayNode<any, any>> extends BaseProxy<T> {
 	write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
 		return (data) => {
 			return pipe(
-				TE.rightIO(this.getProxy(data)),
-				TE.chain((proxy) =>
+				IOE.rightIO(this.getProxy(data)),
+				IOE.chain((proxy) =>
 					A.array.traverseWithIndex(cacheErrorApplicativeValidation)(proxy, (i, a) => {
 						return a.write(variables as any)((data as any)[i])
 					})
 				),
-				TE.map(A.reduce(taskVoid, concatEvict))
+				IOE.map(A.reduce(taskVoid, concatEvict))
 			)
 		}
 	}
 
 	toRefs<Selection extends ArrayNode<any, any>>(selection: Selection) {
 		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
-			return pipe(
-				A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) =>
-					m.toRefs(selection.wrapped)(variables as any)
-				),
-				TE.map(this.deps.ofRef)
-			) as CacheResult<ExtractRefsType<T>>
+			return IOE.rightIO(
+				() =>
+					this.deps.reactivity.computed(() => {
+						return pipe(
+							A.array.traverse(cacheErrorApplicativeValidation)(this.proxy.value, (m) =>
+								m.toRefs(selection.wrapped)(variables as any)
+							),
+							IOE.getOrElse<CacheError, Array<ExtractRefsType<T['wrapped']>>>(constant(constEmptyArray))
+						)()
+					}) as ExtractRefsType<T>
+			)
 		}
 	}
 
@@ -943,7 +938,7 @@ class ArrayProxy<T extends ArrayNode<any, any>> extends BaseProxy<T> {
 					node: this.deps.node.wrapped
 				})
 			)
-			this.proxy = newProxy
+			this.proxy.value = newProxy
 			return newProxy
 		}
 	}
@@ -983,17 +978,21 @@ export function isArrayNode(u: Node): u is ArrayNode<any> {
 }
 
 class SumProxy<T extends SumNode<any, any>> extends BaseProxy<T> {
-	type: O.Option<keyof T['members']> = O.none
-	proxy: O.Option<{ [K in keyof T['members']]: StoreProxyFromNode<T['members'][K]> }[keyof T['members']]> = O.none
+	type: Ref<O.Option<keyof T['members']>>
+	proxy: Ref<O.Option<{ [K in keyof T['members']]: StoreProxyFromNode<T['members'][K]> }[keyof T['members']]>>
 	constructor(deps: Pick<DataProxyDependencies<T>, 'persist'> & Required<Omit<DataProxyDependencies<T>, 'persist'>>) {
 		super(deps)
+		this.type = deps.reactivity.shallowRef(O.none)
+		this.proxy = deps.reactivity.shallowRef(O.none)
 	}
 
 	read<Selection extends SumNode<any, any>>(selection: Selection) {
 		return (variables: TypeOfChildrenVariables<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return pipe(
-				optionSequenceT(this.proxy, this.type),
-				O.fold(constant(TE.right(O.none)), ([p, t]) => p.read(selection.members[t])(variables as any))
+				IOE.rightIO(() => optionSequenceT(this.proxy.value, this.type.value)),
+				IOE.chain(
+					O.fold(constant(IOE.right(O.none)), ([p, t]) => p.read(selection.members[t])(variables as any))
+				)
 			)
 		}
 	}
@@ -1001,20 +1000,27 @@ class SumProxy<T extends SumNode<any, any>> extends BaseProxy<T> {
 	write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
 		return (data) => {
 			return pipe(
-				TE.rightIO(this.getProxy(data)),
-				TE.chain(O.fold(constant(TE.right(taskVoid)), (p) => p.write(variables as any)(data)))
+				IOE.rightIO(this.getProxy(data)),
+				IOE.chain(O.fold(constant(IOE.right(taskVoid)), (p) => p.write(variables as any)(data)))
 			)
 		}
 	}
 
 	toRefs<Selection extends SumNode<any, any>>(selection: Selection) {
 		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
-			return pipe(
-				optionSequenceT(this.proxy, this.type),
-				O.fold(constant(TE.right(this.deps.ofRef())), ([p, k]) =>
-					pipe(p.toRefs(selection.members[k])(variables as any), TE.map(this.deps.ofRef))
-				)
-			) as CacheResult<ExtractRefsType<T>>
+			return IOE.rightIO(() => {
+				return this.deps.reactivity.computed(() => {
+					return pipe(
+						optionSequenceT(this.proxy.value, this.type.value),
+						O.fold(constant(IOE.right(O.none)), ([p, k]) =>
+							pipe(p.toRefs(selection.members[k])(variables as any), IOE.map(O.some))
+						),
+						IOE.getOrElse<CacheError, O.Option<{ [K in keyof T]: ExtractRefsType<T[K]> }[keyof T]>>(
+							constant(constNone)
+						)
+					)()
+				})
+			}) as CacheResult<ExtractRefsType<T>>
 		}
 	}
 
@@ -1030,11 +1036,11 @@ class SumProxy<T extends SumNode<any, any>> extends BaseProxy<T> {
 						member.store({ ...this.deps, path: `${this.deps.path}-${k}`, node: member })
 					)
 					this.type = O.some(k)
-					this.proxy = newProxy
+					this.proxy.value = newProxy
 					return newProxy
 				}
 			}
-			return this.proxy
+			return this.proxy.value
 		}
 	}
 }
@@ -1125,16 +1131,17 @@ export function isSumNode(x: Node): x is SumNode<any, any> {
 const optionSequenceT = sequenceT(O.option)
 
 class OptionProxy<T extends OptionNode<any, any>> extends BaseProxy<T> {
-	proxy: O.Option<StoreProxyFromNode<T>> = O.none
+	proxy: Ref<O.Option<StoreProxyFromNode<T>>>
 	constructor(deps: Pick<DataProxyDependencies<T>, 'persist'> & Required<Omit<DataProxyDependencies<T>, 'persist'>>) {
 		super(deps)
+		this.proxy = deps.reactivity.shallowRef(O.none)
 	}
 
 	read<Selection extends OptionNode<any, any>>(selection: Selection) {
 		return (variables: TypeOfChildrenVariables<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return pipe(
-				this.proxy,
-				O.fold(constant(TE.right(O.none)), (p) => p.read(selection.wrapped)(variables as any))
+				IOE.rightIO(() => this.proxy.value),
+				IOE.chain(O.fold(constant(IOE.right(O.none)), (p) => p.read(selection.wrapped)(variables as any)))
 			)
 		}
 	}
@@ -1142,11 +1149,11 @@ class OptionProxy<T extends OptionNode<any, any>> extends BaseProxy<T> {
 	write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
 		return (data) => {
 			return pipe(
-				TE.rightIO(this.getProxy(data)),
-				TE.chain((oProxy) =>
+				IOE.rightIO(this.getProxy(data)),
+				IOE.chain((oProxy) =>
 					pipe(
 						optionSequenceT(oProxy, data),
-						O.fold(constant(TE.right(taskVoid)), ([proxy, data]) =>
+						O.fold(constant(IOE.right(taskVoid)), ([proxy, data]) =>
 							proxy.write(variables as any)(data as ExtractPartialModelType<T>)
 						)
 					)
@@ -1157,20 +1164,25 @@ class OptionProxy<T extends OptionNode<any, any>> extends BaseProxy<T> {
 
 	toRefs<Selection extends OptionNode<any, any>>(selection: Selection) {
 		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
-			return pipe(
-				this.proxy,
-				O.fold(constant(TE.right(this.deps.ofRef())), (p) =>
-					pipe(p.toRefs(selection.wrapped)(variables as any), TE.map(O.some), TE.map(this.deps.ofRef))
-				)
+			return IOE.rightIO(() =>
+				this.deps.reactivity.computed(() => {
+					return pipe(
+						this.proxy.value,
+						O.fold(constant(IOE.right(O.none)), (p) =>
+							pipe(p.toRefs(selection.wrapped)(variables as any), IOE.map(O.some))
+						),
+						IOE.getOrElse<CacheError, O.Option<ExtractRefsType<T['wrapped']>>>(constant(constNone))
+					)()
+				})
 			) as CacheResult<ExtractRefsType<T>>
 		}
 	}
 
 	private getProxy(data: ExtractPartialModelType<T>): IO<O.Option<StoreProxyFromNode<T>>> {
 		return () => {
-			if (O.isSome(data) && O.isSome(this.proxy)) {
-				return this.proxy
-			} else if (O.isSome(data) && O.isNone(this.proxy)) {
+			if (O.isSome(data) && O.isSome(this.proxy.value)) {
+				return this.proxy.value
+			} else if (O.isSome(data) && O.isNone(this.proxy.value)) {
 				const newProxy = O.some(
 					this.deps.node.wrapped.store({
 						...this.deps,
@@ -1178,10 +1190,10 @@ class OptionProxy<T extends OptionNode<any, any>> extends BaseProxy<T> {
 						node: this.deps.node.wrapped
 					})
 				)
-				this.proxy = newProxy
+				this.proxy.value = newProxy
 				return newProxy
-			} else if (O.isSome(this.proxy) && O.isNone(data)) {
-				this.proxy = O.none
+			} else if (O.isSome(this.proxy.value) && O.isNone(data)) {
+				this.proxy.value = O.none
 				return O.none
 			} else {
 				return O.none
@@ -1223,18 +1235,22 @@ export function isOptionNode(u: Node): u is OptionNode<any> {
 }
 
 class NonEmptyArrayProxy<T extends NonEmptyArrayNode<any, any>> extends BaseProxy<T> {
-	proxy: StoreProxyFromNode<T['wrapped']>[] = []
+	proxy: Ref<StoreProxyFromNode<T['wrapped']>[]>
 	constructor(deps: Pick<DataProxyDependencies<T>, 'persist'> & Required<Omit<DataProxyDependencies<T>, 'persist'>>) {
 		super(deps)
+		this.proxy = deps.reactivity.shallowRef([])
 	}
 
 	read<Selection extends NonEmptyArrayNode<any, any>>(selection: Selection) {
 		return (variables: TypeOfChildrenVariables<T>): CacheResult<O.Option<ExtractModelType<T>>> => {
 			return pipe(
-				A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) =>
-					m.read(selection.wrapped)(variables as any)
+				IOE.rightIO(() => this.proxy.value),
+				IOE.chain((p) =>
+					A.array.traverse(cacheErrorApplicativeValidation)(p, (m) =>
+						m.read(selection.wrapped)(variables as any)
+					)
 				),
-				TE.map((results) =>
+				IOE.map((results) =>
 					pipe(
 						results,
 						A.array.sequence(O.option),
@@ -1247,24 +1263,34 @@ class NonEmptyArrayProxy<T extends NonEmptyArrayNode<any, any>> extends BaseProx
 	write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult> {
 		return (data) => {
 			return pipe(
-				TE.rightIO(this.getProxy(data)),
-				TE.chain((proxy) =>
+				IOE.rightIO(this.getProxy(data)),
+				IOE.chain((proxy) =>
 					A.array.traverseWithIndex(cacheErrorApplicativeValidation)(proxy, (i, a) => {
 						return a.write(variables as any)((data as any)[i])
 					})
 				),
-				TE.map(A.reduce(taskVoid, concatEvict))
+				IOE.map(A.reduce(taskVoid, concatEvict))
 			)
 		}
 	}
 
 	toRefs<Selection extends NonEmptyArrayNode<any, any>>(selection: Selection) {
 		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
-			return pipe(
-				A.array.traverse(cacheErrorApplicativeValidation)(this.proxy, (m) =>
-					m.toRefs(selection.wrapped)(variables as any)
-				),
-				TE.map((val) => (A.isNonEmpty(val) ? this.deps.ofRef(val) : this.deps.ofRef()))
+			return IOE.rightIO(() =>
+				this.deps.reactivity.computed(() => {
+					return pipe(
+						IOE.rightIO(() => this.proxy.value),
+						IOE.chain((p) =>
+							A.array.traverse(cacheErrorApplicativeValidation)(p, (m) =>
+								m.toRefs(selection.wrapped)(variables as any)
+							)
+						),
+						IOE.fold<CacheError, Array<ExtractRefsType<T>>, O.Option<NonEmptyArray<ExtractRefsType<T>>>>(
+							constant(constNone),
+							(as) => () => (A.isNonEmpty(as) ? O.some(as) : O.none)
+						)
+					)()
+				})
 			) as CacheResult<ExtractRefsType<T>>
 		}
 	}
@@ -1278,7 +1304,7 @@ class NonEmptyArrayProxy<T extends NonEmptyArrayNode<any, any>> extends BaseProx
 					node: this.deps.node.wrapped
 				})
 			)
-			this.proxy = newProxy
+			this.proxy.value = newProxy
 			return newProxy
 		}
 	}
@@ -1324,15 +1350,14 @@ export function isWrappedNode(x: Node): x is WrappedNode {
 	return tag === 'Map' || tag === 'Option' || tag === 'Array' || tag === 'NonEmptyArray'
 }
 
-const EMPTY_PROXY_ERROR: CacheResult<any> = TE.left([tree('no proxy exists for this node')])
+const EMPTY_PROXY_ERROR: CacheResult<any> = IOE.left([tree('no proxy exists for this node')])
 
 const CONST_EMPTY_PROXY_ERROR = constant(constant(EMPTY_PROXY_ERROR))
 
 const EMPTY_PROXY: Proxy<any, any, any, any> = {
 	write: CONST_EMPTY_PROXY_ERROR,
 	read: CONST_EMPTY_PROXY_ERROR,
-	toRefs: CONST_EMPTY_PROXY_ERROR,
-	toRef: CONST_EMPTY_PROXY_ERROR
+	toRefs: CONST_EMPTY_PROXY_ERROR
 }
 
 const CONST_EMPTY_PROXY = constant(EMPTY_PROXY)
