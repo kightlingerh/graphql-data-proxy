@@ -1035,7 +1035,7 @@ class SumProxy<T extends SumNode<any, any>> extends BaseProxy<T> {
 					const newProxy = O.some(
 						member.store({ ...this.deps, path: `${this.deps.path}-${k}`, node: member })
 					)
-					this.type = O.some(k)
+					this.type.value = O.some(k)
 					this.proxy.value = newProxy
 					return newProxy
 				}
