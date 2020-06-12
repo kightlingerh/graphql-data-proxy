@@ -3,7 +3,7 @@ import { left, right } from 'fp-ts/lib/Either'
 import * as O from 'fp-ts/lib/Option'
 import { Reader } from 'fp-ts/lib/Reader'
 import * as N from '../node/Node'
-import {CacheError, CacheResult, CacheWriteResult, Persist, Reactivity} from '../shared'
+import { CacheError, CacheResult, CacheWriteResult, Persist, Reactivity } from '../shared'
 import { validate } from './validate'
 
 export interface CacheDependencies {
@@ -33,7 +33,7 @@ export function make<S extends N.SchemaNode<any, any>>(c: S) {
 				return right<CacheError, Cache<R>>({
 					write: store.write,
 					read: (variables) => readC(variables) as CacheResult<O.Option<N.ExtractModelType<R>>>,
-					toRefs: (variables) => toRefsC(variables) as CacheResult<N.ExtractRefsType<R>>,
+					toRefs: (variables) => toRefsC(variables) as CacheResult<N.ExtractRefsType<R>>
 				})
 			}
 		}
