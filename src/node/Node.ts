@@ -14,6 +14,7 @@ import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { Tree } from 'fp-ts/lib/Tree'
 import { tree } from 'io-ts/lib/Decoder'
+import { shallowRef, Ref } from 'vue';
 import * as M from '../model/Model'
 import {
 	cacheErrorApplicativeValidation,
@@ -33,7 +34,6 @@ import {
 	OPEN_BRACKET,
 	OPEN_PAREN,
 	OPEN_SPACE,
-	Ref,
 	taskVoid,
 	TYPENAME
 } from '../shared'
@@ -61,21 +61,21 @@ export type PrimitiveNode<V extends VariablesDefinition = {}> =
 	| IntNode<V>
 
 export interface StringNode<V extends VariablesDefinition = {}>
-	extends NodeBaseWithProxy<string, string, Ref<string>, V> {
+	extends NodeBaseWithProxy<string, string, Ref<O.Option<string>>, V> {
 	readonly tag: 'String'
 }
 
 export interface BooleanNode<V extends VariablesDefinition = {}>
-	extends NodeBaseWithProxy<boolean, boolean, Ref<boolean>, V> {
+	extends NodeBaseWithProxy<boolean, boolean, Ref<O.Option<boolean>>, V> {
 	readonly tag: 'Boolean'
 }
 
-export interface IntNode<V extends VariablesDefinition = {}> extends NodeBaseWithProxy<number, number, Ref<number>, V> {
+export interface IntNode<V extends VariablesDefinition = {}> extends NodeBaseWithProxy<number, number, Ref<O.Option<number>>, V> {
 	readonly tag: 'Int'
 }
 
 export interface FloatNode<V extends VariablesDefinition = {}>
-	extends NodeBaseWithProxy<number, number, Ref<number>, V> {
+	extends NodeBaseWithProxy<number, number, Ref<O.Option<number>>, V> {
 	readonly tag: 'Float'
 }
 
@@ -83,7 +83,7 @@ export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, 
 	extends NodeBaseWithProxy<
 		{ [K in keyof T]: ExtractModelType<T[K]> },
 		Partial<{ [K in keyof T]: ExtractModelType<T[K]> }>,
-		Ref<{ [K in keyof T]: ExtractRefsType<T[K]> }>,
+		Ref<O.Option<{ [K in keyof T]: ExtractRefsType<T[K]> }>>,
 		V,
 		{} & Intersection<
 			Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
@@ -106,7 +106,7 @@ export interface ArrayNode<T extends Node, V extends VariablesDefinition = {}>
 	extends NodeBaseWithProxy<
 		ExtractModelType<T>[],
 		ExtractPartialModelType<T>[],
-		Ref<ExtractRefsType<T>[]>,
+		Ref<O.Option<ExtractRefsType<T>>[]>,
 		V,
 		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
 	> {
@@ -118,7 +118,7 @@ export interface MapNode<K extends Node, T extends Node, V extends VariablesDefi
 	extends NodeBaseWithProxy<
 		Map<ExtractModelType<K>, ExtractModelType<T>>,
 		Map<ExtractModelType<K>, ExtractPartialModelType<T>>,
-		Ref<Map<unknown, ExtractRefsType<T>>>,
+		Ref<O.Option<Map<unknown, ExtractRefsType<T>>>>,
 		V,
 		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
 	> {
@@ -143,7 +143,7 @@ export interface NonEmptyArrayNode<T extends Node, V extends VariablesDefinition
 	extends NodeBaseWithProxy<
 		NonEmptyArray<ExtractModelType<T>>,
 		NonEmptyArray<ExtractPartialModelType<T>>,
-		Ref<NonEmptyArray<ExtractRefsType<T>>>,
+		Ref<O.Option<NonEmptyArray<ExtractRefsType<T>>>>,
 		V,
 		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
 	> {
@@ -155,7 +155,7 @@ export interface SumNode<T extends { [K in keyof T]: TypeNode<any, any, any> }, 
 	extends NodeBaseWithProxy<
 		{ [K in keyof T]: ExtractModelType<T[K]> & { __typename: T[K]['__typename'] } }[keyof T],
 		{ [K in keyof T]: ExtractPartialModelType<T[K]> & { __typename: T[K]['__typename'] } }[keyof T],
-		Ref<{ [K in keyof T]: ExtractRefsType<T[K]> }[keyof T]>,
+		Ref<O.Option<{ [K in keyof T]: ExtractRefsType<T[K]> }[keyof T]>>,
 		V,
 		{} & Intersection<
 			Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
@@ -178,7 +178,7 @@ export interface MutationNode<T extends Node, V extends VariablesDefinition = {}
 }
 
 export interface ScalarNode<N extends string, T, V extends VariablesDefinition = {}>
-	extends NodeBaseWithProxy<T, T, Ref<T>, V> {
+	extends NodeBaseWithProxy<T, T, Ref<O.Option<T>>, V> {
 	readonly tag: 'Scalar'
 	readonly name: N
 }
@@ -228,7 +228,7 @@ export interface Proxy<Variables, Data, PartialData, Refs> {
 	write(variables: Variables): Reader<PartialData, CacheWriteResult>
 	read(selection: unknown): Reader<Variables, CacheResult<O.Option<Data>>>
 	toRefs(selection: unknown): Reader<Variables, CacheResult<Refs>>
-	toRef(selection: unknown): Reader<Variables, CacheResult<Ref<Data>>>
+	toRef(selection: unknown): Reader<Variables, CacheResult<Ref<O.Option<Data>>>>
 }
 
 interface DataProxyDependencies<T extends NodeBase<any, any, any, any, any>> extends CacheNodeDependencies {
@@ -300,12 +300,7 @@ type StoreProxyFromNode<T extends NodeBase<any, any, any, any, any>> = Proxy<
 
 export interface CacheNodeDependencies {
 	path: string
-	ofRef: OfRef
 	persist?: Persist
-}
-
-export interface OfRef {
-	<T>(value?: T): Ref<T>
 }
 
 export interface Persist {
@@ -341,7 +336,7 @@ class Store<T extends NodeBase<any, any, any, any, any>> implements StoreProxyFr
 	}
 
 	toRef<Selection extends Node>(selection: Selection) {
-		return (variables: TypeOfChildrenVariables<T> & TypeOfVariables<T>): CacheResult<Ref<ExtractModelType<T>>> => {
+		return (variables: TypeOfChildrenVariables<T> & TypeOfVariables<T>): CacheResult<Ref<O.Option<ExtractModelType<T>>>> => {
 			return this.extractProxy(this.encodeVariables(variables)).toRef(selection)(variables)
 		}
 	}
@@ -375,10 +370,9 @@ class Store<T extends NodeBase<any, any, any, any, any>> implements StoreProxyFr
 	}
 }
 
-class LiteralProxy<T, V extends VariablesDefinition = {}> implements Proxy<{}, T, T, Ref<T>> {
-	readonly ref: Ref<T>
-	constructor(private readonly deps: DataProxyDependencies<NodeBase<T, T, Ref<T>, V>>) {
-		this.ref = this.deps.ofRef()
+class LiteralProxy<T, V extends VariablesDefinition = {}> implements Proxy<{}, T, T, Ref<O.Option<T>>> {
+	readonly ref: Ref<O.Option<T>> = shallowRef(O.none)
+	constructor(private readonly deps: DataProxyDependencies<NodeBase<T, T, Ref<O.Option<T>>, V>>) {
 		this.read.bind(this)
 		this.write.bind(this)
 		this.toRef.bind(this)
@@ -434,7 +428,8 @@ function getVariablesModel<V extends VariablesDefinition>(
 export function int(): IntNode
 export function int<V extends VariablesDefinition>(variables: V): IntNode<V>
 export function int<V extends VariablesDefinition = {}>(variables: V = EMPTY_VARIABLES): IntNode<V> {
-	const base: NodeBase<number, number, Ref<number>, V> = {
+	const node: IntNode<V> = {
+		tag: 'Int',
 		variables: {
 			children: EMPTY_VARIABLES,
 			definition: variables,
@@ -443,21 +438,15 @@ export function int<V extends VariablesDefinition = {}>(variables: V = EMPTY_VAR
 		model: {
 			whole: M.number,
 			partial: M.number
-		}
-	}
-
-	const data = (deps: DataProxyDependencies<NodeBase<number, number, Ref<number>, V>>) =>
-		new LiteralProxy({ ...deps, node: base })
-	return {
-		...base,
-		tag: 'Int',
+		},
 		print: constEmptyString,
-		data,
+		data: deps => new LiteralProxy({ ...deps, node }),
 		store: (deps) =>
-			isEmptyObject(base.variables)
-				? data({ ...deps, node: deps.node || base })
-				: new Store({ ...deps, data, node: deps.node || base })
+			isEmptyObject(variables)
+				? node.data({ ...deps, node: deps.node || node })
+				: new Store({ ...deps, data: node.data, node: deps.node || node })
 	}
+	return node;
 }
 
 export function isIntNode(u: Node): u is IntNode<any> {
@@ -484,7 +473,8 @@ export const staticFloat = float()
 export function string(): StringNode
 export function string<V extends VariablesDefinition>(variables: V): StringNode<V>
 export function string<V extends VariablesDefinition = {}>(variables: V = EMPTY_VARIABLES): StringNode<V> {
-	const base: NodeBase<string, string, Ref<string>, V> = {
+	const node: StringNode<V> = {
+		tag: 'String',
 		variables: {
 			children: EMPTY_VARIABLES,
 			definition: variables,
@@ -493,21 +483,15 @@ export function string<V extends VariablesDefinition = {}>(variables: V = EMPTY_
 		model: {
 			whole: M.string,
 			partial: M.string
-		}
-	}
-
-	const data = (deps: DataProxyDependencies<NodeBase<string, string, Ref<string>, V>>) =>
-		new LiteralProxy({ ...deps, node: base })
-	return {
-		...base,
-		tag: 'String',
+		},
 		print: constEmptyString,
-		data,
+		data: deps => new LiteralProxy({ ...deps, node }),
 		store: (deps) =>
-			isEmptyObject(base.variables)
-				? data({ ...deps, node: deps.node || base })
-				: new Store({ ...deps, data, node: deps.node || base })
+			isEmptyObject(variables)
+				? node.data({ ...deps, node: deps.node || node })
+				: new Store({ ...deps, data: node.data, node: deps.node || node })
 	}
+	return node;
 }
 
 export const staticString = string()
@@ -519,7 +503,8 @@ export function isStringNode(u: Node): u is StringNode {
 export function boolean(): BooleanNode
 export function boolean<V extends VariablesDefinition>(variables: V): BooleanNode<V>
 export function boolean<V extends VariablesDefinition = {}>(variables: V = EMPTY_VARIABLES): BooleanNode<V> {
-	const base = {
+	const node: BooleanNode<V> = {
+		tag: 'Boolean',
 		variables: {
 			children: EMPTY_VARIABLES,
 			definition: variables,
@@ -528,21 +513,15 @@ export function boolean<V extends VariablesDefinition = {}>(variables: V = EMPTY
 		model: {
 			whole: M.boolean,
 			partial: M.boolean
-		}
-	}
-
-	const data = (deps: DataProxyDependencies<NodeBase<boolean, boolean, Ref<boolean>, V>>) =>
-		new LiteralProxy({ ...deps, node: base })
-	return {
-		...base,
-		tag: 'Boolean',
+		},
 		print: constEmptyString,
-		data,
+		data: deps => new LiteralProxy({ ...deps, node }),
 		store: (deps) =>
 			isEmptyObject(variables)
-				? data({ ...deps, node: deps.node || base })
-				: new Store({ ...deps, data, node: deps.node || base })
+				? node.data({ ...deps, node: deps.node || node })
+				: new Store({ ...deps, data: node.data, node: deps.node || node })
 	}
+	return node;
 }
 
 export const staticBoolean = boolean()
@@ -610,15 +589,7 @@ abstract class BaseProxy<T extends NodeBase<any, any, any, any, any>> implements
 
 	abstract write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult>
 
-	toRef(selection: unknown) {
-		return (variables: TypeOfChildrenVariables<T>): CacheResult<Ref<ExtractModelType<T>>> => {
-			return pipe(
-				variables,
-				this.read(selection),
-				TE.map((o) => (O.isSome(o) ? this.deps.ofRef(o.value) : this.deps.ofRef()))
-			)
-		}
-	}
+	abstract toRef(selection: unknown): Reader<TypeOfChildrenVariables<T>, CacheResult<Ref<O.Option<ExtractModelType<T>>>>>
 }
 
 class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {

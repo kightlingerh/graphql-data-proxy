@@ -29,6 +29,11 @@ export function isEmptyString(x: any) {
 
 export const constEmptyString = constant('')
 
+export interface Reactivity {
+	ref: <T>(value: T) => { value: T };
+	reactive: <T>(value: T) => T
+}
+
 export interface Ref<T> {
 	value: Option<T>
 }
