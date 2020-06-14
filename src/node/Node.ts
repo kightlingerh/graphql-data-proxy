@@ -1,6 +1,6 @@
 import { sequenceT } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
-import { constant, Lazy } from 'fp-ts/lib/function'
+import { constant, constVoid, Lazy } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
 import * as IOE from 'fp-ts/lib/IOEither'
 import * as MAP from 'fp-ts/lib/Map'
@@ -90,7 +90,7 @@ export interface FloatNode<V extends VariablesDefinition = {}>
 export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, V extends VariablesDefinition = {}>
 	extends NodeBaseWithProxy<
 		{ [K in keyof T]: ExtractModelType<T[K]> },
-		Partial<{ [K in keyof T]: ExtractModelType<T[K]> }>,
+		Partial<{ [K in keyof T]: ExtractPartialModelType<T[K]> }>,
 		{ [K in keyof T]: ExtractRefsType<T[K]> },
 		V,
 		{} & Intersection<
@@ -574,7 +574,9 @@ abstract class BaseProxy<T extends NodeBase<any, any, any, any, any>> implements
 }
 
 class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
-	readonly proxy: { [K in keyof T['members']]: StoreProxyFromNode<T['members'][K]> }
+	readonly proxy: { [K in keyof T['members']]: StoreProxyFromNode<T['members'][K]> } & {
+		__typename: Proxy<{}, T['__typename'], T['__typename'], T['__typename']>
+	}
 	constructor(deps: Pick<DataProxyDependencies<T>, 'persist'> & Required<Omit<DataProxyDependencies<T>, 'persist'>>) {
 		super(deps)
 		this.proxy = this.getProxy()
@@ -612,7 +614,11 @@ class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
 	}
 
 	private getProxy() {
-		const proxy: Partial<{ [K in keyof T['members']]: StoreProxyFromNode<T['members'][K]> }> = {}
+		const proxy: Partial<
+			{ [K in keyof T['members']]: StoreProxyFromNode<T['members'][K]> } & {
+				__typename: Proxy<{}, T['__typename'], T['__typename'], T['__typename']>
+			}
+		> = {}
 		const members = this.deps.node.members
 		for (const key in members) {
 			const member = members[key]
@@ -622,7 +628,18 @@ class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
 				node: member
 			}) as any
 		}
-		return proxy as { [K in keyof T['members']]: StoreProxyFromNode<T['members'][K]> }
+		proxy.__typename = getTypenameProxy<T['__typename']>(this.deps.node.__typename) as any
+		return proxy as { [K in keyof T['members']]: StoreProxyFromNode<T['members'][K]> } & {
+			__typename: Proxy<{}, T['__typename'], T['__typename'], T['__typename']>
+		}
+	}
+}
+
+function getTypenameProxy<T extends string>(__typename: T): Proxy<{}, T, T, T> {
+	return {
+		read: () => () => IOE.right(O.some(__typename)),
+		write: () => () => IOE.right(constVoid),
+		toRefs: () => () => IOE.right(__typename)
 	}
 }
 
