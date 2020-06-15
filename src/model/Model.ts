@@ -5,6 +5,7 @@ import { pipe } from 'fp-ts/lib/pipeable'
 import { Tree } from 'fp-ts/lib/Tree'
 import * as C from 'io-ts/lib/Codec'
 import { DecodeError } from 'io-ts/lib/Decoder'
+import { lazy as eqLazy } from 'io-ts/lib/Eq';
 import * as E from 'io-ts/lib/Encoder'
 import * as G from 'io-ts/lib/Guard'
 import * as O from 'fp-ts/lib/Option'
@@ -329,4 +330,13 @@ export function tuple<A extends ReadonlyArray<unknown>>(...models: { [K in keyof
 		decode: D.tuple(...models).decode,
 		encode: E.tuple(...models).encode
 	} as any
+}
+
+export function lazy<A>(id: string, model: Lazy<Model<A>>): Model<A> {
+	return {
+		equals: eqLazy(model).equals,
+		is: G.lazy(model).is,
+		decode: D.lazy(id, model).decode,
+		encode: E.lazy(model).encode
+	}
 }
