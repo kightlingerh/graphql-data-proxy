@@ -12,18 +12,6 @@ export function isEmptyObject(obj: object): obj is {} {
 	return Object.keys(obj).length === 0
 }
 
-export function once<T>(fn: Lazy<T>): Lazy<T> {
-	let result: T
-	return () => {
-		if (result) {
-			return result
-		} else {
-			result = fn()
-			return result
-		}
-	}
-}
-
 export function isEmptyString(x: any) {
 	return x === ''
 }

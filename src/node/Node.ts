@@ -34,7 +34,6 @@ import {
 	isEmptyObject,
 	isEmptyString,
 	ON,
-	once,
 	OPEN_BRACKET,
 	OPEN_PAREN,
 	OPEN_SPACE,
@@ -52,6 +51,8 @@ export type TypeOfVariables<T> = ExtractDefinitionType<ExtractVariablesDefinitio
 export type TypeOfChildrenVariables<T> = ExtractDefinitionType<ExtractChildrenVariablesDefinition<T>>
 
 export type TypeOfMergedVariables<T> = TypeOfVariables<T> & TypeOfChildrenVariables<T>
+
+export type TypeOfRefs<T> = T extends { readonly model: NodeModel<any, any, infer A> } ? A : never
 
 export type Node =
 	| PrimitiveNode<any>
@@ -91,7 +92,7 @@ export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, 
 	extends NodeBaseWithProxy<
 		{ [K in keyof T]: ExtractModelType<T[K]> },
 		Partial<{ [K in keyof T]: ExtractPartialModelType<T[K]> }>,
-		{ [K in keyof T]: ExtractRefsType<T[K]> },
+		{ [K in keyof T]: TypeOfRefs<T[K]> },
 		V,
 		{} & Intersection<
 			Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
@@ -114,7 +115,7 @@ export interface ArrayNode<T extends Node, V extends VariablesDefinition = {}>
 	extends NodeBaseWithProxy<
 		ExtractModelType<T>[],
 		ExtractPartialModelType<T>[],
-		Ref<ExtractRefsType<T>[]>,
+		Ref<TypeOfRefs<T>[]>,
 		V,
 		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
 	> {
@@ -126,7 +127,7 @@ export interface MapNode<K extends Node, T extends Node, V extends VariablesDefi
 	extends NodeBaseWithProxy<
 		Map<ExtractModelType<K>, ExtractModelType<T>>,
 		Map<ExtractModelType<K>, ExtractPartialModelType<T>>,
-		Ref<Map<unknown, ExtractRefsType<T>>>,
+		Ref<Map<unknown, TypeOfRefs<T>>>,
 		V,
 		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
 	> {
@@ -139,7 +140,7 @@ export interface OptionNode<T extends Node, V extends VariablesDefinition = {}>
 	extends NodeBaseWithProxy<
 		O.Option<ExtractModelType<T>>,
 		O.Option<ExtractPartialModelType<T>>,
-		Ref<O.Option<ExtractRefsType<T>>>,
+		Ref<O.Option<TypeOfRefs<T>>>,
 		V,
 		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
 	> {
@@ -151,7 +152,7 @@ export interface NonEmptyArrayNode<T extends Node, V extends VariablesDefinition
 	extends NodeBaseWithProxy<
 		NonEmptyArray<ExtractModelType<T>>,
 		NonEmptyArray<ExtractPartialModelType<T>>,
-		Ref<O.Option<NonEmptyArray<ExtractRefsType<T>>>>,
+		Ref<O.Option<NonEmptyArray<TypeOfRefs<T>>>>,
 		V,
 		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
 	> {
@@ -162,8 +163,8 @@ export interface NonEmptyArrayNode<T extends Node, V extends VariablesDefinition
 export interface SumNode<T extends { [K in keyof T]: TypeNode<any, any, any> }, V extends VariablesDefinition = {}>
 	extends NodeBaseWithProxy<
 		{ [K in keyof T]: ExtractModelType<T[K]> & { __typename: T[K]['__typename'] } }[keyof T],
-		{ [K in keyof T]: ExtractPartialModelType<T[K]> & { __typename: T[K]['__typename'] } }[keyof T],
-		Ref<O.Option<{ [K in keyof T]: ExtractRefsType<T[K]> }[keyof T]>>,
+		{ [K in keyof T]: ExtractPartialModelType<T[K]> & { __typename?: T[K]['__typename'] } }[keyof T],
+		Ref<O.Option<{ [K in keyof T]: TypeOfRefs<T[K]> }[keyof T]>>,
 		V,
 		{} & Intersection<
 			Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
@@ -177,7 +178,7 @@ export interface MutationNode<T extends Node, V extends VariablesDefinition = {}
 	extends NodeBaseWithProxy<
 		ExtractModelType<T>,
 		ExtractPartialModelType<T>,
-		ExtractRefsType<T>,
+		TypeOfRefs<T>,
 		V,
 		{} & ExtractChildrenVariablesDefinition<T>
 	> {
@@ -263,8 +264,6 @@ export interface VariablesDefinition {
 	[K: string]: Node
 }
 
-export type ExtractRefsType<T> = T extends { readonly model: NodeModel<any, any, infer A> } ? A : never
-
 export type ExtractModelType<T> = T extends { readonly model: NodeModel<infer A, any, any> } ? A : never
 
 export type ExtractPartialModelType<T> = T extends { readonly model: NodeModel<any, infer A, any> } ? A : never
@@ -287,14 +286,14 @@ type DataProxyFromNode<T extends NodeBase<any, any, any, any, any>> = Proxy<
 	TypeOfChildrenVariables<T>,
 	ExtractModelType<T>,
 	ExtractPartialModelType<T>,
-	ExtractRefsType<T>
+	TypeOfRefs<T>
 >
 
 type StoreProxyFromNode<T extends NodeBase<any, any, any, any, any>> = Proxy<
 	TypeOfChildrenVariables<T> & TypeOfVariables<T>,
 	ExtractModelType<T>,
 	ExtractPartialModelType<T>,
-	ExtractRefsType<T>
+	TypeOfRefs<T>
 >
 
 export interface CacheNodeDependencies {
@@ -330,7 +329,7 @@ class Store<T extends NodeBase<any, any, any, any, any>> implements StoreProxyFr
 	}
 
 	toRefs<Selection extends Node>(selection: Selection) {
-		return (variables: TypeOfChildrenVariables<T> & TypeOfVariables<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T> & TypeOfVariables<T>): CacheResult<TypeOfRefs<T>> => {
 			return this.extractProxy(this.encodeVariables(variables)).toRefs(selection)(variables)
 		}
 	}
@@ -568,7 +567,7 @@ abstract class BaseProxy<T extends NodeBase<any, any, any, any, any>> implements
 	}
 	abstract read(selection: unknown): Reader<TypeOfChildrenVariables<T>, CacheResult<O.Option<ExtractModelType<T>>>>
 
-	abstract toRefs(selection: unknown): Reader<TypeOfChildrenVariables<T>, CacheResult<ExtractRefsType<T>>>
+	abstract toRefs(selection: unknown): Reader<TypeOfChildrenVariables<T>, CacheResult<TypeOfRefs<T>>>
 
 	abstract write(variables: TypeOfChildrenVariables<T>): Reader<ExtractPartialModelType<T>, CacheWriteResult>
 }
@@ -605,11 +604,11 @@ class TypeProxy<T extends TypeNode<any, any, any>> extends BaseProxy<T> {
 	}
 
 	toRefs<Selection extends TypeNode<any, any, any>>(selection: Selection) {
-		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<TypeOfRefs<T>> => {
 			return pipe(
 				selection as Record<keyof T, any>,
 				recordTraverse((k, _) => this.proxy[k as keyof T].toRefs(selection.members[k])(variables as any))
-			) as CacheResult<ExtractRefsType<T>>
+			) as CacheResult<TypeOfRefs<T>>
 		}
 	}
 
@@ -694,7 +693,7 @@ function printVariablesNode<V extends VariablesDefinition>(variables: V): string
 }
 
 function printTypeNodeMembers(members: { [K: string]: Node }): Lazy<string> {
-	return once(() => {
+	return () => {
 		const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE]
 		for (const [key, value] of Object.entries(members)) {
 			tokens.push(key)
@@ -706,7 +705,7 @@ function printTypeNodeMembers(members: { [K: string]: Node }): Lazy<string> {
 		}
 		tokens.push(CLOSE_BRACKET)
 		return tokens.join('')
-	})
+	}
 }
 
 export function type<N extends string, T extends { [K in keyof T]: Node }>(__typename: N, members: T): TypeNode<N, T>
@@ -804,15 +803,15 @@ class MapProxy<T extends MapNode<any, any, any>> extends BaseProxy<T> {
 	}
 
 	toRefs<Selection extends MapNode<any, any, any>>(selection: Selection) {
-		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<TypeOfRefs<T>> => {
 			return IOE.rightIO(() =>
 				this.deps.reactivity.computed(() => {
 					return pipe(
 						traverseMapCacheResult(this.proxy, (m) => m.toRefs(selection.wrapped)(variables as any)),
-						IOE.getOrElse<CacheError, Map<unknown, ExtractRefsType<T['wrapped']>>>(constant(constMap))
+						IOE.getOrElse<CacheError, Map<unknown, TypeOfRefs<T['wrapped']>>>(constant(constMap))
 					)()
 				})
-			) as CacheResult<ExtractRefsType<T>>
+			) as CacheResult<TypeOfRefs<T>>
 		}
 	}
 
@@ -931,7 +930,7 @@ class ArrayProxy<T extends ArrayNode<any, any>> extends BaseProxy<T> {
 	}
 
 	toRefs<Selection extends ArrayNode<any, any>>(selection: Selection) {
-		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<TypeOfRefs<T>> => {
 			return IOE.rightIO(
 				() =>
 					this.deps.reactivity.computed(() => {
@@ -939,9 +938,9 @@ class ArrayProxy<T extends ArrayNode<any, any>> extends BaseProxy<T> {
 							A.array.traverse(cacheErrorApplicativeValidation)(this.proxy.value, (m) =>
 								m.toRefs(selection.wrapped)(variables as any)
 							),
-							IOE.getOrElse<CacheError, Array<ExtractRefsType<T['wrapped']>>>(constant(constEmptyArray))
+							IOE.getOrElse<CacheError, Array<TypeOfRefs<T['wrapped']>>>(constant(constEmptyArray))
 						)()
-					}) as ExtractRefsType<T>
+					}) as TypeOfRefs<T>
 			)
 		}
 	}
@@ -1024,7 +1023,7 @@ class SumProxy<T extends SumNode<any, any>> extends BaseProxy<T> {
 	}
 
 	toRefs<Selection extends SumNode<any, any>>(selection: Selection) {
-		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<TypeOfRefs<T>> => {
 			return IOE.rightIO(() => {
 				return this.deps.reactivity.computed(() => {
 					return pipe(
@@ -1032,12 +1031,12 @@ class SumProxy<T extends SumNode<any, any>> extends BaseProxy<T> {
 						O.fold(constant(IOE.right(O.none)), ([p, k]) =>
 							pipe(p.toRefs(selection.members[k])(variables as any), IOE.map(O.some))
 						),
-						IOE.getOrElse<CacheError, O.Option<{ [K in keyof T]: ExtractRefsType<T[K]> }[keyof T]>>(
+						IOE.getOrElse<CacheError, O.Option<{ [K in keyof T]: TypeOfRefs<T[K]> }[keyof T]>>(
 							constant(constNone)
 						)
 					)()
 				})
-			}) as CacheResult<ExtractRefsType<T>>
+			}) as CacheResult<TypeOfRefs<T>>
 		}
 	}
 
@@ -1078,7 +1077,7 @@ function getSumModel<T extends { [K in keyof T]: TypeNode<string, any> }>(
 
 function getSumPartialModel<T extends { [K in keyof T]: TypeNode<string, any> }>(
 	members: T
-): M.Model<{ [K in keyof T]: ExtractPartialModelType<T[K]> & { __typename: T[K]['__typename'] } }[keyof T]> {
+): M.Model<{ [K in keyof T]: ExtractPartialModelType<T[K]> & { __typename?: T[K]['__typename'] } }[keyof T]> {
 	const m: any = {}
 	Object.keys(m).forEach((key) => {
 		const sumNode = members[key as keyof T]
@@ -1091,7 +1090,7 @@ function getSumPartialModel<T extends { [K in keyof T]: TypeNode<string, any> }>
 }
 
 function printSumNode<T extends { [K in keyof T]: TypeNode<string, any> }>(members: T): Lazy<string> {
-	return once(() => {
+	return () => {
 		const tokens: string[] = [OPEN_BRACKET, TYPENAME]
 		Object.keys(members).forEach((key) => {
 			const n = members[key as keyof T]
@@ -1107,7 +1106,7 @@ function printSumNode<T extends { [K in keyof T]: TypeNode<string, any> }>(membe
 		})
 		tokens.push(CLOSE_BRACKET)
 		return tokens.join('')
-	})
+	}
 }
 
 export function sum<T extends { [K in keyof T]: TypeNode<any, any, any> }>(members: T): SumNode<T>
@@ -1180,7 +1179,7 @@ class OptionProxy<T extends OptionNode<any, any>> extends BaseProxy<T> {
 	}
 
 	toRefs<Selection extends OptionNode<any, any>>(selection: Selection) {
-		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<TypeOfRefs<T>> => {
 			return IOE.rightIO(() =>
 				this.deps.reactivity.computed(() => {
 					return pipe(
@@ -1188,10 +1187,10 @@ class OptionProxy<T extends OptionNode<any, any>> extends BaseProxy<T> {
 						O.fold(constant(IOE.right(O.none)), (p) =>
 							pipe(p.toRefs(selection.wrapped)(variables as any), IOE.map(O.some))
 						),
-						IOE.getOrElse<CacheError, O.Option<ExtractRefsType<T['wrapped']>>>(constant(constNone))
+						IOE.getOrElse<CacheError, O.Option<TypeOfRefs<T['wrapped']>>>(constant(constNone))
 					)()
 				})
-			) as CacheResult<ExtractRefsType<T>>
+			) as CacheResult<TypeOfRefs<T>>
 		}
 	}
 
@@ -1292,7 +1291,7 @@ class NonEmptyArrayProxy<T extends NonEmptyArrayNode<any, any>> extends BaseProx
 	}
 
 	toRefs<Selection extends NonEmptyArrayNode<any, any>>(selection: Selection) {
-		return (variables: TypeOfChildrenVariables<T>): CacheResult<ExtractRefsType<T>> => {
+		return (variables: TypeOfChildrenVariables<T>): CacheResult<TypeOfRefs<T>> => {
 			return IOE.rightIO(() =>
 				this.deps.reactivity.computed(() => {
 					return pipe(
@@ -1302,13 +1301,13 @@ class NonEmptyArrayProxy<T extends NonEmptyArrayNode<any, any>> extends BaseProx
 								m.toRefs(selection.wrapped)(variables as any)
 							)
 						),
-						IOE.fold<CacheError, Array<ExtractRefsType<T>>, O.Option<NonEmptyArray<ExtractRefsType<T>>>>(
+						IOE.fold<CacheError, Array<TypeOfRefs<T>>, O.Option<NonEmptyArray<TypeOfRefs<T>>>>(
 							constant(constNone),
 							(as) => () => (A.isNonEmpty(as) ? O.some(as) : O.none)
 						)
 					)()
 				})
-			) as CacheResult<ExtractRefsType<T>>
+			) as CacheResult<TypeOfRefs<T>>
 		}
 	}
 
@@ -1453,15 +1452,13 @@ export function print<N extends string, T extends { [K in keyof T]: Node }>(
 	schema: SchemaNode<N, T>,
 	operation: string,
 	operationName: string
-): Lazy<string> {
-	return once(() => {
-		const tokens = [operation, ' ', operationName]
-		if (!isEmptyObject(schema.variables.children)) {
-			tokens.push(printVariables(schema.variables.children))
-		}
-		tokens.push(OPEN_SPACE, schema.print())
-		return tokens.join('')
-	})
+): string {
+	const tokens = [operation, ' ', operationName]
+	if (!isEmptyObject(schema.variables.children)) {
+		tokens.push(printVariables(schema.variables.children))
+	}
+	tokens.push(OPEN_SPACE, schema.print())
+	return tokens.join('')
 }
 
 export function pickFromType<

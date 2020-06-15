@@ -15,7 +15,7 @@ export interface CacheDependencies {
 export interface Cache<R> {
 	write(variables: N.TypeOfMergedVariables<R>): Reader<N.ExtractPartialModelType<R>, CacheWriteResult>
 	read(variables: N.TypeOfMergedVariables<R>): CacheResult<O.Option<N.ExtractModelType<R>>>
-	toRefs(variables: N.TypeOfMergedVariables<R>): CacheResult<N.ExtractRefsType<R>>
+	toRefs(variables: N.TypeOfMergedVariables<R>): CacheResult<N.TypeOfRefs<R>>
 }
 
 export interface RequestCache<R> extends Reader<R, Cache<R>> {}
@@ -33,7 +33,7 @@ export function make<S extends N.SchemaNode<any, any>>(c: S) {
 				return right<CacheError, Cache<R>>({
 					write: store.write,
 					read: (variables) => readC(variables) as CacheResult<O.Option<N.ExtractModelType<R>>>,
-					toRefs: (variables) => toRefsC(variables) as CacheResult<N.ExtractRefsType<R>>
+					toRefs: (variables) => toRefsC(variables) as CacheResult<N.TypeOfRefs<R>>
 				})
 			}
 		}
