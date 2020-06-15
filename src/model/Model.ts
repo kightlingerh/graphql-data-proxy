@@ -5,7 +5,7 @@ import { pipe } from 'fp-ts/lib/pipeable'
 import { Tree } from 'fp-ts/lib/Tree'
 import * as C from 'io-ts/lib/Codec'
 import { DecodeError } from 'io-ts/lib/Decoder'
-import { lazy as eqLazy } from 'io-ts/lib/Eq';
+import { lazy as eqLazy } from 'io-ts/lib/Eq'
 import * as E from 'io-ts/lib/Encoder'
 import * as G from 'io-ts/lib/Guard'
 import * as O from 'fp-ts/lib/Option'
@@ -278,7 +278,6 @@ export function sum<T extends string>(
 			}
 			return false
 		}
-
 		return {
 			equals,
 			encode: E.sum(tag)(members).encode,
