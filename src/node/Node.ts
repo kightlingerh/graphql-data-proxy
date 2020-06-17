@@ -793,10 +793,20 @@ class MapProxy<T extends MapNode<any, any, any>> extends BaseProxy<T> {
 			>(
 				data as Map<unknown, ExtractPartialModelType<T>>,
 				((k: ExtractModelType<T['key']>, v: ExtractPartialModelType<T['wrapped']>) => {
-					return pipe(
-						IOE.rightIO(this.getProxy(k as ExtractModelType<T['key']>)),
-						IOE.chain((p) => p.write(variables as any)(v))
-					)
+					if (v === null || v === undefined) {
+						return pipe(
+							IOE.rightIO(this.getProxy(k as ExtractModelType<T['key']>)),
+							IOE.chain(p => IOE.rightIO(() => {
+								this.proxy.delete(k);
+								return () => { this.proxy.set(k, p); }
+							}))
+						);
+					} else {
+						return pipe(
+							IOE.rightIO(this.getProxy(k as ExtractModelType<T['key']>)),
+							IOE.chain((p) => p.write(variables as any)(v))
+						)
+					}
 				}) as any
 			)
 		}

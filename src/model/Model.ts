@@ -5,7 +5,7 @@ import { pipe } from 'fp-ts/lib/pipeable'
 import { Tree } from 'fp-ts/lib/Tree'
 import * as C from 'io-ts/lib/Codec'
 import { DecodeError } from 'io-ts/lib/Decoder'
-import { lazy as eqLazy } from 'io-ts/lib/Eq'
+import { lazy as eqLazy, partial as eqPartial, sum as eqSum, tuple as eqTuple } from 'io-ts/lib/Eq'
 import * as E from 'io-ts/lib/Encoder'
 import * as G from 'io-ts/lib/Guard'
 import * as O from 'fp-ts/lib/Option'
@@ -48,16 +48,7 @@ export function type<T>(members: { [K in keyof T]: Model<T[K]> }): Model<T> {
 
 export function partial<T>(members: { [K in keyof T]: Model<T[K]> }): Model<Partial<T>> {
 	return {
-		equals: (x, y) => {
-			for (const k in members) {
-				const xk = x[k]
-				const yk = y[k]
-				if (!(xk === undefined || yk === undefined ? xk === yk : members[k].equals(xk!, yk!))) {
-					return false
-				}
-			}
-			return true
-		},
+		equals: eqPartial(members).equals,
 		is: G.partial(members).is,
 		...C.partial(members)
 	}
@@ -84,18 +75,7 @@ export function union<A extends ReadonlyArray<unknown>>(...members: { [K in keyo
 				O.fold(constant(JSON.stringify(a)), (m) => m.encode(a))
 			)
 		},
-		...D.union(...members)
-	}
-}
-
-export function typeWithUniqueIdentifier<T, K extends keyof T>(
-	properties: { [K in keyof T]: Model<T[K]> },
-	key: K
-): Model<T> {
-	const keyModel = properties[key]
-	return {
-		...type(properties),
-		equals: (x, y) => keyModel.equals(x[key], y[key])
+		decode: D.union(...members).decode
 	}
 }
 
@@ -133,7 +113,7 @@ const UnknownRecordGuard: G.Guard<Record<string | number, unknown>> = {
 
 const UnknownRecordDecoder: D.Decoder<Record<string | number, unknown>> = D.fromGuard(
 	UnknownRecordGuard,
-	'stringNode | number'
+	'string | number'
 )
 
 export function map<Key, Value>(key: Model<Key>, value: Model<Value>): Model<Map<Key, Value>> {
@@ -269,17 +249,8 @@ export function sum<T extends string>(
 	tag: T
 ): <A>(members: { [K in keyof A]: Model<A[K] & Record<T, K>> }) => Model<A[keyof A]> {
 	return (members) => {
-		const equals = (a: unknown, b: unknown): boolean => {
-			for (const key in members) {
-				const m = members[key]
-				if (m.is(a) && m.is(b)) {
-					return m.equals(a, b)
-				}
-			}
-			return false
-		}
 		return {
-			equals,
+			equals: eqSum(tag)(members).equals,
 			encode: E.sum(tag)(members).encode,
 			is: G.sum(tag)(members).is,
 			decode: D.sum(tag)(members).decode
@@ -324,7 +295,7 @@ export function either<E, A>(left: Model<E>, right: Model<A>): Model<EITHER.Eith
 
 export function tuple<A extends ReadonlyArray<unknown>>(...models: { [K in keyof A]: Model<A[K]> }): Model<A> {
 	return {
-		equals: EQ.getTupleEq(...models).equals,
+		equals: eqTuple(...models).equals,
 		is: G.tuple(...models).is,
 		decode: D.tuple(...models).decode,
 		encode: E.tuple(...models).encode
