@@ -1,5 +1,6 @@
 import { sequenceT } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
+import {Eq} from 'fp-ts/lib/Eq';
 import { constant, constVoid, Lazy } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
 import * as IOE from 'fp-ts/lib/IOEither'
@@ -12,6 +13,7 @@ import { Reader } from 'fp-ts/lib/Reader'
 import { sequence, traverseWithIndex } from 'fp-ts/lib/Record'
 import { Show } from 'fp-ts/lib/Show'
 import { tree } from 'io-ts/lib/Decoder'
+import {Encoder} from 'io-ts/lib/Encoder';
 import * as M from '../model/Model'
 import {
 	CacheError,
@@ -1527,6 +1529,47 @@ export const showNode: Show<Node> = {
 		}
 	}
 }
+
+export function useEq<T extends NodeBase<any, any, any, any, any>>(node: T, eq: Eq<ExtractModelType<T>>): T {
+	return {
+		...node,
+		model: {
+			...node.model,
+			whole: M.useEq(node.model.whole, eq)
+		}
+	}
+}
+
+export function eqById<N extends string, T extends { [K in keyof T]: Node } & Record<'id', Node>, V extends VariablesDefinition = {}>(node: TypeNode<N, T, V>): TypeNode<N, T, V> {
+	return {
+		...node,
+		model: {
+			...node.model,
+			whole: M.eqById(node.model.whole)
+		}
+	}
+}
+
+export function useEncoder<T extends NodeBase<any, any, any, any, any>>(node: T, encoder: Encoder<ExtractModelType<T>>): T {
+	return {
+		...node,
+		model: {
+			...node.model,
+			whole: M.useEncoder(node.model.whole, encoder)
+		}
+	}
+}
+
+export function encodeById<N extends string, T extends { [K in keyof T]: Node } & Record<'id', Node>, V extends VariablesDefinition = {}>(node: TypeNode<N, T, V>): TypeNode<N, T, V> {
+	return {
+		...node,
+		model: {
+			...node.model,
+			whole: M.encodeById(node.model.whole)
+		}
+	}
+}
+
 
 export const showSumNode: Show<SumNode<any>> = {
 	show: (node) =>

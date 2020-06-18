@@ -5,7 +5,7 @@ import { pipe } from 'fp-ts/lib/pipeable'
 import { Tree } from 'fp-ts/lib/Tree'
 import * as C from 'io-ts/lib/Codec'
 import { DecodeError } from 'io-ts/lib/Decoder'
-import { lazy as eqLazy, partial as eqPartial, sum as eqSum, tuple as eqTuple } from 'io-ts/lib/Eq'
+import { lazy as eqLazy, partial as eqPartial, sum as eqSum, tuple as eqTuple, intersection as eqIntersection } from 'io-ts/lib/Eq'
 import * as E from 'io-ts/lib/Encoder'
 import * as G from 'io-ts/lib/Guard'
 import * as O from 'fp-ts/lib/Option'
@@ -46,6 +46,7 @@ export function type<T>(members: { [K in keyof T]: Model<T[K]> }): Model<T> {
 	}
 }
 
+
 export function partial<T>(members: { [K in keyof T]: Model<T[K]> }): Model<Partial<T>> {
 	return {
 		equals: eqPartial(members).equals,
@@ -56,7 +57,7 @@ export function partial<T>(members: { [K in keyof T]: Model<T[K]> }): Model<Part
 
 export function intersection<A, B>(left: Model<A>, right: Model<B>): Model<A & B> {
 	return {
-		equals: (x, y) => left.equals(x, y) && right.equals(x, y),
+		equals: eqIntersection(left, right).equals,
 		is: G.intersection(left, right).is,
 		...C.intersection(left, right)
 	}
@@ -308,5 +309,35 @@ export function lazy<A>(id: string, model: Lazy<Model<A>>): Model<A> {
 		is: G.lazy(model).is,
 		decode: D.lazy(id, model).decode,
 		encode: E.lazy(model).encode
+	}
+}
+
+
+
+export function useEncoder<T>(model: Model<T>, encoder: E.Encoder<T>): Model<T> {
+	return {
+		...model,
+		...encoder,
+	};
+}
+
+export function encodeById<T extends Record<'id', Literal>>(model: Model<T>): Model<T> {
+	return {
+		...model,
+		encode: x => E.id.encode(x.id)
+	}
+}
+
+export function useEq<T>(model: Model<T>, eq: EQ.Eq<T>): Model<T> {
+	return {
+		...model,
+		...eq
+	}
+}
+
+export function eqById<T extends Record<'id', Literal>>(model: Model<T>): Model<T> {
+	return {
+		...model,
+		equals: (x, y) => x.id === y.id
 	}
 }
