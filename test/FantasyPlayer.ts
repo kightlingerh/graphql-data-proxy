@@ -1,14 +1,26 @@
+import {none, Option} from 'fp-ts/lib/Option';
 import * as M from '../src/model'
 import * as N from '../src/node'
 
 const FantasyPlayerId = N.scalar('FantasyPlayerId', M.string)
 
-const FantasyPlayerPersonalInfo = N.type('FantasyPlayerPersonalInfo', {
+const FantasyPlayerPersonalInfo = N.markAsEntity(N.type('FantasyPlayerPersonalInfo', {
 	pictureUrl: N.option(N.staticString),
 	firstName: N.staticString,
 	lastName: N.staticString,
 	highSchool: N.option(N.staticString)
-})
+}))
+
+type Info = N.TypeOfRefs<typeof FantasyPlayerPersonalInfo>
+
+const x: Info = {
+	value: {
+		pictureUrl: none as Option<string>,
+		firstName: '',
+		lastName: '',
+		highSchool: none as Option<string>
+	}
+}
 
 const FantasyPlayerStatisticsQueryVariables = {
 	statisticIds: N.array(N.staticString)

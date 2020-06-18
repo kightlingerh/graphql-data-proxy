@@ -14,7 +14,7 @@ export interface CacheDependencies {
 
 export interface Cache<R> {
 	write(variables: N.TypeOfMergedVariables<R>): Reader<N.ExtractPartialModelType<R>, CacheWriteResult>
-	read(variables: N.TypeOfMergedVariables<R>): CacheResult<O.Option<N.ExtractModelType<R>>>
+	read(variables: N.TypeOfMergedVariables<R>): CacheResult<O.Option<N.TypeOf<R>>>
 	toRefs(variables: N.TypeOfMergedVariables<R>): CacheResult<N.TypeOfRefs<R>>
 }
 
@@ -22,7 +22,7 @@ export interface RequestCache<R> extends Reader<R, Cache<R>> {}
 
 export function make<S extends N.SchemaNode<any, any>>(c: S) {
 	return (deps: CacheDependencies) => {
-		const store = c.store({ persist: deps.persist, reactivity: deps.reactivity, path: deps.id || 'root' })
+		const store = null as any;
 		return <R extends N.SchemaNode<any, any>>(r: R) => {
 			const errors = validate(c, r)
 			if (isNonEmpty(errors)) {
@@ -32,7 +32,7 @@ export function make<S extends N.SchemaNode<any, any>>(c: S) {
 				const toRefsC = store.toRefs(r)
 				return right<CacheError, Cache<R>>({
 					write: store.write,
-					read: (variables) => readC(variables) as CacheResult<O.Option<N.ExtractModelType<R>>>,
+					read: (variables) => readC(variables) as CacheResult<O.Option<N.TypeOf<R>>>,
 					toRefs: (variables) => toRefsC(variables) as CacheResult<N.TypeOfRefs<R>>
 				})
 			}
