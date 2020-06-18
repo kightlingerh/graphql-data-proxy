@@ -5,7 +5,13 @@ import { pipe } from 'fp-ts/lib/pipeable'
 import { Tree } from 'fp-ts/lib/Tree'
 import * as C from 'io-ts/lib/Codec'
 import { DecodeError } from 'io-ts/lib/Decoder'
-import { lazy as eqLazy, partial as eqPartial, sum as eqSum, tuple as eqTuple, intersection as eqIntersection } from 'io-ts/lib/Eq'
+import {
+	lazy as eqLazy,
+	partial as eqPartial,
+	sum as eqSum,
+	tuple as eqTuple,
+	intersection as eqIntersection
+} from 'io-ts/lib/Eq'
 import * as E from 'io-ts/lib/Encoder'
 import * as G from 'io-ts/lib/Guard'
 import * as O from 'fp-ts/lib/Option'
@@ -45,7 +51,6 @@ export function type<T>(members: { [K in keyof T]: Model<T[K]> }): Model<T> {
 		...C.type(members)
 	}
 }
-
 
 export function partial<T>(members: { [K in keyof T]: Model<T[K]> }): Model<Partial<T>> {
 	return {
@@ -312,19 +317,17 @@ export function lazy<A>(id: string, model: Lazy<Model<A>>): Model<A> {
 	}
 }
 
-
-
 export function useEncoder<T>(model: Model<T>, encoder: E.Encoder<T>): Model<T> {
 	return {
 		...model,
-		...encoder,
-	};
+		...encoder
+	}
 }
 
 export function encodeById<T extends Record<'id', Literal>>(model: Model<T>): Model<T> {
 	return {
 		...model,
-		encode: x => E.id.encode(x.id)
+		encode: (x) => E.id.encode(x.id)
 	}
 }
 
