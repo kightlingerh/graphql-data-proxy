@@ -22,7 +22,7 @@ export interface RequestCache<R> extends Reader<R, Cache<R>> {}
 
 export function make<S extends N.SchemaNode<any, any>>(c: S) {
 	return (deps: CacheDependencies) => {
-		const store = null as any;
+		const store = null as any
 		return <R extends N.SchemaNode<any, any>>(r: R) => {
 			const errors = validate(c, r)
 			if (isNonEmpty(errors)) {

@@ -2,13 +2,10 @@ import { Eq } from 'fp-ts/lib/Eq'
 import { Lazy } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import { Reader } from 'fp-ts/lib/Reader'
 import { Show } from 'fp-ts/lib/Show'
 import { Encoder } from 'io-ts/lib/Encoder'
 import * as M from '../model/Model'
 import {
-	CacheResult,
-	CacheWriteResult,
 	CLOSE_BRACKET,
 	CLOSE_PAREN,
 	COLON,
@@ -38,140 +35,186 @@ export type TypeOfRefs<T> = T extends { readonly model: NodeModel<any, any, infe
 
 export type Node =
 	| PrimitiveNode<any>
-	| TypeNode<any, any, any>
+	| TypeNode<any, any, any, any>
 	| WrappedNode
-	| SumNode<any, any>
-	| ScalarNode<any, any, any>
-	| MutationNode<any, any>
+	| SumNode<any, any, any>
+	| ScalarNode<any, any, any, any>
+	| MutationNode<any, any, any>
 
-export type PrimitiveNode<V extends VariablesDefinition = {}> =
-	| StringNode<V>
-	| BooleanNode<V>
-	| FloatNode<V>
-	| IntNode<V>
+export type PrimitiveNode<Variables extends VariablesDefinition = {}> =
+	| StringNode<Variables, any>
+	| BooleanNode<Variables, any>
+	| FloatNode<Variables, any>
+	| IntNode<Variables, any>
 
-export interface StringNode<V extends VariablesDefinition = {}>
-	extends NodeBase<string, string, Ref<O.Option<string>>, V> {
+export interface StringNode<Variables extends VariablesDefinition = {}, Refs = Ref<O.Option<string>>>
+	extends NodeBase<string, string, Refs, Variables> {
 	readonly tag: 'String'
 }
 
-export interface BooleanNode<V extends VariablesDefinition = {}>
-	extends NodeBase<boolean, boolean, Ref<O.Option<boolean>>, V> {
+export interface BooleanNode<Variables extends VariablesDefinition = {}, Refs = Ref<O.Option<boolean>>>
+	extends NodeBase<boolean, boolean, Refs, Variables> {
 	readonly tag: 'Boolean'
 }
 
-export interface IntNode<V extends VariablesDefinition = {}>
-	extends NodeBase<number, number, Ref<O.Option<number>>, V> {
+export interface IntNode<Variables extends VariablesDefinition = {}, Refs = Ref<O.Option<number>>>
+	extends NodeBase<number, number, Refs, Variables> {
 	readonly tag: 'Int'
 }
 
-export interface FloatNode<V extends VariablesDefinition = {}>
-	extends NodeBase<number, number, Ref<O.Option<number>>, V> {
+export interface FloatNode<V extends VariablesDefinition = {}, Refs = Ref<O.Option<number>>>
+	extends NodeBase<number, number, Refs, V> {
 	readonly tag: 'Float'
 }
 
-export interface TypeNode<N extends string, T extends { [K in keyof T]: Node }, V extends VariablesDefinition = {}>
+export interface TypeNode<
+	Name extends string,
+	Members extends { [K in keyof Members]: Node },
+	Variables extends VariablesDefinition = {},
+	Refs = { [K in keyof Members]: TypeOfRefs<Members[K]> }
+>
 	extends NodeBase<
-		{ [K in keyof T]: TypeOf<T[K]> },
-		Partial<{ [K in keyof T]: ExtractPartialModelType<T[K]> }>,
-		{ [K in keyof T]: TypeOfRefs<T[K]> },
-		V,
+		{ [K in keyof Members]: TypeOf<Members[K]> },
+		Partial<{ [K in keyof Members]: ExtractPartialModelType<Members[K]> }>,
+		Refs,
+		Variables,
 		{} & Intersection<
-			Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
+			Values<
+				{
+					[K in keyof Members]: ExtractChildrenVariablesDefinition<Members[K]> &
+						ExtractVariablesDefinition<Members[K]>
+				}
+			>
 		>
 	> {
-	readonly __typename: N
+	readonly __typename: Name
 	readonly tag: 'Type'
-	readonly members: T
+	readonly members: Members
 }
 
 export type SchemaNode<N extends string, T extends { [K in keyof T]: Node }> = TypeNode<N, T>
 
 export type WrappedNode =
-	| ArrayNode<any, any>
-	| MapNode<any, any, any>
-	| OptionNode<any, any>
-	| NonEmptyArrayNode<any, any>
+	| ArrayNode<any, any, any>
+	| MapNode<any, any, any, any>
+	| OptionNode<any, any, any>
+	| NonEmptyArrayNode<any, any, any>
 
-export interface ArrayNode<T extends Node, V extends VariablesDefinition = {}>
+export interface ArrayNode<
+	Wrapped extends Node,
+	Variables extends VariablesDefinition = {},
+	Refs = Ref<TypeOfRefs<Wrapped>[]>
+>
 	extends NodeBase<
-		TypeOf<T>[],
-		ExtractPartialModelType<T>[],
-		Ref<TypeOfRefs<T>[]>,
-		V,
-		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
+		TypeOf<Wrapped>[],
+		ExtractPartialModelType<Wrapped>[],
+		Refs,
+		Variables,
+		{} & ExtractChildrenVariablesDefinition<Wrapped> & ExtractVariablesDefinition<Wrapped>
 	> {
 	readonly tag: 'Array'
-	readonly wrapped: T
+	readonly wrapped: Wrapped
 }
 
-export interface MapNode<K extends Node, T extends Node, V extends VariablesDefinition = {}>
+export interface MapNode<
+	Key extends Node,
+	Value extends Node,
+	Variables extends VariablesDefinition = {},
+	Refs = Map<unknown, TypeOfRefs<Value>>
+>
 	extends NodeBase<
-		Map<TypeOf<K>, TypeOf<T>>,
-		Map<TypeOf<K>, ExtractPartialModelType<T>>,
-		Map<unknown, TypeOfRefs<T>>,
-		V,
-		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
+		Map<TypeOf<Key>, TypeOf<Value>>,
+		Map<TypeOf<Key>, ExtractPartialModelType<Value>>,
+		Refs,
+		Variables,
+		{} & ExtractChildrenVariablesDefinition<Value> & ExtractVariablesDefinition<Value>
 	> {
 	readonly tag: 'Map'
-	readonly key: K
-	readonly wrapped: T
+	readonly key: Key
+	readonly wrapped: Value
 }
 
-export interface OptionNode<T extends Node, V extends VariablesDefinition = {}>
+export interface OptionNode<
+	Wrapped extends Node,
+	Variables extends VariablesDefinition = {},
+	Refs = Ref<O.Option<TypeOfRefs<Wrapped>>>
+>
 	extends NodeBase<
-		O.Option<TypeOf<T>>,
-		O.Option<ExtractPartialModelType<T>>,
-		Ref<O.Option<TypeOfRefs<T>>>,
-		V,
-		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
+		O.Option<TypeOf<Wrapped>>,
+		O.Option<ExtractPartialModelType<Wrapped>>,
+		Refs,
+		Variables,
+		{} & ExtractChildrenVariablesDefinition<Wrapped> & ExtractVariablesDefinition<Wrapped>
 	> {
 	readonly tag: 'Option'
-	readonly wrapped: T
+	readonly wrapped: Wrapped
 }
 
-export interface NonEmptyArrayNode<T extends Node, V extends VariablesDefinition = {}>
+export interface NonEmptyArrayNode<
+	Wrapped extends Node,
+	Variables extends VariablesDefinition = {},
+	Refs = Ref<O.Option<NonEmptyArray<TypeOfRefs<Wrapped>>>>
+>
 	extends NodeBase<
-		NonEmptyArray<TypeOf<T>>,
-		NonEmptyArray<ExtractPartialModelType<T>>,
-		Ref<O.Option<NonEmptyArray<TypeOfRefs<T>>>>,
-		V,
-		{} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T>
+		NonEmptyArray<TypeOf<Wrapped>>,
+		NonEmptyArray<ExtractPartialModelType<Wrapped>>,
+		Refs,
+		Variables,
+		{} & ExtractChildrenVariablesDefinition<Wrapped> & ExtractVariablesDefinition<Wrapped>
 	> {
 	readonly tag: 'NonEmptyArray'
-	readonly wrapped: T
+	readonly wrapped: Wrapped
 }
 
-export interface SumNode<T extends { [K in keyof T]: TypeNode<any, any, any> }, V extends VariablesDefinition = {}>
+export interface SumNode<
+	Members extends { [K in keyof Members]: TypeNode<any, any, any> },
+	Variables extends VariablesDefinition = {},
+	Refs = Ref<O.Option<{ [K in keyof Members]: TypeOfRefs<Members[K]> }[keyof Members]>>
+>
 	extends NodeBase<
-		{ [K in keyof T]: TypeOf<T[K]> & { __typename: T[K]['__typename'] } }[keyof T],
-		{ [K in keyof T]: ExtractPartialModelType<T[K]> & { __typename?: T[K]['__typename'] } }[keyof T],
-		Ref<O.Option<{ [K in keyof T]: TypeOfRefs<T[K]> }[keyof T]>>,
-		V,
+		{ [K in keyof Members]: TypeOf<Members[K]> & { __typename: Members[K]['__typename'] } }[keyof Members],
+		{
+			[K in keyof Members]: ExtractPartialModelType<Members[K]> & { __typename?: Members[K]['__typename'] }
+		}[keyof Members],
+		Refs,
+		Variables,
 		{} & Intersection<
-			Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
+			Values<
+				{
+					[K in keyof Members]: ExtractChildrenVariablesDefinition<Members[K]> &
+						ExtractVariablesDefinition<Members[K]>
+				}
+			>
 		>
 	> {
 	readonly tag: 'Sum'
-	readonly members: T
+	readonly members: Members
 }
 
-export interface MutationNode<T extends Node, V extends VariablesDefinition = {}>
+export interface MutationNode<
+	Return extends Node,
+	Variables extends VariablesDefinition = {},
+	Refs = TypeOfRefs<Return>
+>
 	extends NodeBase<
-		TypeOf<T>,
-		ExtractPartialModelType<T>,
-		TypeOfRefs<T>,
-		V,
-		{} & ExtractChildrenVariablesDefinition<T>
+		TypeOf<Return>,
+		ExtractPartialModelType<Return>,
+		Refs,
+		Variables,
+		{} & ExtractChildrenVariablesDefinition<Return>
 	> {
 	readonly tag: 'Mutation'
-	readonly result: T
+	readonly result: Return
 }
 
-export interface ScalarNode<N extends string, T, V extends VariablesDefinition = {}>
-	extends NodeBase<T, T, Ref<O.Option<T>>, V> {
+export interface ScalarNode<
+	Name extends string,
+	Data,
+	Variables extends VariablesDefinition = {},
+	Refs = Ref<O.Option<Data>>
+> extends NodeBase<Data, Data, Refs, Variables> {
 	readonly tag: 'Scalar'
-	readonly name: N
+	readonly name: Name
 }
 
 interface NodeBase<
@@ -185,11 +228,12 @@ interface NodeBase<
 	readonly model: NodeModel<Data, PartialData, Refs>
 	readonly tag: string
 	readonly print: Lazy<string>
-	readonly __cache__?: BaseCacheConfig;
+	readonly __cache__?: CacheConfig
 }
 
-export interface BaseCacheConfig {
-	isEntity: boolean;
+export interface CacheConfig {
+	isEntity?: boolean
+	uniqueBy?: string
 }
 
 interface NodeVariables<V extends VariablesDefinition = {}, MV extends VariablesDefinition = {}> {
@@ -224,14 +268,11 @@ export type ExtractDefinitionType<V> = {
 	[K in keyof V]: TypeOf<V[K]>
 }
 
-
 const EMPTY_VARIABLES_MODEL = M.type({})
 
 const EMPTY_VARIABLES: any = {}
 
-function getVariablesModel<V extends VariablesDefinition>(
-	variables: V
-): M.Model<{ [K in keyof V]: TypeOf<V[K]> }> {
+function getVariablesModel<V extends VariablesDefinition>(variables: V): M.Model<{ [K in keyof V]: TypeOf<V[K]> }> {
 	return isEmptyObject(variables) ? (EMPTY_VARIABLES_MODEL as any) : M.type(variables)
 }
 
@@ -289,7 +330,7 @@ export function string<V extends VariablesDefinition = {}>(variables: V = EMPTY_
 			partial: M.string
 		},
 		print: constEmptyString
-	};
+	}
 }
 
 export const staticString = string()
@@ -312,7 +353,7 @@ export function boolean<V extends VariablesDefinition = {}>(variables: V = EMPTY
 			whole: M.boolean,
 			partial: M.boolean
 		},
-		print: constEmptyString,
+		print: constEmptyString
 	}
 }
 
@@ -766,25 +807,21 @@ export function print<N extends string, T extends { [K in keyof T]: Node }>(
 	return tokens.join('')
 }
 
-export function pickFromType<
-	Name extends string,
-	T extends { [K in keyof T]: Node },
-	V extends VariablesDefinition,
-	P extends keyof T
->(node: TypeNode<Name, T, V>, ...keys: P[]): TypeNode<Name, Pick<T, P>, V> {
+export function pickFromType<T extends TypeNode<any, any, any, any>, P extends keyof T['members']>(
+	node: T,
+	...keys: P[]
+): TypeNode<T['__typename'], Pick<T['members'], P>, T['variables']['definition']> {
 	const n: any = {}
 	keys.forEach((k) => {
 		n[k] = node.members[k]
 	})
-	return type(node.__typename, n, node.variables.definition)
+	return type(node.__typename, n, node.variables.definition) as any
 }
 
-export function omitFromType<
-	Name extends string,
-	T extends { [K in keyof T]: Node },
-	V extends VariablesDefinition,
-	P extends keyof T
->(node: TypeNode<Name, T, V>, ...keys: P[]): TypeNode<Name, Omit<T, P>, V> {
+export function omitFromType<T extends TypeNode<any, any, any, any>, P extends keyof T['members']>(
+	node: T,
+	...keys: P[]
+): TypeNode<T['__typename'], Omit<T['members'], P>, T['variables']['definition']> {
 	const n: any = {}
 	const members = node.members
 	Object.keys(members).forEach((k) => {
@@ -792,7 +829,7 @@ export function omitFromType<
 			n[k] = members[k as keyof T]
 		}
 	})
-	return type(node.__typename, n, node.variables.definition)
+	return type(node.__typename, n, node.variables.definition) as any
 }
 
 export const showNode: Show<Node> = {
@@ -847,10 +884,7 @@ export function eqById<
 	}
 }
 
-export function useEncoder<T extends NodeBase<any, any, any, any, any>>(
-	node: T,
-	encoder: Encoder<TypeOf<T>>
-): T {
+export function useEncoder<T extends NodeBase<any, any, any, any, any>>(node: T, encoder: Encoder<TypeOf<T>>): T {
 	return {
 		...node,
 		model: {
@@ -861,31 +895,52 @@ export function useEncoder<T extends NodeBase<any, any, any, any, any>>(
 }
 
 export function encodeById<
-	N extends string,
-	T extends { [K in keyof T]: Node } & Record<'id', Node>,
-	V extends VariablesDefinition = {}
->(node: TypeNode<N, T, V>): TypeNode<N, T, V> {
+	Name extends string,
+	Members extends { [K in keyof Members]: Node } & Record<'id', Node>,
+	Variables extends VariablesDefinition = {},
+	Refs = { [K in keyof Members]: TypeOfRefs<Members[K]> }
+>(node: TypeNode<Name, Members, Variables, Refs>): TypeNode<Name, Members, Variables, Refs> {
 	return {
 		...node,
 		model: {
 			...node.model,
 			whole: M.useEncoder(node.model.whole, {
-				encode: a => node.members.id.model.whole.encode(a.id)
+				encode: (a) => node.members.id.model.whole.encode(a.id)
 			})
 		}
 	}
 }
 
-export function markAsEntity<T extends NodeBase<any, any, any, any, any>>(
-	node: T
-): Omit<T, 'model'> & {
-	readonly model: NodeModel<TypeOf<T>, ExtractPartialModelType<T>, Ref<TypeOf<T>>>
-} {
+type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any>
+	? TypeNode<T['__typename'], T['members'], ExtractVariablesDefinition<T>, Ref<O.Option<TypeOf<T>>>>
+	: T extends SumNode<any, any, any>
+	? SumNode<T['members'], ExtractVariablesDefinition<T>, Ref<O.Option<TypeOf<T>>>>
+	: T extends ArrayNode<any, any, any>
+	? ArrayNode<T['wrapped'], ExtractVariablesDefinition<T>, Ref<O.Option<TypeOf<T>>>>
+	: T extends NonEmptyArrayNode<any, any, any>
+	? NonEmptyArrayNode<T['wrapped'], ExtractVariablesDefinition<T>, Ref<O.Option<TypeOf<T>>>>
+	: T extends OptionNode<any, any, any>
+	? OptionNode<T['wrapped'], ExtractVariablesDefinition<T>, Ref<O.Option<TypeOf<T>>>>
+	: T extends MapNode<any, any, any, any>
+	? MapNode<T['key'], T['wrapped'], ExtractVariablesDefinition<T>, Ref<O.Option<TypeOf<T>>>>
+	: T
+
+export function markAsEntity<T extends Node>(node: T): ExtractEntityType<T> {
 	return {
 		...node,
 		__cache__: {
 			...node.__cache__,
 			isEntity: true
+		}
+	} as any
+}
+
+export function markAsUnique<T extends TypeNode<any, any, any, any>>(node: T, uniqueBy: keyof T['members']): T {
+	return {
+		...node,
+		__cache__: {
+			...node.__cache__,
+			uniqueBy
 		}
 	}
 }
