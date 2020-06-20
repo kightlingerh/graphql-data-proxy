@@ -232,20 +232,20 @@ interface NodeBase<
 }
 
 export interface CacheConfig {
-	isEntity?: boolean
-	uniqueBy?: string
+	readonly isEntity?: boolean
+	readonly uniqueBy?: string
 }
 
 interface NodeVariables<V extends VariablesDefinition = {}, MV extends VariablesDefinition = {}> {
-	children: MV
-	definition: V
-	model: M.Model<ExtractDefinitionType<V>>
+	readonly children: MV
+	readonly definition: V
+	readonly model: M.Model<ExtractDefinitionType<V>>
 }
 
 interface NodeModel<W, P, R> {
-	whole: M.Model<W>
-	partial: M.Model<P>
-	__refs?: R
+	readonly whole: M.Model<W>
+	readonly partial: M.Model<P>
+	readonly __refs?: R
 }
 
 export interface VariablesDefinition {
