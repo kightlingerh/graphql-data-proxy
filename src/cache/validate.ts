@@ -23,14 +23,38 @@ export function validate(schema: N.SchemaNode<any, any>, request: N.SchemaNode<a
 	}
 }
 
+function isWrappedNode(node: N.Node): node is N.WrappedNode {
+	switch (node.tag) {
+		case 'Option':
+		case 'NonEmptyArray':
+		case 'Map':
+		case 'Array':
+			return true
+		default:
+			return false
+	}
+}
+
+function isTypeNode(node: N.Node): node is N.TypeNode<any, any, any, any, any, any, any> {
+	return node.tag === 'Type'
+}
+
+function isScalarNode(node: N.Node): node is N.ScalarNode<any, any, any, any, any, any> {
+	return node.tag === 'Scalar'
+}
+
+function isSumNode(node: N.Node): node is N.SumNode<any, any, any, any, any, any> {
+	return node.tag === 'Sum'
+}
+
 function validateNode(x: N.Node, y: N.Node): Array<Tree<string>> {
-	if (N.isWrappedNode(x) && N.isWrappedNode(y)) {
+	if (isWrappedNode(x) && isWrappedNode(y)) {
 		return validateWrappedNode(x.wrapped, y.wrapped)
-	} else if (N.isTypeNode(x) && N.isTypeNode(y)) {
+	} else if (isTypeNode(x) && isTypeNode(y)) {
 		return validateTypeNode(x, y)
-	} else if (N.isScalarNode(x) && N.isScalarNode(y)) {
+	} else if (isScalarNode(x) && isScalarNode(y)) {
 		return validateScalarNode(x, y)
-	} else if (N.isSumNode(x) && N.isSumNode(y)) {
+	} else if (isSumNode(x) && isSumNode(y)) {
 		return validateSumNode(x, y)
 	} else {
 		return [tree(`cannot use node ${N.showNode.show(y)}, should be assignable to ${N.showNode.show(x)}`)]
@@ -59,6 +83,10 @@ function validateTypeNode<SchemaNode extends N.TypeNode<any, any, any>, RequestN
 	return errors
 }
 
+function isMapNode(node: N.Node): node is N.MapNode<any, any, any, any, any, any> {
+	return node.tag === 'Map'
+}
+
 function validateWrappedNode<SchemaNode extends N.WrappedNode, RequestNode extends N.WrappedNode>(
 	x: SchemaNode,
 	y: RequestNode
@@ -68,7 +96,7 @@ function validateWrappedNode<SchemaNode extends N.WrappedNode, RequestNode exten
 		return [
 			tree(
 				`invalid request within ${x.tag}<${
-					N.isMapNode(x) ? `${x.key.name || x.key.__typename || x.key.tag}, ` : ''
+					isMapNode(x) ? `${x.key.name || x.key.__typename || x.key.tag}, ` : ''
 				}${x.wrapped.name || x.wrapped.__typename || x.tag}>`,
 				errors
 			)
@@ -86,7 +114,7 @@ function validateScalarNode<
 	if (x.name !== y.name) {
 		errors.push(tree(`scalar nodes are not the same, schema has ${x.name}, while request has ${y.name}`))
 	}
-	if (x.model !== y.model) {
+	if (x.strictModel !== y.strictModel) {
 		errors.push(tree(`Scalar Node: ${x.name} in the schema has a different model than Scalar Node:${y.name}`))
 	}
 	return errors

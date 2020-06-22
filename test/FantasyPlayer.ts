@@ -1,33 +1,51 @@
-import { none, Option, some } from 'fp-ts/lib/Option'
+import {none} from 'fp-ts/lib/Option';
 import * as M from '../src/model'
 import * as N from '../src/node'
 
 const FantasyPlayerId = N.scalar('FantasyPlayerId', M.string)
 
-const FantasyPlayerPersonalInfo = N.type('FantasyPlayerPersonalInfo', {
-	pictureUrl: N.option(N.staticString),
-	firstName: N.staticString,
-	lastName: N.staticString,
-	highSchool: N.option(N.staticString)
-}, { fantasyPlayerIds: N.array(N.staticString) })
+const FantasyPlayerPersonalInfo = N.type(
+	'FantasyPlayerPersonalInfo',
+	{
+		pictureUrl: N.option(N.staticString),
+		firstName: N.staticString,
+		lastName: N.staticString,
+		highSchool: N.option(N.staticString)
+	},
+	{ fantasyPlayerIds: N.array(N.staticString) }
+)
 
+const PartialFantasyPlayerPersonalInfo = N.omitFromType(FantasyPlayerPersonalInfo, 'pictureUrl')
 
-const PartialFantasyPlayerPersonalInfo = N.pickFromType(FantasyPlayerPersonalInfo, 'pictureUrl')
+type Vars = N.TypeOfMergedVariables<typeof PartialFantasyPlayerPersonalInfo>
 
 const FantasyPlayerStatisticsQueryVariables = {
 	statisticIds: N.array(N.staticString)
 }
 
+const FantasyPlayerFantasyInfo = N.type(
+	'FantasyPlayerFantasyInfo',
+	{
+		ownerFantasyTeamId: N.option(N.staticString)
+	},
+	FantasyPlayerStatisticsQueryVariables
+)
 
-const FantasyPlayerFantasyInfo = N.type('FantasyPlayerFantasyInfo', {
-	ownerFantasyTeamId: N.option(N.staticString)
-}, FantasyPlayerStatisticsQueryVariables)
+const FantasyPlayerInfo = N.sum(FantasyPlayerPersonalInfo, FantasyPlayerFantasyInfo)()
 
-const FantasyPlayerInfo = N.sum(FantasyPlayerPersonalInfo, FantasyPlayerFantasyInfo)();
+export type Data = N.TypeOf<typeof FantasyPlayerInfo>
 
-export type Data = N.TypeOf<typeof FantasyPlayerInfo>;
+const x: Data = {
+	__typename: 'FantasyPlayerFantasyInfo',
+	ownerFantasyTeamId: none
+}
 
 export type MergedVariables = N.TypeOfMergedVariables<typeof FantasyPlayerInfo>
+
+const variables: MergedVariables = {
+	fantasyPlayerIds: [],
+	statisticIds: [false]
+}
 
 const FantasyPlayerStatisticsMap = N.map(
 	N.staticInt,
@@ -47,4 +65,3 @@ export const FantasyPlayer = N.markAsEntity(
 		fantasyInfo: FantasyPlayerFantasyInfo
 	})
 )
-
