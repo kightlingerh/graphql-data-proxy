@@ -1,4 +1,4 @@
-import {none} from 'fp-ts/lib/Option';
+import { none } from 'fp-ts/lib/Option'
 import * as M from '../src/model'
 import * as N from '../src/node'
 

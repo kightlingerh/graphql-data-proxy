@@ -39,9 +39,9 @@ export type Node =
 	| PrimitiveNode
 	| WrappedNode
 	| TypeNode<any, any, any, any, any, any, any>
-	| SumNode<any, any, any>
-	| ScalarNode<any, any, any, any>
-	| MutationNode<any, any, any>
+	| SumNode<any, any, any, any, any, any>
+	| ScalarNode<any, any, any, any, any, any>
+	| MutationNode<any, any, any, any, any, any>
 
 export type PrimitiveNode =
 	| StringNode<any, any, any, any>
@@ -914,12 +914,34 @@ export function useEncoder<T extends NodeDefinition<any, any, any, any, any>>(no
 	}
 }
 
-export function encodeById<T extends TypeNode<any, Record<'id', Node>, any, any, any, any, any>>(node: T): T {
-	return {
-		...node,
-		strictModel: M.useEncoder(node.strictModel, {
-			encode: (a) => node.members.id.strictModel.encode(a.id)
-		})
+export function encodeById<T extends TypeNode<any, Record<'id', Node>, any, any, any, any, any>>(node: T): T
+export function encodeById<
+	T extends SumNode<ReadonlyArray<TypeNode<any, Record<'id', Node>, any, any, any, any, any>>>
+>(node: T): T
+export function encodeById<
+	T extends
+		| TypeNode<any, Record<'id', Node>, any, any, any, any, any>
+		| SumNode<ReadonlyArray<TypeNode<any, Record<'id', Node>, any, any, any, any, any>>>
+>(node: T): T {
+	switch (node.tag) {
+		case 'Type':
+			return {
+				...node,
+				strictModel: M.useEncoder(node.strictModel, {
+					encode: (a) => (node as TypeNode<any, Record<'id', Node>>).members.id.strictModel.encode(a.id)
+				})
+			}
+		case 'Sum':
+			const o = getSumObject(...(node.members as ReadonlyArray<TypeNode<any, Record<'id', Node>>>))
+			return {
+				...node,
+				strictModel: {
+					...node.strictModel,
+					encode: (a) => {
+						return o[a.__typename].encode(a.id)
+					}
+				}
+			}
 	}
 }
 
