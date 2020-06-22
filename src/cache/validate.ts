@@ -79,8 +79,8 @@ function validateWrappedNode<SchemaNode extends N.WrappedNode, RequestNode exten
 }
 
 function validateScalarNode<
-	SchemaNode extends N.ScalarNode<string, any, N.VariablesDefinition>,
-	RequestNode extends N.ScalarNode<string, any, N.VariablesDefinition>
+	SchemaNode extends N.ScalarNode<string, any, N.NodeVariablesDefinition>,
+	RequestNode extends N.ScalarNode<string, any, N.NodeVariablesDefinition>
 >(x: SchemaNode, y: RequestNode): Array<Tree<string>> {
 	const errors = []
 	if (x.name !== y.name) {

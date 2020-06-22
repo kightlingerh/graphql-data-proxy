@@ -13,7 +13,7 @@ export interface CacheDependencies {
 }
 
 export interface Cache<R> {
-	write(variables: N.TypeOfMergedVariables<R>): Reader<N.ExtractPartialModelType<R>, CacheWriteResult>
+	write(variables: N.TypeOfMergedVariables<R>): Reader<N.TypeOfPartial<R>, CacheWriteResult>
 	read(variables: N.TypeOfMergedVariables<R>): CacheResult<O.Option<N.TypeOf<R>>>
 	toRefs(variables: N.TypeOfMergedVariables<R>): CacheResult<N.TypeOfRefs<R>>
 }

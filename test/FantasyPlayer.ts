@@ -4,35 +4,30 @@ import * as N from '../src/node'
 
 const FantasyPlayerId = N.scalar('FantasyPlayerId', M.string)
 
-const FantasyPlayerPersonalInfo = N.markAsEntity(
-	N.type('FantasyPlayerPersonalInfo', {
-		pictureUrl: N.option(N.staticString),
-		firstName: N.staticString,
-		lastName: N.staticString,
-		highSchool: N.option(N.staticString)
-	})
-)
+const FantasyPlayerPersonalInfo = N.type('FantasyPlayerPersonalInfo', {
+	pictureUrl: N.option(N.staticString),
+	firstName: N.staticString,
+	lastName: N.staticString,
+	highSchool: N.option(N.staticString)
+}, { fantasyPlayerIds: N.array(N.staticString) })
+
 
 const PartialFantasyPlayerPersonalInfo = N.pickFromType(FantasyPlayerPersonalInfo, 'pictureUrl')
-
-type Info = N.TypeOfRefs<typeof PartialFantasyPlayerPersonalInfo>
-
-const x: Info = {
-	value: some({
-		pictureUrl: none as Option<string>,
-		firstName: '',
-		lastName: '',
-		highSchool: none as Option<string>
-	})
-}
 
 const FantasyPlayerStatisticsQueryVariables = {
 	statisticIds: N.array(N.staticString)
 }
 
+
 const FantasyPlayerFantasyInfo = N.type('FantasyPlayerFantasyInfo', {
 	ownerFantasyTeamId: N.option(N.staticString)
-})
+}, FantasyPlayerStatisticsQueryVariables)
+
+const FantasyPlayerInfo = N.sum(FantasyPlayerPersonalInfo, FantasyPlayerFantasyInfo)();
+
+export type Data = N.TypeOf<typeof FantasyPlayerInfo>;
+
+export type MergedVariables = N.TypeOfMergedVariables<typeof FantasyPlayerInfo>
 
 const FantasyPlayerStatisticsMap = N.map(
 	N.staticInt,
@@ -53,4 +48,3 @@ export const FantasyPlayer = N.markAsEntity(
 	})
 )
 
-type MergedVariables = N.TypeOfMergedVariables<typeof FantasyPlayer>
