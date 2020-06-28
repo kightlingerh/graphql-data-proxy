@@ -877,7 +877,7 @@ export function omitFromType<T extends TypeNode<any, any, any, any, any, any, an
 	...keys: P[]
 ): TypeNode<
 	T['__typename'],
-	Pick<T['members'], P>,
+	Omit<T['members'], P>,
 	ExtractTypeNodeDataFromMembers<Omit<T['members'], P>>,
 	ExtractTypeNodePartialDataFromMembers<Omit<T['members'], P>>,
 	ExtractTypeNodeRefsFromMembers<Omit<T['members'], P>>,
