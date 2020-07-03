@@ -49,7 +49,7 @@ function isSumNode(node: N.Node): node is N.SumNode<any, any, any, any, any, any
 
 function validateNode(x: N.Node, y: N.Node): Array<Tree<string>> {
 	if (isWrappedNode(x) && isWrappedNode(y)) {
-		return validateWrappedNode(x.wrapped, y.wrapped)
+		return validateWrappedNode(x, y)
 	} else if (isTypeNode(x) && isTypeNode(y)) {
 		return validateTypeNode(x, y)
 	} else if (isScalarNode(x) && isScalarNode(y)) {

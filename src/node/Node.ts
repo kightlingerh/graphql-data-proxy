@@ -414,7 +414,7 @@ export function scalar<Name extends string, Data, Variables extends NodeVariable
 	}
 }
 
-function extractTypeChildrenVariables<T extends { [K in keyof T]: Node }>(
+function getTypeChildrenVariables<T extends { [K in keyof T]: Node }>(
 	members: T
 ): {} & Intersection<
 	Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
@@ -535,7 +535,7 @@ export function type<
 		strictModel: M.type(extractTypeMemberStrictModels(members)) as any,
 		partialModel: M.partial(extractTypeMemberPartialModels(members)) as any,
 		variablesModel: getVariablesModel(variables),
-		childrenVariablesDefinition: extractTypeChildrenVariables(members),
+		childrenVariablesDefinition: getTypeChildrenVariables(members),
 		nodeVariablesDefinition: variables,
 		print: printTypeNodeMembers(members)
 	}
@@ -615,6 +615,32 @@ function printSumNode<Members extends ReadonlyArray<TypeNode<any, any, any, any,
 	}
 }
 
+function getSumChildrenVariables<Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>>(
+	...members: Members
+): ExtractSumNodeChildrenVariablesDefinitionFromMembers<Members> {
+	const x: any = {}
+	members.forEach((member) => {
+		for (const [k, v] of Object.entries(member.childrenVariablesDefinition)) {
+			if (x[k] !== undefined) {
+				console.warn(
+					`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
+				)
+			}
+			x[k] = v
+		}
+
+		for (const [k, v] of Object.entries(member.nodeVariablesDefinition)) {
+			if (x[k] !== undefined) {
+				console.warn(
+					`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
+				)
+			}
+			x[k] = v
+		}
+	})
+	return x
+}
+
 export function sum<Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>>(...members: Members) {
 	return <Variables extends NodeVariablesDefinition>(
 		variables: Variables = EMPTY_VARIABLES
@@ -631,7 +657,7 @@ export function sum<Members extends ReadonlyArray<TypeNode<any, any, any, any, a
 			partialModel: getSumPartialModel(...members),
 			print: printSumNode(...members),
 			nodeVariablesDefinition: variables,
-			childrenVariablesDefinition: extractTypeChildrenVariables(getSumObject(...members)) as any,
+			childrenVariablesDefinition: getSumChildrenVariables(...members),
 			variablesModel: getVariablesModel(variables),
 			members
 		}
