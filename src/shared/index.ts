@@ -1,5 +1,5 @@
 import * as E from 'fp-ts/lib/Either'
-import { constant, constVoid, Lazy } from 'fp-ts/lib/function'
+import { constant, constVoid } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
 import * as IOE from 'fp-ts/lib/IOEither'
 import { Monoid } from 'fp-ts/lib/Monoid'
@@ -95,14 +95,6 @@ export function concatEvict(x: Evict, y: Evict): Evict {
 	return async () => {
 		await Promise.all([x(), y()])
 	}
-}
-
-export interface Reactivity {
-	shallowRef<T>(value: T): Ref<T>
-
-	shallowReactive<T extends object>(value: T): T
-
-	computed<T>(fn: Lazy<T>): Ref<T>
 }
 
 export interface Persist {
