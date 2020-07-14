@@ -1,6 +1,6 @@
 import { isNonEmpty } from 'fp-ts/lib/Array'
-import { right } from 'fp-ts/lib/Either'
-import { left } from 'fp-ts/lib/IOEither'
+import { right, left } from 'fp-ts/lib/Either'
+import { left as leftIOE } from 'fp-ts/lib/IOEither'
 import { of } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { Reader } from 'fp-ts/lib/Reader'
@@ -22,7 +22,7 @@ export interface Cache<R> {
 
 export interface RequestCache<R> extends Reader<R, Cache<R>> {}
 
-const TEMP_CACHE_RESULT: CacheResult<any> = left(of(tree('cache not yet implemented')))
+const TEMP_CACHE_RESULT: CacheResult<any> = leftIOE(of(tree('cache not yet implemented')))
 
 export function make<S extends N.SchemaNode<any, any>>(c: S) {
 	return (_: CacheDependencies) => {
