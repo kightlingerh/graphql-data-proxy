@@ -306,8 +306,10 @@ const EMPTY_VARIABLES_MODEL = M.type({})
 
 const EMPTY_VARIABLES: any = {}
 
-function getVariablesModel<V extends NodeVariablesDefinition>(variables: V): M.Model<{ [K in keyof V]: TypeOf<V[K]> }> {
-	return isEmptyObject(variables) ? (EMPTY_VARIABLES_MODEL as any) : M.type(variables)
+export function definitionToModel<V extends NodeVariablesDefinition>(
+	variables: V
+): M.Model<{ [K in keyof V]: TypeOf<V[K]> }> {
+	return isEmptyObject(variables) ? (EMPTY_VARIABLES_MODEL as any) : M.type(extractTypeMemberStrictModels(variables))
 }
 
 export function int(): IntNode
@@ -321,7 +323,7 @@ export function int<V extends NodeVariablesDefinition = {}>(
 		partialModel: M.number,
 		childrenVariablesDefinition: EMPTY_VARIABLES,
 		nodeVariablesDefinition: variables,
-		variablesModel: getVariablesModel(variables),
+		variablesModel: definitionToModel(variables),
 		print: constEmptyString
 	}
 }
@@ -341,7 +343,7 @@ export function float<V extends NodeVariablesDefinition = {}>(
 		partialModel: M.number,
 		childrenVariablesDefinition: EMPTY_VARIABLES,
 		nodeVariablesDefinition: variables,
-		variablesModel: getVariablesModel(variables),
+		variablesModel: definitionToModel(variables),
 		print: constEmptyString
 	}
 }
@@ -361,7 +363,7 @@ export function string<V extends NodeVariablesDefinition = {}>(
 		partialModel: M.string,
 		childrenVariablesDefinition: EMPTY_VARIABLES,
 		nodeVariablesDefinition: variables,
-		variablesModel: getVariablesModel(variables),
+		variablesModel: definitionToModel(variables),
 		print: constEmptyString
 	}
 }
@@ -381,7 +383,7 @@ export function boolean<V extends NodeVariablesDefinition = {}>(
 		partialModel: M.boolean,
 		childrenVariablesDefinition: EMPTY_VARIABLES,
 		nodeVariablesDefinition: variables,
-		variablesModel: getVariablesModel(variables),
+		variablesModel: definitionToModel(variables),
 		print: constEmptyString
 	}
 }
@@ -409,7 +411,7 @@ export function scalar<Name extends string, Data, Variables extends NodeVariable
 		partialModel: model,
 		childrenVariablesDefinition: EMPTY_VARIABLES,
 		nodeVariablesDefinition: variables,
-		variablesModel: getVariablesModel(variables),
+		variablesModel: definitionToModel(variables),
 		print: constEmptyString
 	}
 }
@@ -534,7 +536,7 @@ export function type<
 		members,
 		strictModel: M.type(extractTypeMemberStrictModels(members)) as any,
 		partialModel: M.partial(extractTypeMemberPartialModels(members)) as any,
-		variablesModel: getVariablesModel(variables),
+		variablesModel: definitionToModel(variables),
 		childrenVariablesDefinition: getTypeChildrenVariables(members),
 		nodeVariablesDefinition: variables,
 		print: printTypeNodeMembers(members)
@@ -658,7 +660,7 @@ export function sum<Members extends ReadonlyArray<TypeNode<any, any, any, any, a
 			print: printSumNode(...members),
 			nodeVariablesDefinition: variables,
 			childrenVariablesDefinition: getSumChildrenVariables(...members),
-			variablesModel: getVariablesModel(variables),
+			variablesModel: definitionToModel(variables),
 			members
 		}
 	}
@@ -695,7 +697,7 @@ export function map<Key extends Node, Value extends Node, Variables extends Node
 		partialModel: M.map(key.strictModel, value.partialModel),
 		childrenVariablesDefinition: mergeVariablesDefinitionWithChildren(value),
 		nodeVariablesDefinition: variables,
-		variablesModel: getVariablesModel(variables),
+		variablesModel: definitionToModel(variables),
 		key,
 		wrapped: value,
 		print: value.print
@@ -729,7 +731,7 @@ export function array<Wrapped extends Node, Variables extends NodeVariablesDefin
 		strictModel: M.array(wrapped.strictModel),
 		partialModel: M.array(wrapped.partialModel),
 		childrenVariablesDefinition: mergeVariablesDefinitionWithChildren(wrapped),
-		variablesModel: getVariablesModel(variables),
+		variablesModel: definitionToModel(variables),
 		nodeVariablesDefinition: variables,
 		print: wrapped.print
 	}
@@ -762,7 +764,7 @@ export function option<Wrapped extends Node, Variables extends NodeVariablesDefi
 		strictModel: M.option(wrapped.strictModel),
 		partialModel: M.option(wrapped.partialModel),
 		childrenVariablesDefinition: mergeVariablesDefinitionWithChildren(wrapped),
-		variablesModel: getVariablesModel(variables),
+		variablesModel: definitionToModel(variables),
 		nodeVariablesDefinition: variables,
 		print: wrapped.print
 	}
@@ -795,7 +797,7 @@ export function nonEmptyArray<Wrapped extends Node, Variables extends NodeVariab
 		strictModel: M.nonEmptyArray(wrapped.strictModel),
 		partialModel: M.nonEmptyArray(wrapped.partialModel),
 		childrenVariablesDefinition: mergeVariablesDefinitionWithChildren(wrapped),
-		variablesModel: getVariablesModel(variables),
+		variablesModel: definitionToModel(variables),
 		nodeVariablesDefinition: variables,
 		print: wrapped.print
 	}
@@ -816,7 +818,7 @@ export function mutation<Result extends Node, Variables extends NodeVariablesDef
 		strictModel: result.strictModel,
 		partialModel: result.partialModel,
 		childrenVariablesDefinition: mergeVariablesDefinitionWithChildren(result),
-		variablesModel: getVariablesModel(variables),
+		variablesModel: definitionToModel(variables),
 		nodeVariablesDefinition: variables,
 		print: result.print
 	}
