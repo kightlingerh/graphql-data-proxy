@@ -29,11 +29,12 @@ const FantasyPlayerFantasyInfo = N.type(
 
 const FantasyPlayerInfo = N.sum(FantasyPlayerPersonalInfo, FantasyPlayerFantasyInfo)()
 
-const FantasyPlayerStatisticsMap = N.map(
-	N.staticInt,
-	N.map(N.staticString, N.option(N.staticFloat)),
-	FantasyPlayerStatisticsQueryVariables
-)
+const FantasyPlayerStatisticsMap = N.nonEmptyArray(N.option(N.staticFloat), FantasyPlayerStatisticsQueryVariables);
+// 	N.map(
+// 	N.staticInt,
+// 	N.map(N.staticString, N.option(N.staticFloat)),
+// 	FantasyPlayerStatisticsQueryVariables
+// )
 
 const FantasyPlayer = N.schema('FantasyPlayer', {
 	id: FantasyPlayerId,
@@ -43,20 +44,24 @@ const FantasyPlayer = N.schema('FantasyPlayer', {
 	fantasyInfo: FantasyPlayerFantasyInfo
 });
 
-const FantasyPlayerRequest = N.pickFromType(FantasyPlayer, 'info', 'id');
+const FantasyPlayerRequest = N.pickFromType(FantasyPlayer, 'id', 'statistics');
 
 interface FantasyPlayerRequestVariables extends N.TypeOfMergedVariables<typeof FantasyPlayerRequest> {};
 
-export const RequestVariables: FantasyPlayerRequestVariables = {};
+export const RequestVariables: FantasyPlayerRequestVariables = {
+	statisticIds: ['some-statistic-ids']
+};
 
 export const RequestData: N.TypeOfPartial<typeof FantasyPlayerRequest> = {
 	id: 'some-id',
-	info: {
-		pictureUrl: none,
-		firstName: 'Harry',
-		lastName: 'Kightlinger',
-		highSchool: some('La Canada High School')
-	}
+	// info: {
+	// 	__typename: 'FantasyPlayerPersonalInfo',
+	// 	pictureUrl: none,
+	// 	firstName: 'Harry',
+	// 	lastName: 'Kightlinger',
+	// 	highSchool: some('La Canada High School')
+	// },
+	statistics: []
 }
 
 export const cache = make(FantasyPlayer)({})(FantasyPlayerRequest)

@@ -1,5 +1,5 @@
 import { shallowReactive } from '@vue/reactivity'
-import { array, isNonEmpty } from 'fp-ts/lib/Array'
+import {array, isNonEmpty, makeBy} from 'fp-ts/lib/Array'
 import { left, right } from 'fp-ts/lib/Either'
 import { constant, constVoid, pipe } from 'fp-ts/lib/function'
 import { getWitherable, map } from 'fp-ts/lib/Map'
@@ -36,7 +36,6 @@ export function make<S extends N.SchemaNode<any, any>>(schema: S) {
 					write: (variables) => (data) => {
 						return () => {
 							const evict = write(data, schema, request, variables, cache)()
-							console.log(cache);
 							return evict;
 						}
 					}
@@ -237,9 +236,6 @@ function writeToTypeNode<T extends N.TypeNode<any, any>>(
 			if (requestCache[k] === undefined) {
 				requestCache[k] = shallowReactive(new Map())
 			}
-			if (schema.members[k] === undefined || request.members[k] === undefined) {
-				console.log(k, schema.members, request.members);
-			}
 			evict = concatEvict(
 				evict,
 				write(data[k], schema.members[k], request.members[k], variables, requestCache[k])()
@@ -259,8 +255,12 @@ function writeToArrayNode(
 	return () => {
 		const key = encode(request, variables)
 		const currentValue = cache.get(key)
-		const newValue = shallowReactive(new Array(data.length).map(() => shallowReactive(new Map())))
-		data.forEach((val, index) => write(val, schema.wrapped, request.wrapped, variables, newValue[index])())
+		const newValue = shallowReactive(makeBy(data.length, () => shallowReactive(new Map())))
+		data.forEach((val, index) => {
+			console.log(val, newValue);
+			const evict = write(val, schema.wrapped, request.wrapped, variables, newValue[index])()
+			return evict;
+		})
 		cache.set(key, newValue)
 		return () => {
 			if (currentValue) {
@@ -282,7 +282,7 @@ function writeToNonEmptyArrayNode(
 	return () => {
 		const key = encode(request, variables)
 		const currentValue = cache.get(key)
-		const newValue = shallowReactive(new Array(data.length).map(() => shallowReactive(new Map())))
+		const newValue = shallowReactive(makeBy(data.length, () => shallowReactive(new Map())))
 		data.forEach((val, index) => write(val, schema.wrapped, request.wrapped, variables, newValue[index])())
 		cache.set(key, some(newValue))
 		return () => {
@@ -310,7 +310,7 @@ function writeToOptionNode(
 				requestCache = some(shallowReactive(new Map()))
 				cache.set(key, requestCache)
 			}
-			return write(data.value, schema.wrapped, request.wrapped, variables, requestCache.value)
+			return write(data.value, schema.wrapped, request.wrapped, variables, requestCache.value)()
 		} else {
 			const currentValue = cache.get(key)
 			cache.set(key, none)
