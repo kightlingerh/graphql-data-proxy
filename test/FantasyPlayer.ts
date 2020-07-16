@@ -1,4 +1,5 @@
-import { none } from 'fp-ts/lib/Option'
+import {none, some} from 'fp-ts/lib/Option';
+import {make} from '../src/cache/Cache';
 import * as M from '../src/model'
 import * as N from '../src/node'
 
@@ -11,13 +12,9 @@ const FantasyPlayerPersonalInfo = N.type(
 		firstName: N.staticString,
 		lastName: N.staticString,
 		highSchool: N.option(N.staticString)
-	},
-	{ fantasyPlayerIds: N.array(N.staticString) }
+	}
 )
 
-const PartialFantasyPlayerPersonalInfo = N.omitFromType(FantasyPlayerPersonalInfo, 'pictureUrl')
-
-type Vars = N.TypeOfMergedVariables<typeof PartialFantasyPlayerPersonalInfo>
 
 const FantasyPlayerStatisticsQueryVariables = {
 	statisticIds: N.array(N.staticString)
@@ -27,25 +24,10 @@ const FantasyPlayerFantasyInfo = N.type(
 	'FantasyPlayerFantasyInfo',
 	{
 		ownerFantasyTeamId: N.option(N.staticString)
-	},
-	FantasyPlayerStatisticsQueryVariables
+	}
 )
 
 const FantasyPlayerInfo = N.sum(FantasyPlayerPersonalInfo, FantasyPlayerFantasyInfo)()
-
-export type Data = N.TypeOf<typeof FantasyPlayerInfo>
-
-const x: Data = {
-	__typename: 'FantasyPlayerFantasyInfo',
-	ownerFantasyTeamId: none
-}
-
-export type MergedVariables = N.TypeOfMergedVariables<typeof FantasyPlayerInfo>
-
-const variables: MergedVariables = {
-	fantasyPlayerIds: [],
-	statisticIds: [false]
-}
 
 const FantasyPlayerStatisticsMap = N.map(
 	N.staticInt,
@@ -53,15 +35,29 @@ const FantasyPlayerStatisticsMap = N.map(
 	FantasyPlayerStatisticsQueryVariables
 )
 
-export type FantasyPlayerStatisticsVariables = N.TypeOfVariables<typeof FantasyPlayerFantasyInfo>
+const FantasyPlayer = N.schema('FantasyPlayer', {
+	id: FantasyPlayerId,
+	info: FantasyPlayerInfo,
+	statistics: FantasyPlayerStatisticsMap,
+	personalInfo: FantasyPlayerPersonalInfo,
+	fantasyInfo: FantasyPlayerFantasyInfo
+});
 
-export type FantasyPlayerStatistics = N.TypeOf<typeof FantasyPlayerStatisticsMap>
+const FantasyPlayerRequest = N.pickFromType(FantasyPlayer, 'info', 'id');
 
-export const FantasyPlayer = N.markAsEntity(
-	N.schema('FantasyPlayer', {
-		id: FantasyPlayerId,
-		statistics: FantasyPlayerStatisticsMap,
-		personalInfo: FantasyPlayerPersonalInfo,
-		fantasyInfo: FantasyPlayerFantasyInfo
-	})
-)
+interface FantasyPlayerRequestVariables extends N.TypeOfMergedVariables<typeof FantasyPlayerRequest> {};
+
+export const RequestVariables: FantasyPlayerRequestVariables = {};
+
+export const RequestData: N.TypeOfPartial<typeof FantasyPlayerRequest> = {
+	id: 'some-id',
+	info: {
+		pictureUrl: none,
+		firstName: 'Harry',
+		lastName: 'Kightlinger',
+		highSchool: some('La Canada High School')
+	}
+}
+
+export const cache = make(FantasyPlayer)({})(FantasyPlayerRequest)
+

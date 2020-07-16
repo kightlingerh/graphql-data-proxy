@@ -1,4 +1,3 @@
-import * as E from 'fp-ts/lib/Either'
 import { constant, constVoid } from 'fp-ts/lib/function'
 import { IO } from 'fp-ts/lib/IO'
 import * as IOE from 'fp-ts/lib/IOEither'
@@ -53,34 +52,18 @@ export const cacheErrorApplicativeValidation = IOE.getIOValidation(getSemigroup<
 
 export interface CacheWriteResult extends CacheResult<Evict> {}
 
-export interface CacheResult<T> extends IOE.IOEither<CacheError, T> {}
+export interface CacheResult<T> extends IO<T> {}
 
 export interface Evict extends IO<void> {}
 
 export interface CacheError extends NonEmptyArray<Tree<string>> {}
 
 export const cacheWriteResultMonoid: Monoid<CacheWriteResult> = {
-	empty: IOE.right(constVoid),
+	empty: constant(constVoid),
 	concat: (x, y) => {
-		return () => {
-			const xResult = x()
-			const yResult = y()
-			if (E.isLeft(xResult) && E.isLeft(yResult)) {
-				return E.left([...xResult.left, ...yResult.left]) as E.Either<CacheError, Evict>
-			} else if (E.isLeft(xResult) && E.isRight(yResult)) {
-				yResult.right()
-				return xResult as E.Either<CacheError, Evict>
-			} else if (E.isLeft(yResult) && E.isRight(xResult)) {
-				xResult.right()
-				return yResult as E.Either<CacheError, Evict>
-			} else if (E.isRight(xResult) && E.isRight(yResult)) {
-				return E.right(() => {
-					x()
-					y()
-				}) as E.Either<CacheError, Evict>
-			} else {
-				return E.right(constVoid)
-			}
+		return () => () => {
+			x()
+			y()
 		}
 	}
 }
@@ -88,7 +71,10 @@ export const cacheWriteResultMonoid: Monoid<CacheWriteResult> = {
 export async function taskVoid() {}
 
 export function concatEvict(x: Evict, y: Evict): Evict {
-	return () => Promise.all([x(), y()])
+	return () => {
+		x()
+		y()
+	}
 }
 
 export interface Persist {

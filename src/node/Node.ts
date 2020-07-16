@@ -234,6 +234,7 @@ export interface SumNode<
 > extends NodeDefinition<Data, PartialData, RefsData, Variables, ChildrenVariables> {
 	readonly tag: 'Sum'
 	readonly members: Members
+	readonly membersRecord: Record<ExtractTypeName<{ [K in keyof Members]: Members[K] }[number]>, Members[number]>
 }
 
 export interface MutationNode<
@@ -638,6 +639,16 @@ function getSumChildrenVariables<Members extends ReadonlyArray<TypeNode<any, any
 	return x
 }
 
+function getSumMembersRecord<Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>>(
+	...members: Members
+): Record<ExtractTypeName<{ [K in keyof Members]: Members[K] }[number]>, Members[number]> {
+	const x: any = {}
+	members.forEach((member) => {
+		x[member.__typename] = member
+	})
+	return x
+}
+
 export function sum<Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>>(...members: Members) {
 	return <Variables extends NodeVariablesDefinition>(
 		variables: Variables = EMPTY_VARIABLES
@@ -648,14 +659,20 @@ export function sum<Members extends ReadonlyArray<TypeNode<any, any, any, any, a
 		ExtractSumNodeRefsFromMembers<Members>,
 		Variables
 	> => {
+		const newMembers = members.map(member =>  member.members.hasOwnProperty('__typename') ? member : type(
+			member.__typename,
+			{ ...member.members, __typename: scalar(member.__typename, M.literal(member.__typename)) },
+			member.nodeVariablesDefinition
+		));
 		return {
 			tag: 'Sum',
-			strictModel: getSumModel(...members),
-			partialModel: getSumPartialModel(...members),
+			strictModel: getSumModel(...newMembers),
+			partialModel: getSumPartialModel(...newMembers),
 			print: printSumNode(...members),
 			nodeVariablesDefinition: variables,
-			childrenVariablesDefinition: getSumChildrenVariables(...members),
+			childrenVariablesDefinition: getSumChildrenVariables(...newMembers),
 			variablesModel: definitionToModel(variables),
+			membersRecord: getSumMembersRecord(...newMembers),
 			members
 		}
 	}
@@ -977,14 +994,6 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			O.Option<TypeOf<T>>,
 			ExtractVariablesDefinition<T>
 	  >
-	: T extends SumNode<any, any, any, any, any, any>
-	? SumNode<
-			T['members'],
-			ExtractSumNodeDataFromMembers<T['members']>,
-			ExtractSumNodePartialDataFromMembers<T['members']>,
-			O.Option<TypeOf<T>>,
-			ExtractVariablesDefinition<T>
-	  >
 	: T extends ArrayNode<any, any, any, any, any, any>
 	? ArrayNode<
 			T['wrapped'],
@@ -1030,6 +1039,10 @@ export function markAsEntity<T extends Node>(node: T): ExtractEntityType<T> {
 	} as any
 }
 
+export function markAsUnique<
+	Key extends string,
+	Members extends ReadonlyArray<TypeNode<any, Record<Key, any>, any, any, any, any, any>>
+>(node: SumNode<Members>, uniqueBy: Key): SumNode<Members>
 export function markAsUnique<T extends TypeNode<any, any, any, any, any, any, any>>(
 	node: T,
 	uniqueBy: keyof T['members']

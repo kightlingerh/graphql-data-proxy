@@ -2,6 +2,7 @@ import { isNonEmpty } from 'fp-ts/lib/Array'
 import { Tree } from 'fp-ts/lib/Tree'
 import { tree } from 'io-ts/lib/Decoder'
 import * as N from '../node'
+import { isMapNode, isScalarNode, isSumNode, isTypeNode, isWrappedNode } from './shared'
 
 const VALIDATIONS: WeakMap<N.SchemaNode<any, any>, WeakMap<N.SchemaNode<any, any>, Array<Tree<string>>>> = new WeakMap()
 
@@ -23,30 +24,6 @@ export function validate(schema: N.SchemaNode<any, any>, request: N.SchemaNode<a
 	}
 }
 
-function isWrappedNode(node: N.Node): node is N.WrappedNode {
-	switch (node.tag) {
-		case 'Option':
-		case 'NonEmptyArray':
-		case 'Map':
-		case 'Array':
-			return true
-		default:
-			return false
-	}
-}
-
-function isTypeNode(node: N.Node): node is N.TypeNode<any, any, any, any, any, any, any> {
-	return node.tag === 'Type'
-}
-
-function isScalarNode(node: N.Node): node is N.ScalarNode<any, any, any, any, any, any> {
-	return node.tag === 'Scalar'
-}
-
-function isSumNode(node: N.Node): node is N.SumNode<any, any, any, any, any, any> {
-	return node.tag === 'Sum'
-}
-
 function validateNode(x: N.Node, y: N.Node): Array<Tree<string>> {
 	if (isWrappedNode(x) && isWrappedNode(y)) {
 		return validateWrappedNode(x, y)
@@ -56,6 +33,8 @@ function validateNode(x: N.Node, y: N.Node): Array<Tree<string>> {
 		return validateScalarNode(x, y)
 	} else if (isSumNode(x) && isSumNode(y)) {
 		return validateSumNode(x, y)
+	} else if (x.tag === y.tag) {
+		return []
 	} else {
 		return [tree(`cannot use node ${N.showNode.show(y)}, should be assignable to ${N.showNode.show(x)}`)]
 	}
@@ -83,10 +62,6 @@ function validateTypeNode<SchemaNode extends N.TypeNode<any, any, any>, RequestN
 	return errors
 }
 
-function isMapNode(node: N.Node): node is N.MapNode<any, any, any, any, any, any> {
-	return node.tag === 'Map'
-}
-
 function validateWrappedNode<SchemaNode extends N.WrappedNode, RequestNode extends N.WrappedNode>(
 	x: SchemaNode,
 	y: RequestNode
@@ -97,7 +72,7 @@ function validateWrappedNode<SchemaNode extends N.WrappedNode, RequestNode exten
 			tree(
 				`invalid request within ${x.tag}<${
 					isMapNode(x) ? `${x.key.name || x.key.__typename || x.key.tag}, ` : ''
-				}${x.wrapped.name || x.wrapped.__typename || x.tag}>`,
+				}${x.wrapped.name || x.wrapped.__typename || x.wrapped.tag}>`,
 				errors
 			)
 		]
@@ -124,8 +99,8 @@ function validateSumNode<SchemaNode extends N.SumNode<any, any>, RequestNode ext
 	x: SchemaNode,
 	y: RequestNode
 ): Array<Tree<string>> {
-	const xMembers = x.members
-	const yMembers = y.members
+	const xMembers = x.membersRecord
+	const yMembers = y.membersRecord
 	const errors: Array<Tree<string>> = []
 	for (const k in yMembers) {
 		const xk = xMembers[k]
