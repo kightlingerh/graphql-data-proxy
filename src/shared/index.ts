@@ -24,10 +24,6 @@ export const constMap = constant(new Map())
 
 export const constNone = constant(none)
 
-export interface Ref<T> {
-	value: T
-}
-
 export function isFunction(u: unknown): u is Function {
 	return typeof u === 'function'
 }
@@ -92,13 +88,10 @@ export const cacheWriteResultMonoid: Monoid<CacheWriteResult> = {
 export async function taskVoid() {}
 
 export function concatEvict(x: Evict, y: Evict): Evict {
-	return async () => {
-		await Promise.all([x(), y()])
-	}
+	return () => Promise.all([x(), y()])
 }
 
 export interface Persist {
 	store(key: string, value: string): IOE.IOEither<CacheError, void>
-
 	restore<T>(key: string): IOE.IOEither<CacheError, O.Option<T>>
 }

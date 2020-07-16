@@ -19,7 +19,6 @@ import {
 	OPEN_BRACKET,
 	OPEN_PAREN,
 	OPEN_SPACE,
-	Ref,
 	TYPENAME
 } from '../shared'
 
@@ -52,7 +51,7 @@ export type PrimitiveNode =
 export interface StringNode<
 	Data = string,
 	PartialData = string,
-	RefsData = Ref<O.Option<string>>,
+	RefsData = O.Option<string>,
 	Variables extends NodeVariablesDefinition = {}
 > extends NodeDefinition<Data, PartialData, RefsData, Variables> {
 	readonly tag: 'String'
@@ -61,7 +60,7 @@ export interface StringNode<
 export interface BooleanNode<
 	Data = boolean,
 	PartialData = boolean,
-	RefsData = Ref<O.Option<boolean>>,
+	RefsData = O.Option<boolean>,
 	Variables extends NodeVariablesDefinition = {}
 > extends NodeDefinition<Data, PartialData, RefsData, Variables> {
 	readonly tag: 'Boolean'
@@ -70,7 +69,7 @@ export interface BooleanNode<
 export interface IntNode<
 	Data = number,
 	PartialData = number,
-	RefsData = Ref<O.Option<number>>,
+	RefsData = O.Option<number>,
 	Variables extends NodeVariablesDefinition = {}
 > extends NodeDefinition<Data, PartialData, RefsData, Variables> {
 	readonly tag: 'Int'
@@ -79,7 +78,7 @@ export interface IntNode<
 export interface FloatNode<
 	Data = number,
 	PartialData = number,
-	RefsData = Ref<O.Option<number>>,
+	RefsData = O.Option<number>,
 	Variables extends NodeVariablesDefinition = {}
 > extends NodeDefinition<Data, PartialData, RefsData, Variables> {
 	readonly tag: 'Float'
@@ -128,7 +127,7 @@ export type ExtractArrayNodeDataFromWrapped<Wrapped> = Array<TypeOf<Wrapped>>
 
 export type ExtractArrayNodePartialDataFromWrapped<Wrapped> = Array<TypeOfPartial<Wrapped>>
 
-export type ExtractArrayNodeRefsFromWrapped<Wrapped> = Ref<Array<TypeOfRefs<Wrapped>>>
+export type ExtractArrayNodeRefsFromWrapped<Wrapped> = Array<TypeOfRefs<Wrapped>>
 
 export type ExtractChildrenVariablesDefinitionFromWrapped<Wrapped> = {} & ExtractChildrenVariablesDefinition<Wrapped> &
 	ExtractVariablesDefinition<Wrapped>
@@ -169,7 +168,7 @@ export type ExtractOptionNodeDataFromWrapped<Wrapped> = O.Option<TypeOf<Wrapped>
 
 export type ExtractOptionNodePartialDataFromWrapped<Wrapped> = O.Option<TypeOfPartial<Wrapped>>
 
-export type ExtractOptionNodeRefsFromWrapped<Wrapped> = Ref<O.Option<TypeOfRefs<Wrapped>>>
+export type ExtractOptionNodeRefsFromWrapped<Wrapped> = O.Option<TypeOfRefs<Wrapped>>
 
 export interface OptionNode<
 	Wrapped extends Node,
@@ -187,7 +186,7 @@ export type ExtractNonEmptyArrayNodeDataFromWrapped<Wrapped> = NonEmptyArray<Typ
 
 export type ExtractNonEmptyArrayNodePartialDataFromWrapped<Wrapped> = NonEmptyArray<TypeOfPartial<Wrapped>>
 
-export type ExtractNonEmptyArrayNodeRefsFromWrapped<Wrapped> = Ref<O.Option<NonEmptyArray<TypeOfRefs<Wrapped>>>>
+export type ExtractNonEmptyArrayNodeRefsFromWrapped<Wrapped> = O.Option<NonEmptyArray<TypeOfRefs<Wrapped>>>
 
 export interface NonEmptyArrayNode<
 	Wrapped extends Node,
@@ -215,7 +214,7 @@ export type ExtractSumNodePartialDataFromMembers<
 
 export type ExtractSumNodeRefsFromMembers<
 	Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>
-> = Ref<O.Option<{ [K in keyof Members]: TypeOfRefs<Members[K]> }[number]>>
+> = O.Option<{ [K in keyof Members]: TypeOfRefs<Members[K]> }[number]>
 
 export type ExtractSumNodeChildrenVariablesDefinitionFromMembers<
 	Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>
@@ -253,7 +252,7 @@ export interface ScalarNode<
 	Name extends string,
 	Data,
 	PartialData = Data,
-	RefsData = Ref<O.Option<Data>>,
+	RefsData = O.Option<Data>,
 	Variables extends NodeVariablesDefinition = {},
 	ChildrenVariables extends NodeVariablesDefinition = {}
 > extends NodeDefinition<Data, PartialData, RefsData, Variables, ChildrenVariables> {
@@ -313,10 +312,10 @@ export function definitionToModel<V extends NodeVariablesDefinition>(
 }
 
 export function int(): IntNode
-export function int<V extends NodeVariablesDefinition>(variables: V): IntNode<number, number, Ref<O.Option<number>>, V>
+export function int<V extends NodeVariablesDefinition>(variables: V): IntNode<number, number, O.Option<number>, V>
 export function int<V extends NodeVariablesDefinition = {}>(
 	variables: V = EMPTY_VARIABLES
-): IntNode<number, number, Ref<O.Option<number>>, V> {
+): IntNode<number, number, O.Option<number>, V> {
 	return {
 		tag: 'Int',
 		strictModel: M.number,
@@ -331,12 +330,10 @@ export function int<V extends NodeVariablesDefinition = {}>(
 export const staticInt = int()
 
 export function float(): FloatNode
-export function float<V extends NodeVariablesDefinition>(
-	variables: V
-): FloatNode<number, number, Ref<O.Option<number>>, V>
+export function float<V extends NodeVariablesDefinition>(variables: V): FloatNode<number, number, O.Option<number>, V>
 export function float<V extends NodeVariablesDefinition = {}>(
 	variables: V = EMPTY_VARIABLES
-): FloatNode<number, number, Ref<O.Option<number>>, V> {
+): FloatNode<number, number, O.Option<number>, V> {
 	return {
 		tag: 'Float',
 		strictModel: M.number,
@@ -351,12 +348,10 @@ export function float<V extends NodeVariablesDefinition = {}>(
 export const staticFloat = float()
 
 export function string(): StringNode
-export function string<V extends NodeVariablesDefinition>(
-	variables: V
-): StringNode<string, string, Ref<O.Option<string>>, V>
+export function string<V extends NodeVariablesDefinition>(variables: V): StringNode<string, string, O.Option<string>, V>
 export function string<V extends NodeVariablesDefinition = {}>(
 	variables: V = EMPTY_VARIABLES
-): StringNode<string, string, Ref<O.Option<string>>, V> {
+): StringNode<string, string, O.Option<string>, V> {
 	return {
 		tag: 'String',
 		strictModel: M.string,
@@ -373,10 +368,10 @@ export const staticString = string()
 export function boolean(): BooleanNode
 export function boolean<V extends NodeVariablesDefinition>(
 	variables: V
-): BooleanNode<boolean, boolean, Ref<O.Option<boolean>>, V>
+): BooleanNode<boolean, boolean, O.Option<boolean>, V>
 export function boolean<V extends NodeVariablesDefinition = {}>(
 	variables: V = EMPTY_VARIABLES
-): BooleanNode<boolean, boolean, Ref<O.Option<boolean>>, V> {
+): BooleanNode<boolean, boolean, O.Option<boolean>, V> {
 	return {
 		tag: 'Boolean',
 		strictModel: M.boolean,
@@ -393,17 +388,17 @@ export const staticBoolean = boolean()
 export function scalar<Name extends string, Data>(
 	name: Name,
 	model: M.Model<Data>
-): ScalarNode<Name, Data, Data, Ref<O.Option<Data>>>
+): ScalarNode<Name, Data, Data, O.Option<Data>>
 export function scalar<Name extends string, Data, Variables extends NodeVariablesDefinition>(
 	name: Name,
 	model: M.Model<Data>,
 	variables: Variables
-): ScalarNode<Name, Data, Data, Ref<O.Option<Data>>, Variables>
+): ScalarNode<Name, Data, Data, O.Option<Data>, Variables>
 export function scalar<Name extends string, Data, Variables extends NodeVariablesDefinition = {}>(
 	name: Name,
 	model: M.Model<Data>,
 	variables: Variables = EMPTY_VARIABLES
-): ScalarNode<Name, Data, Data, Ref<O.Option<Data>>, Variables> {
+): ScalarNode<Name, Data, Data, O.Option<Data>, Variables> {
 	return {
 		name,
 		tag: 'Scalar',
@@ -979,7 +974,7 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['members'],
 			ExtractTypeNodeDataFromMembers<T['members']>,
 			ExtractTypeNodePartialDataFromMembers<T['members']>,
-			Ref<O.Option<TypeOf<T>>>,
+			O.Option<TypeOf<T>>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T extends SumNode<any, any, any, any, any, any>
@@ -987,7 +982,7 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['members'],
 			ExtractSumNodeDataFromMembers<T['members']>,
 			ExtractSumNodePartialDataFromMembers<T['members']>,
-			Ref<O.Option<TypeOf<T>>>,
+			O.Option<TypeOf<T>>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T extends ArrayNode<any, any, any, any, any, any>
@@ -995,7 +990,7 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['wrapped'],
 			ExtractArrayNodeDataFromWrapped<T['wrapped']>,
 			ExtractArrayNodePartialDataFromWrapped<T['wrapped']>,
-			Ref<O.Option<TypeOf<T>>>,
+			O.Option<TypeOf<T>[]>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T extends NonEmptyArrayNode<any, any, any, any, any, any>
@@ -1003,7 +998,7 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['wrapped'],
 			ExtractNonEmptyArrayNodeDataFromWrapped<T['wrapped']>,
 			ExtractNonEmptyArrayNodePartialDataFromWrapped<T['wrapped']>,
-			Ref<O.Option<TypeOf<T>>>,
+			O.Option<NonEmptyArray<TypeOf<T>>>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T extends OptionNode<any, any, any, any, any, any>
@@ -1011,7 +1006,7 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['wrapped'],
 			ExtractOptionNodeDataFromWrapped<T['wrapped']>,
 			ExtractOptionNodePartialDataFromWrapped<T['wrapped']>,
-			Ref<O.Option<TypeOf<T>>>,
+			O.Option<TypeOf<T>>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T extends MapNode<any, any, any, any, any, any, any>
@@ -1020,7 +1015,7 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['wrapped'],
 			ExtractMapNodeDataFromKeyValue<T['key'], T['wrapped']>,
 			ExtractMapNodePartialDataFromKeyValue<T['key'], T['wrapped']>,
-			Map<TypeOf<T['key']>, TypeOf<T['wrapped']>>,
+			O.Option<Map<TypeOf<T['key']>, TypeOf<T['wrapped']>>>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T
