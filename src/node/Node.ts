@@ -1,5 +1,5 @@
 import { Eq } from 'fp-ts/lib/Eq'
-import { FunctionN, Lazy } from 'fp-ts/lib/function'
+import { Lazy } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { Show } from 'fp-ts/lib/Show'
@@ -276,12 +276,28 @@ interface NodeDefinition<
 	readonly variablesModel: M.Model<ExtractDefinitionType<Variables>>
 	readonly print: Lazy<string>
 	readonly __refs__?: RefsData
-	readonly __cache__?: NodeCacheConfig<Variables, RefsData>
+	readonly __cache__?: NodeCacheConfig
 }
 
-export interface NodeCacheConfig<Variables, RefsData> {
+export type EncodedVariables = string
+
+export type CacheEntry = any
+
+export interface CacheNode extends Map<EncodedVariables, CacheEntry> {}
+
+export interface CustomCache<T> {
+	(
+		schemaNode: T,
+		requestNode: T,
+		variables: TypeOfMergedVariables<T>,
+		cacheNode: CacheNode,
+		data?: TypeOfPartial<T>
+	): TypeOfRefs<T>
+}
+
+export interface NodeCacheConfig<T = any> {
 	readonly isEntity?: boolean
-	readonly useCustomCache?: FunctionN<[Variables], RefsData>
+	readonly useCustomCache?: CustomCache<T>
 }
 
 export interface NodeVariablesDefinition {
@@ -1043,12 +1059,12 @@ export function markAsEntity<T extends Node>(node: T): ExtractEntityType<T> {
 	} as any
 }
 
-export function useCustomCache<T extends Node>(node: T, cache: FunctionN<[TypeOfVariables<T>], TypeOfRefs<T>>): T {
+export function useCustomCache<T extends Node>(node: T, customCache: CustomCache<T>): T {
 	return {
 		...node,
 		__cache__: {
 			...node.__cache__,
-			useCustomCache: cache
+			useCustomCache: customCache
 		}
 	}
 }

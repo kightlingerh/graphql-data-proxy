@@ -1,5 +1,5 @@
 import { shallowReactive } from '@vue/reactivity'
-import { sequence, isNonEmpty, makeBy } from 'fp-ts/lib/Array'
+import { isNonEmpty, makeBy, sequence } from 'fp-ts/lib/Array'
 import { left, right } from 'fp-ts/lib/Either'
 import { constant, constVoid, Lazy, pipe } from 'fp-ts/lib/function'
 import { getWitherable, map } from 'fp-ts/lib/Map'
@@ -8,6 +8,7 @@ import { chain, isNone, isSome, none, option, Option, some } from 'fp-ts/lib/Opt
 import { fromCompare } from 'fp-ts/lib/Ord'
 import { Reader } from 'fp-ts/lib/Reader'
 import * as N from '../node/Node'
+import { CacheNode } from '../node/Node'
 import { CacheError, CacheResult, CacheWriteResult, cacheWriteResultMonoid, concatEvict, Persist } from '../shared'
 import { isEntityNode } from './shared'
 import { validate } from './validate'
@@ -38,8 +39,6 @@ export function make<S extends N.SchemaNode<any, any>>(schema: S) {
 		}
 	}
 }
-
-interface CacheNode extends Map<any, any> {}
 
 function read(schema: N.Node, request: N.Node, variables: object, cache: CacheNode): CacheResult<Option<any>> {
 	if (isEntityNode(schema)) {
@@ -73,7 +72,7 @@ function readTypeNode(
 ): CacheResult<Option<any>> {
 	return () => {
 		const requestCache = !!schema?.__cache__?.useCustomCache
-			? schema.__cache__.useCustomCache(variables)
+			? schema.__cache__.useCustomCache(schema, request, variables, cache)
 			: cache.get(encode(request, variables))
 		if (requestCache) {
 			const x: any = {}
@@ -99,7 +98,7 @@ const arraySequenceOption = sequence(option)
 function readArrayNode(schema: N.ArrayNode<any>, request: N.ArrayNode<any>, variables: object, cache: CacheNode) {
 	return () => {
 		const cacheEntry = !!schema?.__cache__?.useCustomCache
-			? schema.__cache__.useCustomCache(variables)
+			? schema.__cache__.useCustomCache(schema, request, variables, cache)
 			: cache.get(encode(request, variables))
 		if (!cacheEntry) {
 			return none
@@ -118,7 +117,7 @@ function readNonEmptyArrayNode(
 ) {
 	return () => {
 		const cacheEntry = !!schema?.__cache__?.useCustomCache
-			? schema.__cache__.useCustomCache(variables)
+			? schema.__cache__.useCustomCache(schema, request, variables, cache)
 			: cache.get(encode(request, variables))
 		if (!cacheEntry) {
 			return none
@@ -137,7 +136,7 @@ function readNonEmptyArrayNode(
 function readOptionNode(schema: N.OptionNode<any>, request: N.OptionNode<any>, variables: object, cache: CacheNode) {
 	return () => {
 		const cacheEntry = !!schema?.__cache__?.useCustomCache
-			? schema.__cache__.useCustomCache(variables)
+			? schema.__cache__.useCustomCache(schema, request, variables, cache)
 			: cache.get(encode(request, variables))
 		if (!cacheEntry) {
 			return some(none)
@@ -156,7 +155,7 @@ const mapSequenceOption = getWitherable(fromCompare(constant(0 as const))).seque
 function readMapNode(schema: N.MapNode<any, any>, request: N.MapNode<any, any>, variables: object, cache: CacheNode) {
 	return () => {
 		const cacheEntry = !!schema?.__cache__?.useCustomCache
-			? schema.__cache__.useCustomCache(variables)
+			? schema.__cache__.useCustomCache(schema, request, variables, cache)
 			: cache.get(encode(request, variables))
 		if (!cacheEntry) {
 			return none
@@ -232,7 +231,7 @@ function writeToTypeNode<T extends N.TypeNode<any, any>>(
 ) {
 	return () => {
 		let evict = constVoid
-		const requestCache = getCache(schema, request, variables, cache, () => shallowReactive({}))
+		const requestCache = getCache(data, schema, request, variables, cache, () => shallowReactive({}))
 		for (const k in data) {
 			if (requestCache[k] === undefined) {
 				requestCache[k] = shallowReactive(new Map())
@@ -305,7 +304,7 @@ function writeToOptionNode(
 	return () => {
 		const key = encode(request, variables)
 		if (isSome(data)) {
-			let cacheEntry = getCache(schema, request, variables, cache, () => some(shallowReactive(new Map())))
+			let cacheEntry = getCache(data, schema, request, variables, cache, () => some(shallowReactive(new Map())))
 			if (isNone(cacheEntry)) {
 				cacheEntry = some(shallowReactive(new Map()))
 				cache.set(key, cacheEntry)
@@ -332,7 +331,7 @@ function writeToMapNode(
 ) {
 	return () => {
 		let evict = constVoid
-		const requestCache = getCache(schema, request, variables, cache, () => shallowReactive(new Map()))
+		const requestCache = getCache(data, schema, request, variables, cache, () => shallowReactive(new Map()))
 		for (const [k, v] of data.entries()) {
 			evict = concatEvict(
 				evict,
@@ -379,6 +378,7 @@ function writeToSumNode(
 }
 
 function getCache(
+	data: any,
 	schemaNode: N.Node,
 	requestNode: N.Node,
 	variables: object,
@@ -386,13 +386,13 @@ function getCache(
 	cacheData: Lazy<unknown>
 ) {
 	if (!!schemaNode?.__cache__?.useCustomCache) {
-		return schemaNode.__cache__.useCustomCache(variables)
+		return schemaNode.__cache__.useCustomCache(schemaNode, requestNode, variables, cacheNode, data)
 	} else {
 		return makeCache(encode(requestNode, variables), cacheNode, cacheData)
 	}
 }
 
-function makeCache(key: unknown, cacheNode: CacheNode, cacheData: Lazy<unknown>) {
+function makeCache(key: string, cacheNode: CacheNode, cacheData: Lazy<unknown>) {
 	let requestCache = cacheNode.get(key)
 	if (!requestCache) {
 		requestCache = cacheData()
