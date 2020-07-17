@@ -1,5 +1,5 @@
 import { Eq } from 'fp-ts/lib/Eq'
-import {FunctionN, Lazy} from 'fp-ts/lib/function'
+import { FunctionN, Lazy } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { Show } from 'fp-ts/lib/Show'
@@ -1057,6 +1057,15 @@ export function markAsUnique<T extends TypeNode<any, any, any, any, any, any, an
 	}
 }
 
+export function useCustomCache<T extends Node>(node: T, cache: FunctionN<[TypeOfVariables<T>], TypeOfRefs<T>>): T {
+	return {
+		...node,
+		__cache__: {
+			...node.__cache__,
+			useCustomCache: cache
+		}
+	}
+}
 
 export const showNode: Show<Node> = {
 	show: (node) => {
