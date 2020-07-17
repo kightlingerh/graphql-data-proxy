@@ -75,7 +75,7 @@ function readTypeNode(
 		const x: any = {}
 		for (const k in request.members) {
 			if (requestCache[k] === undefined) {
-				return none
+				requestCache[k] = shallowReactive(new Map())
 			}
 			const result = read(schema.members[k], request.members[k], variables, requestCache[k])()
 			if (isNone(result)) {

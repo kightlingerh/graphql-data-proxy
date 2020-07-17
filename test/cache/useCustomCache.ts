@@ -111,5 +111,27 @@ describe('useCustomCache', () => {
 				isSome(allPeopleCacheReadResult.right) &&
 				allPeopleCacheReadResult.right.value.allPeople
 		)
-	})
+	}),
+		it('should read data even on unwritten node', () => {
+			const peopleCache = make(People)({})(PeopleRequest)
+			const allPeopleCache = make(People)({})(AllPeopleRequest)
+			assert.deepStrictEqual(isRight(peopleCache) && isRight(allPeopleCache), true)
+
+			pipe(
+				fromEither(peopleCache),
+				chain((c) => rightIO(c.write(PeopleReqeustVariables)(PeopleData)))
+			)()
+
+			const allPeopleCacheReadResult = pipe(
+				fromEither(allPeopleCache),
+				chain((c) => rightIO(c.read({})))
+			)()
+
+			assert.deepStrictEqual(
+				isRight(allPeopleCacheReadResult) &&
+					isSome(allPeopleCacheReadResult.right) &&
+					allPeopleCacheReadResult.right.value.allPeople,
+				PeopleData.people
+			)
+		})
 })
