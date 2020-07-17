@@ -1044,19 +1044,6 @@ export function markAsEntity<T extends Node>(node: T): ExtractEntityType<T> {
 	} as any
 }
 
-export function markAsUnique<T extends TypeNode<any, any, any, any, any, any, any>>(
-	node: T,
-	uniqueBy: keyof T['members']
-): T {
-	return {
-		...node,
-		__cache__: {
-			...node.__cache__,
-			uniqueBy
-		}
-	}
-}
-
 export function useCustomCache<T extends Node>(node: T, cache: FunctionN<[TypeOfVariables<T>], TypeOfRefs<T>>): T {
 	return {
 		...node,
