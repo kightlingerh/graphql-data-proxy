@@ -65,42 +65,42 @@ describe('evict', () => {
 		const postEvictReadResult = read()
 		assert.deepStrictEqual(isRight(postEvictReadResult) && isNone(postEvictReadResult.right), true)
 	}),
-	it('evict should clear only partial update', () => {
-		const cache = make(PersonNode)({})(PersonNode)
-		assert.deepStrictEqual(isRight(cache), true)
+		it('evict should clear only partial update', () => {
+			const cache = make(PersonNode)({})(PersonNode)
+			assert.deepStrictEqual(isRight(cache), true)
 
-		const read = pipe(
-			fromEither(cache),
-			chain((c) => rightIO(c.read({})))
-		)
+			const read = pipe(
+				fromEither(cache),
+				chain((c) => rightIO(c.read({})))
+			)
 
-		// initial write
-		pipe(
-			fromEither(cache),
-			chain((c) => rightIO(c.write({})(Person)))
-		)()
+			// initial write
+			pipe(
+				fromEither(cache),
+				chain((c) => rightIO(c.write({})(Person)))
+			)()
 
-		// apply update
-		const updateEvict = pipe(
-			fromEither(cache),
-			chain((c) => rightIO(c.write({})(PersonUpdate)))
-		)()
+			// apply update
+			const updateEvict = pipe(
+				fromEither(cache),
+				chain((c) => rightIO(c.write({})(PersonUpdate)))
+			)()
 
-		assert.deepStrictEqual(isRight(updateEvict), true)
+			assert.deepStrictEqual(isRight(updateEvict), true)
 
-		const postUpdateReadResult = read()
+			const postUpdateReadResult = read()
 
-		assert.deepStrictEqual(
-			isRight(postUpdateReadResult) && isSome(postUpdateReadResult.right) && postUpdateReadResult.right.value,
-			PersonFinal
-		)
-		pipe(updateEvict, getOrElse(constant(constVoid)))()
+			assert.deepStrictEqual(
+				isRight(postUpdateReadResult) && isSome(postUpdateReadResult.right) && postUpdateReadResult.right.value,
+				PersonFinal
+			)
+			pipe(updateEvict, getOrElse(constant(constVoid)))()
 
-		const postEvictReadResult = read()
+			const postEvictReadResult = read()
 
-		assert.deepStrictEqual(
-			isRight(postEvictReadResult) && isSome(postEvictReadResult.right) && postEvictReadResult.right.value,
-			Person
-		)
-	})
+			assert.deepStrictEqual(
+				isRight(postEvictReadResult) && isSome(postEvictReadResult.right) && postEvictReadResult.right.value,
+				Person
+			)
+		})
 })
