@@ -1,5 +1,5 @@
 import { Eq } from 'fp-ts/lib/Eq'
-import { Lazy } from 'fp-ts/lib/function'
+import {FunctionN, Lazy} from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { Show } from 'fp-ts/lib/Show'
@@ -276,12 +276,13 @@ interface NodeDefinition<
 	readonly variablesModel: M.Model<ExtractDefinitionType<Variables>>
 	readonly print: Lazy<string>
 	readonly __refs__?: RefsData
-	readonly __cache__?: NodeCacheConfig
+	readonly __cache__?: NodeCacheConfig<Variables, RefsData>
 }
 
-export interface NodeCacheConfig {
+export interface NodeCacheConfig<Variables, RefsData> {
 	readonly isEntity?: boolean
 	readonly uniqueBy?: string
+	readonly useCustomCache?: FunctionN<[Variables], RefsData>
 }
 
 export interface NodeVariablesDefinition {
@@ -659,11 +660,15 @@ export function sum<Members extends ReadonlyArray<TypeNode<any, any, any, any, a
 		ExtractSumNodeRefsFromMembers<Members>,
 		Variables
 	> => {
-		const newMembers = members.map(member =>  member.members.hasOwnProperty('__typename') ? member : type(
-			member.__typename,
-			{ ...member.members, __typename: scalar(member.__typename, M.literal(member.__typename)) },
-			member.nodeVariablesDefinition
-		));
+		const newMembers = members.map((member) =>
+			member.members.hasOwnProperty('__typename')
+				? member
+				: type(
+						member.__typename,
+						{ ...member.members, __typename: scalar(member.__typename, M.literal(member.__typename)) },
+						member.nodeVariablesDefinition
+				  )
+		)
 		return {
 			tag: 'Sum',
 			strictModel: getSumModel(...newMembers),
@@ -1039,10 +1044,6 @@ export function markAsEntity<T extends Node>(node: T): ExtractEntityType<T> {
 	} as any
 }
 
-export function markAsUnique<
-	Key extends string,
-	Members extends ReadonlyArray<TypeNode<any, Record<Key, any>, any, any, any, any, any>>
->(node: SumNode<Members>, uniqueBy: Key): SumNode<Members>
 export function markAsUnique<T extends TypeNode<any, any, any, any, any, any, any>>(
 	node: T,
 	uniqueBy: keyof T['members']
@@ -1055,6 +1056,7 @@ export function markAsUnique<T extends TypeNode<any, any, any, any, any, any, an
 		}
 	}
 }
+
 
 export const showNode: Show<Node> = {
 	show: (node) => {
