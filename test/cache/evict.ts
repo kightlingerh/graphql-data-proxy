@@ -21,7 +21,7 @@ const PersonNode = N.type('Person', {
 	personalInfo: PersonalInfoNode
 })
 
-const PersonData: N.TypeOfPartial<typeof PersonNode> = {
+const Person: N.TypeOfPartial<typeof PersonNode> = {
 	id: 'some-id',
 	personalInfo: {
 		pictureUrl: none,
@@ -31,13 +31,28 @@ const PersonData: N.TypeOfPartial<typeof PersonNode> = {
 	}
 }
 
+const PersonUpdate: N.TypeOfPartial<typeof PersonNode> = {
+	id: '1',
+	personalInfo: {
+		highSchool: some('La Canada High School')
+	}
+}
+
+const PersonFinal: N.TypeOfPartial<typeof PersonNode> = {
+	id: '1',
+	personalInfo: {
+		...Person.personalInfo,
+		...PersonUpdate.personalInfo
+	}
+}
+
 describe('evict', () => {
-	it('evict should clear cache', () => {
+	it('evict should clear entire write', () => {
 		const cache = make(PersonNode)({})(PersonNode)
 		assert.deepStrictEqual(isRight(cache), true)
 		const evict = pipe(
 			fromEither(cache),
-			chain((c) => rightIO(c.write({})(PersonData)))
+			chain((c) => rightIO(c.write({})(Person)))
 		)()
 		assert.deepStrictEqual(isRight(evict), true)
 		const read = pipe(
@@ -49,5 +64,43 @@ describe('evict', () => {
 		pipe(evict, getOrElse(constant(constVoid)))()
 		const postEvictReadResult = read()
 		assert.deepStrictEqual(isRight(postEvictReadResult) && isNone(postEvictReadResult.right), true)
+	}),
+	it('evict should clear only partial update', () => {
+		const cache = make(PersonNode)({})(PersonNode)
+		assert.deepStrictEqual(isRight(cache), true)
+
+		const read = pipe(
+			fromEither(cache),
+			chain((c) => rightIO(c.read({})))
+		)
+
+		// initial write
+		pipe(
+			fromEither(cache),
+			chain((c) => rightIO(c.write({})(Person)))
+		)()
+
+		// apply update
+		const updateEvict = pipe(
+			fromEither(cache),
+			chain((c) => rightIO(c.write({})(PersonUpdate)))
+		)()
+
+		assert.deepStrictEqual(isRight(updateEvict), true)
+
+		const postUpdateReadResult = read()
+
+		assert.deepStrictEqual(
+			isRight(postUpdateReadResult) && isSome(postUpdateReadResult.right) && postUpdateReadResult.right.value,
+			PersonFinal
+		)
+		pipe(updateEvict, getOrElse(constant(constVoid)))()
+
+		const postEvictReadResult = read()
+
+		assert.deepStrictEqual(
+			isRight(postEvictReadResult) && isSome(postEvictReadResult.right) && postEvictReadResult.right.value,
+			Person
+		)
 	})
 })
