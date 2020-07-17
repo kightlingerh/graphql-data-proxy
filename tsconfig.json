@@ -3,6 +3,7 @@
     "outDir": "./lib",
     "declaration": true,
     "module": "es6",
+    "esModuleInterop": true,
     "noImplicitReturns": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

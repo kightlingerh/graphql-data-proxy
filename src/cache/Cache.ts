@@ -9,7 +9,7 @@ import { fromCompare } from 'fp-ts/lib/Ord'
 import { Reader } from 'fp-ts/lib/Reader'
 import * as N from '../node/Node'
 import { CacheError, CacheResult, CacheWriteResult, cacheWriteResultMonoid, concatEvict, Persist } from '../shared'
-import { isEntityNode, isUniqueNode } from './shared'
+import { isEntityNode } from './shared'
 import { validate } from './validate'
 
 export interface CacheDependencies {
@@ -72,8 +72,9 @@ function readTypeNode(
 	cache: CacheNode
 ): CacheResult<Option<any>> {
 	return () => {
-		const key = encode(request, variables)
-		const requestCache = cache.get(key)
+		const requestCache = !!schema?.__cache__?.useCustomCache
+			? schema.__cache__.useCustomCache(variables)
+			: cache.get(encode(request, variables))
 		if (requestCache) {
 			const x: any = {}
 			for (const k in request.members) {
@@ -97,7 +98,9 @@ const arraySequenceOption = sequence(option)
 
 function readArrayNode(schema: N.ArrayNode<any>, request: N.ArrayNode<any>, variables: object, cache: CacheNode) {
 	return () => {
-		const cacheEntry = cache.get(encode(request, variables))
+		const cacheEntry = !!schema?.__cache__?.useCustomCache
+			? schema.__cache__.useCustomCache(variables)
+			: cache.get(encode(request, variables))
 		if (!cacheEntry) {
 			return none
 		}
@@ -114,7 +117,9 @@ function readNonEmptyArrayNode(
 	cache: CacheNode
 ) {
 	return () => {
-		const cacheEntry = cache.get(encode(request, variables))
+		const cacheEntry = !!schema?.__cache__?.useCustomCache
+			? schema.__cache__.useCustomCache(variables)
+			: cache.get(encode(request, variables))
 		if (!cacheEntry) {
 			return none
 		}
@@ -131,7 +136,9 @@ function readNonEmptyArrayNode(
 
 function readOptionNode(schema: N.OptionNode<any>, request: N.OptionNode<any>, variables: object, cache: CacheNode) {
 	return () => {
-		const cacheEntry = cache.get(encode(request, variables))
+		const cacheEntry = !!schema?.__cache__?.useCustomCache
+			? schema.__cache__.useCustomCache(variables)
+			: cache.get(encode(request, variables))
 		if (!cacheEntry) {
 			return some(none)
 		}
@@ -148,7 +155,9 @@ const mapSequenceOption = getWitherable(fromCompare(constant(0 as const))).seque
 
 function readMapNode(schema: N.MapNode<any, any>, request: N.MapNode<any, any>, variables: object, cache: CacheNode) {
 	return () => {
-		const cacheEntry = cache.get(encode(request, variables))
+		const cacheEntry = !!schema?.__cache__?.useCustomCache
+			? schema.__cache__.useCustomCache(variables)
+			: cache.get(encode(request, variables))
 		if (!cacheEntry) {
 			return none
 		}
@@ -377,7 +386,7 @@ function getCache(
 	cacheNode: CacheNode,
 	cacheData: Lazy<unknown>
 ) {
-	if (schemaNode?.__cache__?.useCustomCache) {
+	if (!!schemaNode?.__cache__?.useCustomCache) {
 		return schemaNode.__cache__.useCustomCache(variables)
 	} else {
 		return makeCache(encode(requestNode, variables), cacheNode, cacheData)

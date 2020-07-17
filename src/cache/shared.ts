@@ -41,16 +41,6 @@ export function isEntityNode(node: N.Node): boolean {
 	}
 }
 
-export function isUniqueNode(node: N.Node): boolean {
-	switch (node.tag) {
-		case 'Type':
-		case 'Sum':
-			return !!node?.__cache__?.uniqueBy
-		default:
-			return false
-	}
-}
-
 export function isTypeNode(node: N.Node): node is N.TypeNode<any, any, any, any, any, any, any> {
 	return node.tag === 'Type'
 }
