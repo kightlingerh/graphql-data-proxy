@@ -281,7 +281,6 @@ interface NodeDefinition<
 
 export interface NodeCacheConfig<Variables, RefsData> {
 	readonly isEntity?: boolean
-	readonly uniqueBy?: string
 	readonly useCustomCache?: FunctionN<[Variables], RefsData>
 }
 
