@@ -305,13 +305,12 @@ function writeToOptionNode(
 	return () => {
 		const key = encode(request, variables)
 		if (isSome(data)) {
-			return write(
-				data.value,
-				schema.wrapped,
-				request.wrapped,
-				variables,
-				getCache(schema, request, variables, cache, () => some(shallowReactive(new Map()))).value
-			)()
+			let cacheEntry = getCache(schema, request, variables, cache, () => some(shallowReactive(new Map())))
+			if (isNone(cacheEntry)) {
+				cacheEntry = some(shallowReactive(new Map()))
+				cache.set(key, cacheEntry)
+			}
+			return write(data.value, schema.wrapped, request.wrapped, variables, cacheEntry.value)()
 		} else {
 			const currentValue = cache.get(key)
 			cache.set(key, none)
