@@ -71,25 +71,19 @@ function readTypeNode(
 	cache: CacheNode
 ): CacheResult<Option<any>> {
 	return () => {
-		const requestCache = !!schema?.__cache__?.useCustomCache
-			? schema.__cache__.useCustomCache(schema, request, variables, cache)
-			: cache.get(encode(request, variables))
-		if (requestCache) {
-			const x: any = {}
-			for (const k in request.members) {
-				if (requestCache[k] === undefined) {
-					return none
-				}
-				const result = read(schema.members[k], request.members[k], variables, requestCache[k])()
-				if (isNone(result)) {
-					return none
-				}
-				x[k] = result.value
+		const requestCache = getCache(schema, request, variables, cache, () => shallowReactive({}))
+		const x: any = {}
+		for (const k in request.members) {
+			if (requestCache[k] === undefined) {
+				return none
 			}
-			return some(x)
-		} else {
-			return none
+			const result = read(schema.members[k], request.members[k], variables, requestCache[k])()
+			if (isNone(result)) {
+				return none
+			}
+			x[k] = result.value
 		}
+		return some(x)
 	}
 }
 
@@ -154,14 +148,8 @@ const mapSequenceOption = getWitherable(fromCompare(constant(0 as const))).seque
 
 function readMapNode(schema: N.MapNode<any, any>, request: N.MapNode<any, any>, variables: object, cache: CacheNode) {
 	return () => {
-		const cacheEntry = !!schema?.__cache__?.useCustomCache
-			? schema.__cache__.useCustomCache(schema, request, variables, cache)
-			: cache.get(encode(request, variables))
-		if (!cacheEntry) {
-			return none
-		}
 		return pipe(
-			cacheEntry as Map<any, CacheNode>,
+			getCache(schema, request, variables, cache, () => shallowReactive(new Map())) as Map<any, CacheNode>,
 			map((val) => read(schema.wrapped, request.wrapped, variables, val)()),
 			mapSequenceOption
 		)
