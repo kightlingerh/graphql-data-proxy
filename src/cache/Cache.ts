@@ -231,7 +231,7 @@ function writeToTypeNode<T extends N.TypeNode<any, any>>(
 ) {
 	return () => {
 		let evict = constVoid
-		const requestCache = getCache(data, schema, request, variables, cache, () => shallowReactive({}))
+		const requestCache = getCache(schema, request, variables, cache, () => shallowReactive({}), data)
 		for (const k in data) {
 			if (requestCache[k] === undefined) {
 				requestCache[k] = shallowReactive(new Map())
@@ -304,7 +304,7 @@ function writeToOptionNode(
 	return () => {
 		const key = encode(request, variables)
 		if (isSome(data)) {
-			let cacheEntry = getCache(data, schema, request, variables, cache, () => some(shallowReactive(new Map())))
+			let cacheEntry = getCache(schema, request, variables, cache, () => some(shallowReactive(new Map())), data)
 			if (isNone(cacheEntry)) {
 				cacheEntry = some(shallowReactive(new Map()))
 				cache.set(key, cacheEntry)
@@ -331,7 +331,7 @@ function writeToMapNode(
 ) {
 	return () => {
 		let evict = constVoid
-		const requestCache = getCache(data, schema, request, variables, cache, () => shallowReactive(new Map()))
+		const requestCache = getCache(schema, request, variables, cache, () => shallowReactive(new Map()), data)
 		for (const [k, v] of data.entries()) {
 			evict = concatEvict(
 				evict,
@@ -378,15 +378,17 @@ function writeToSumNode(
 }
 
 function getCache(
-	data: any,
 	schemaNode: N.Node,
 	requestNode: N.Node,
 	variables: object,
 	cacheNode: CacheNode,
-	cacheData: Lazy<unknown>
+	cacheData: Lazy<unknown>,
+	data?: any
 ) {
 	if (!!schemaNode?.__cache__?.useCustomCache) {
-		return schemaNode.__cache__.useCustomCache(schemaNode, requestNode, variables, cacheNode, data)
+		return makeCache(encode(requestNode, variables), cacheNode, () =>
+			(schemaNode as any).__cache__.useCustomCache(schemaNode, requestNode, variables, cacheNode, data)
+		)
 	} else {
 		return makeCache(encode(requestNode, variables), cacheNode, cacheData)
 	}
