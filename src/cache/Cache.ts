@@ -25,12 +25,12 @@ export interface Cache<R> {
 
 export function make<S extends N.SchemaNode<any, any>>(schema: S) {
 	return (_: CacheDependencies) => {
+		const cache = new Map()
 		return <R extends N.SchemaNode<any, any>>(request: R) => {
 			const errors = validate(schema, request)
 			if (isNonEmpty(errors)) {
 				return left<CacheError, Cache<R>>(errors)
 			} else {
-				const cache = new Map()
 				return right<CacheError, Cache<R>>({
 					read: (variables) => read(schema, request, variables, cache),
 					write: (variables) => (data) => write(data, schema, request, variables, cache)
