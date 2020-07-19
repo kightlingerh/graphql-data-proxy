@@ -34,6 +34,8 @@ export type TypeOfMergedVariables<T> = TypeOfVariables<T> & TypeOfChildrenVariab
 
 export type TypeOfRefs<T> = T extends { readonly __refs__?: infer A } ? A : never
 
+export type TypeOfCacheEntry<T> = T extends { readonly __cache_entry__?: infer A } ? A : never
+
 export type Node =
 	| PrimitiveNode
 	| WrappedNode
@@ -52,8 +54,9 @@ export interface StringNode<
 	Data = string,
 	PartialData = string,
 	RefsData = O.Option<string>,
+	CacheEntry = O.Option<string>,
 	Variables extends NodeVariablesDefinition = {}
-> extends NodeDefinition<Data, PartialData, RefsData, Variables> {
+> extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables> {
 	readonly tag: 'String'
 }
 
@@ -61,8 +64,9 @@ export interface BooleanNode<
 	Data = boolean,
 	PartialData = boolean,
 	RefsData = O.Option<boolean>,
+	CacheEntry = O.Option<boolean>,
 	Variables extends NodeVariablesDefinition = {}
-> extends NodeDefinition<Data, PartialData, RefsData, Variables> {
+> extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables> {
 	readonly tag: 'Boolean'
 }
 
@@ -70,8 +74,9 @@ export interface IntNode<
 	Data = number,
 	PartialData = number,
 	RefsData = O.Option<number>,
+	CacheEntry = O.Option<number>,
 	Variables extends NodeVariablesDefinition = {}
-> extends NodeDefinition<Data, PartialData, RefsData, Variables> {
+> extends NodeDefinition<Data, PartialData, RefsData,  CacheEntry, Variables> {
 	readonly tag: 'Int'
 }
 
@@ -79,8 +84,9 @@ export interface FloatNode<
 	Data = number,
 	PartialData = number,
 	RefsData = O.Option<number>,
+	CacheEntry = O.Option<number>,
 	Variables extends NodeVariablesDefinition = {}
-> extends NodeDefinition<Data, PartialData, RefsData, Variables> {
+> extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables> {
 	readonly tag: 'Float'
 }
 
@@ -101,15 +107,18 @@ export type ExtractTypeNodeChildrenVariablesFromMembers<Members> = {} & Intersec
 	>
 >
 
+export type ExtractTypeNodeCacheEntryFromMembers<Members> = { [K in keyof Members]: TypeOfCacheEntry<Members[K]> }
+
 export interface TypeNode<
 	Typename extends string,
 	Members extends { [K in keyof Members]: Node },
 	Data = ExtractTypeNodeDataFromMembers<Members>,
 	PartialData = ExtractTypeNodePartialDataFromMembers<Members>,
 	RefsData = ExtractTypeNodeRefsFromMembers<Members>,
+	CacheEntry = ExtractTypeNodeCacheEntryFromMembers<Members>,
 	Variables extends NodeVariablesDefinition = {},
 	ChildrenVariables extends NodeVariablesDefinition = ExtractTypeNodeChildrenVariablesFromMembers<Members>
-> extends NodeDefinition<Data, PartialData, RefsData, Variables, ChildrenVariables> {
+> extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables, ChildrenVariables> {
 	readonly __typename: Typename
 	readonly tag: 'Type'
 	readonly members: Members
@@ -132,14 +141,17 @@ export type ExtractArrayNodeRefsFromWrapped<Wrapped> = Array<TypeOfRefs<Wrapped>
 export type ExtractChildrenVariablesDefinitionFromWrapped<Wrapped> = {} & ExtractChildrenVariablesDefinition<Wrapped> &
 	ExtractVariablesDefinition<Wrapped>
 
+export type ExtractArrayNodeCacheEntryFromWrapped<Wrapped> = Array<TypeOfCacheEntry<Wrapped>>
+
 export interface ArrayNode<
 	Wrapped extends Node,
 	Data = ExtractArrayNodeDataFromWrapped<Wrapped>,
 	PartialData = ExtractArrayNodePartialDataFromWrapped<Wrapped>,
 	RefsData = ExtractArrayNodeRefsFromWrapped<Wrapped>,
+	CacheEntry = ExtractArrayNodeCacheEntryFromWrapped<Wrapped>,
 	Variables extends NodeVariablesDefinition = {},
 	ChildrenVariables extends NodeVariablesDefinition = ExtractChildrenVariablesDefinitionFromWrapped<Wrapped>
-> extends NodeDefinition<Data, PartialData, RefsData, Variables, ChildrenVariables> {
+> extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables, ChildrenVariables> {
 	readonly tag: 'Array'
 	readonly wrapped: Wrapped
 }
@@ -150,15 +162,18 @@ export type ExtractMapNodePartialDataFromKeyValue<Key, Value> = Map<TypeOf<Key>,
 
 export type ExtractMapNodeRefsFromKeyValue<Key, Value> = Map<TypeOf<Key>, TypeOfRefs<Value>>
 
+export type ExtractMapNodeCacheEntryFromKeyValue<Key, Value> = Map<TypeOf<Key>, CacheNode<TypeOfCacheEntry<Value>>>
+
 export interface MapNode<
 	Key extends Node,
 	Value extends Node,
 	Data = ExtractMapNodeDataFromKeyValue<Key, Value>,
 	PartialData = ExtractMapNodePartialDataFromKeyValue<Key, Value>,
 	RefsData = ExtractMapNodeRefsFromKeyValue<Key, Value>,
+	CacheEntry = ExtractMapNodeCacheEntryFromKeyValue<Key, Value>,
 	Variables extends NodeVariablesDefinition = {},
 	ChildrenVariables extends NodeVariablesDefinition = ExtractChildrenVariablesDefinitionFromWrapped<Value>
-> extends NodeDefinition<Data, PartialData, RefsData, Variables, ChildrenVariables> {
+> extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables, ChildrenVariables> {
 	readonly tag: 'Map'
 	readonly key: Key
 	readonly wrapped: Value
@@ -169,6 +184,8 @@ export type ExtractOptionNodeDataFromWrapped<Wrapped> = O.Option<TypeOf<Wrapped>
 export type ExtractOptionNodePartialDataFromWrapped<Wrapped> = O.Option<TypeOfPartial<Wrapped>>
 
 export type ExtractOptionNodeRefsFromWrapped<Wrapped> = O.Option<TypeOfRefs<Wrapped>>
+
+export type ExtractOptionNodeCacheEntryFromWrapped<Wrapped> = O.Option<CacheNode<TypeOfCacheEntry<Wrapped>>>
 
 export interface OptionNode<
 	Wrapped extends Node,
@@ -242,6 +259,7 @@ export interface MutationNode<
 	Data = TypeOf<Node>,
 	PartialData = TypeOfPartial<Node>,
 	RefsData = TypeOfRefs<Result>,
+	CacheEntry = T
 	Variables extends NodeVariablesDefinition = {},
 	ChildrenVariables extends NodeVariablesDefinition = {} & ExtractChildrenVariablesDefinition<Result>
 > extends NodeDefinition<Data, PartialData, RefsData, Variables, ChildrenVariables> {
@@ -254,9 +272,10 @@ export interface ScalarNode<
 	Data,
 	PartialData = Data,
 	RefsData = O.Option<Data>,
+	CacheEntry = O.Option<Data>,
 	Variables extends NodeVariablesDefinition = {},
 	ChildrenVariables extends NodeVariablesDefinition = {}
-> extends NodeDefinition<Data, PartialData, RefsData, Variables, ChildrenVariables> {
+> extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables, ChildrenVariables> {
 	readonly tag: 'Scalar'
 	readonly name: Name
 }
@@ -265,6 +284,7 @@ interface NodeDefinition<
 	StrictData,
 	PartialData,
 	RefsData,
+	CacheEntry,
 	Variables extends NodeVariablesDefinition = {},
 	ChildrenVariables extends NodeVariablesDefinition = {}
 > {
@@ -275,22 +295,25 @@ interface NodeDefinition<
 	readonly nodeVariablesDefinition: Variables
 	readonly variablesModel: M.Model<ExtractDefinitionType<Variables>>
 	readonly print: Lazy<string>
+	readonly __cache_entry__?: CacheEntry,
 	readonly __refs__?: RefsData
 	readonly __cache__?: NodeCacheConfig
 }
 
 export type EncodedVariables = string
 
-export type CacheEntry = any
+export interface CacheNode<CacheEntry> extends Map<EncodedVariables, CacheEntry> {}
 
-export interface CacheNode extends Map<EncodedVariables, CacheEntry> {}
+// export type CacheEntry = any
+
+// export interface CacheNode extends Map<EncodedVariables, CacheEntry> {}
 
 export interface CustomCache<T> {
 	(
 		schemaNode: T,
 		requestNode: T,
 		variables: TypeOfMergedVariables<T>,
-		cacheNode: CacheNode,
+		cacheNode: any,
 		data?: TypeOfPartial<T>
 	): TypeOfRefs<T>
 }
