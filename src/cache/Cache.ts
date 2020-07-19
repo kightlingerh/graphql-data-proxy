@@ -7,7 +7,7 @@ import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { chain, isNone, isSome, none, option, Option, some } from 'fp-ts/lib/Option'
 import { fromCompare } from 'fp-ts/lib/Ord'
 import { Reader } from 'fp-ts/lib/Reader'
-import {CacheNode} from '../node/Node';
+import { CacheNode } from '../node/Node'
 import * as N from '../node/Node'
 import { CacheError, CacheResult, CacheWriteResult, cacheWriteResultMonoid, concatEvict, Persist } from '../shared'
 import { isEntityNode } from './shared'
@@ -148,7 +148,12 @@ function readOptionNode(schema: N.OptionNode<any>, request: N.OptionNode<any>, v
 
 const mapSequenceOption = getWitherable(fromCompare(constant(0 as const))).sequence(option)
 
-function readMapNode(schema: N.MapNode<any, any>, request: N.MapNode<any, any>, variables: object, cache: AnyCacheNode) {
+function readMapNode(
+	schema: N.MapNode<any, any>,
+	request: N.MapNode<any, any>,
+	variables: object,
+	cache: AnyCacheNode
+) {
 	return () => {
 		return pipe(
 			getCache(schema, request, variables, cache, () => shallowReactive(new Map())) as Map<any, AnyCacheNode>,

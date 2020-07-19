@@ -1,11 +1,9 @@
-import {Eq} from 'fp-ts/lib/Eq'
-import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray'
+import { Eq } from 'fp-ts/lib/Eq'
+import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import {Encoder} from 'io-ts/lib/Encoder'
+import { Encoder } from 'io-ts/lib/Encoder'
 import * as M from '../model/Model'
-import {
-	isEmptyObject,
-} from '../shared'
+import { isEmptyObject } from '../shared'
 
 export type TypeOf<T> = T extends { readonly strictModel: M.Model<infer A> } ? A : never
 
@@ -191,7 +189,9 @@ export type ExtractNonEmptyArrayNodePartialDataFromWrapped<Wrapped> = NonEmptyAr
 
 export type ExtractNonEmptyArrayNodeRefsFromWrapped<Wrapped> = O.Option<NonEmptyArray<TypeOfRefs<Wrapped>>>
 
-export type ExtractNonEmptyArrayNodeCacheEntryFromWrapped<Wrapped> = O.Option<NonEmptyArray<CacheNode<TypeOfCacheEntry<Wrapped>>>>
+export type ExtractNonEmptyArrayNodeCacheEntryFromWrapped<Wrapped> = O.Option<
+	NonEmptyArray<CacheNode<TypeOfCacheEntry<Wrapped>>>
+>
 
 export interface NonEmptyArrayNode<
 	Wrapped extends Node,
@@ -353,7 +353,7 @@ export function int<V extends NodeVariablesDefinition = {}>(
 		partialModel: M.number,
 		variablesModel: definitionToModel(variables),
 		__sub_variables_definition__: EMPTY_VARIABLES,
-		__variables_definition__: variables,
+		__variables_definition__: variables
 	}
 }
 
@@ -372,7 +372,7 @@ export function float<V extends NodeVariablesDefinition = {}>(
 		partialModel: M.number,
 		variablesModel: definitionToModel(variables),
 		__sub_variables_definition__: EMPTY_VARIABLES,
-		__variables_definition__: variables,
+		__variables_definition__: variables
 	}
 }
 
@@ -391,7 +391,7 @@ export function string<V extends NodeVariablesDefinition = {}>(
 		partialModel: M.string,
 		variablesModel: definitionToModel(variables),
 		__sub_variables_definition__: EMPTY_VARIABLES,
-		__variables_definition__: variables,
+		__variables_definition__: variables
 	}
 }
 
@@ -410,7 +410,7 @@ export function boolean<V extends NodeVariablesDefinition = {}>(
 		partialModel: M.boolean,
 		variablesModel: definitionToModel(variables),
 		__sub_variables_definition__: EMPTY_VARIABLES,
-		__variables_definition__: variables,
+		__variables_definition__: variables
 	}
 }
 
@@ -437,7 +437,7 @@ export function scalar<Name extends string, Data, Variables extends NodeVariable
 		partialModel: model,
 		variablesModel: definitionToModel(variables),
 		__sub_variables_definition__: EMPTY_VARIABLES,
-		__variables_definition__: variables,
+		__variables_definition__: variables
 	}
 }
 
@@ -543,7 +543,7 @@ export function type<
 		partialModel: M.partial(extractTypeMemberPartialModels(members)) as any,
 		variablesModel: definitionToModel(variables),
 		__sub_variables_definition__: getTypeChildrenVariables(members),
-		__variables_definition__: variables,
+		__variables_definition__: variables
 	}
 }
 
@@ -625,7 +625,7 @@ export function sum<Members extends ReadonlyArray<TypeNode<any, any, any, any, a
 			variablesModel: definitionToModel(variables),
 			membersRecord: getSumMembersRecord(...newMembers),
 			__variables_definition__: variables,
-			__sub_variables_definition__: getSumChildrenVariables(...newMembers),
+			__sub_variables_definition__: getSumChildrenVariables(...newMembers)
 		}
 	}
 }
@@ -672,7 +672,7 @@ export function map<Key extends Node<{}>, Value extends Node<{}>, Variables exte
 		variablesModel: definitionToModel(variables),
 		wrapped: value,
 		__sub_variables_definition__: mergeNodeVariables(value),
-		__variables_definition__: variables,
+		__variables_definition__: variables
 	}
 }
 
@@ -710,7 +710,7 @@ export function array<Wrapped extends Node<{}>, Variables extends NodeVariablesD
 		partialModel: M.array(wrapped.partialModel),
 		variablesModel: definitionToModel(variables),
 		__sub_variables_definition__: mergeNodeVariables(wrapped),
-		__variables_definition__: variables,
+		__variables_definition__: variables
 	}
 }
 
@@ -798,7 +798,14 @@ export function mutation<Result extends Node, Variables extends NodeVariablesDef
 export function mutation<Result extends Node, Variables extends NodeVariablesDefinition = {}>(
 	result: Result,
 	variables: Variables = EMPTY_VARIABLES
-): MutationNode<Result, TypeOf<Result>, TypeOfPartial<Result>, TypeOfRefs<Result>, TypeOfCacheEntry<Result>, Variables> {
+): MutationNode<
+	Result,
+	TypeOf<Result>,
+	TypeOfPartial<Result>,
+	TypeOfRefs<Result>,
+	TypeOfCacheEntry<Result>,
+	Variables
+> {
 	return {
 		tag: 'Mutation',
 		result: result,

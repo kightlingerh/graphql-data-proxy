@@ -1,11 +1,11 @@
-import {constant, constVoid} from 'fp-ts/lib/function'
-import {IO} from 'fp-ts/lib/IO'
+import { constant, constVoid } from 'fp-ts/lib/function'
+import { IO } from 'fp-ts/lib/IO'
 import * as IOE from 'fp-ts/lib/IOEither'
-import {Monoid} from 'fp-ts/lib/Monoid'
-import {getSemigroup, NonEmptyArray} from 'fp-ts/lib/NonEmptyArray'
+import { Monoid } from 'fp-ts/lib/Monoid'
+import { getSemigroup, NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import {none} from 'fp-ts/lib/Option'
-import {Tree} from 'fp-ts/lib/Tree'
+import { none } from 'fp-ts/lib/Option'
+import { Tree } from 'fp-ts/lib/Tree'
 
 export function isEmptyObject(obj: object): obj is {} {
 	return Object.keys(obj).length === 0

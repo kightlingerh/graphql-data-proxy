@@ -1,5 +1,5 @@
-import {isEmptyObject, isEmptyString} from '../shared/index';
-import {Node, NodeVariablesDefinition, OptionNode, SchemaNode, TypeNode} from './Node';
+import { isEmptyObject, isEmptyString } from '../shared/index'
+import { Node, NodeVariablesDefinition, OptionNode, SchemaNode, TypeNode } from './Node'
 
 const OPEN_BRACKET = '{'
 const CLOSE_BRACKET = '}'
@@ -24,8 +24,8 @@ function printTypeNodeMembers(members: { [K: string]: Node }): string {
 		tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [OPEN_SPACE, val, OPEN_SPACE]))
 	}
 	tokens.push(CLOSE_BRACKET)
-	return tokens.join('')}
-
+	return tokens.join('')
+}
 
 function printVariables<V extends NodeVariablesDefinition>(variables: V): string {
 	const tokens: string[] = [OPEN_PAREN]
@@ -40,7 +40,6 @@ function printVariables<V extends NodeVariablesDefinition>(variables: V): string
 	tokens.push(CLOSE_PAREN)
 	return tokens.join('')
 }
-
 
 function printVariableName(node: Node, isOptional: boolean = false): string {
 	const optionalString = isOptional ? '' : EXCLAMATION
@@ -99,7 +98,7 @@ function printNode(node: Node): string {
 		case 'Scalar':
 		case 'Int':
 		case 'Float':
-			return '';
+			return ''
 		case 'Type':
 			return printTypeNodeMembers(node.members)
 		case 'Sum':
@@ -108,12 +107,11 @@ function printNode(node: Node): string {
 		case 'Option':
 		case 'NonEmptyArray':
 		case 'Array':
-			return printNode(node.wrapped);
+			return printNode(node.wrapped)
 		case 'Mutation':
-			return printNode(node.result);
+			return printNode(node.result)
 	}
 }
-
 
 export function print<N extends string, T extends { [K in keyof T]: Node }>(
 	schema: SchemaNode<N, T>,
@@ -127,4 +125,3 @@ export function print<N extends string, T extends { [K in keyof T]: Node }>(
 	tokens.push(OPEN_SPACE, printNode(schema))
 	return tokens.join('')
 }
-

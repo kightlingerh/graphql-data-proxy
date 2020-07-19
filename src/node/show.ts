@@ -1,5 +1,5 @@
-import {Show} from 'fp-ts/lib/Show';
-import {Node, SumNode, TypeNode} from './Node';
+import { Show } from 'fp-ts/lib/Show'
+import { Node, SumNode, TypeNode } from './Node'
 
 export const showNode: Show<Node> = {
 	show: (node) => {

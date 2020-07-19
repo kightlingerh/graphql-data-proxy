@@ -1,3 +1,3 @@
 export * from './Node'
-export * from './show';
-export * from './print';
+export * from './show'
+export * from './print'
