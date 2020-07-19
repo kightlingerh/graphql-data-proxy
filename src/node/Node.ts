@@ -21,19 +21,19 @@ export type TypeOfRefs<T> = T extends { readonly __refs__?: infer A } ? A : neve
 
 export type TypeOfCacheEntry<T> = T extends { readonly __cache_entry__?: infer A } ? A : never
 
-export type Node =
-	| PrimitiveNode
-	| WrappedNode
-	| TypeNode<any, any, any, any, any, any, any>
-	| SumNode<any, any, any, any, any, any>
-	| ScalarNode<any, any, any, any, any, any>
-	| MutationNode<any, any, any, any, any, any>
+export type Node<Variables extends {} = any> =
+	| PrimitiveNode<Variables>
+	| WrappedNode<Variables>
+	| TypeNode<any, any, any, any, any, any, Variables, any>
+	| SumNode<any, any, any, any, any, Variables, any>
+	| ScalarNode<any, any, any, any, any, Variables, any>
+	| MutationNode<any, any, any, any, any, Variables, any>
 
-export type PrimitiveNode =
-	| StringNode<any, any, any, any>
-	| BooleanNode<any, any, any, any>
-	| FloatNode<any, any, any, any>
-	| IntNode<any, any, any, any>
+export type PrimitiveNode<Variables extends {} = {}> =
+	| StringNode<any, any, any, Variables, any>
+	| BooleanNode<any, any, any, Variables, any>
+	| FloatNode<any, any, any, Variables, any>
+	| IntNode<any, any, any, Variables, any>
 
 export interface StringNode<
 	Data = string,
@@ -111,11 +111,11 @@ export interface TypeNode<
 
 export type SchemaNode<N extends string, T extends { [K in keyof T]: Node }> = TypeNode<N, T>
 
-export type WrappedNode =
-	| ArrayNode<any, any, any, any, any, any>
-	| MapNode<any, any, any, any, any, any, any>
-	| OptionNode<any, any, any, any, any, any>
-	| NonEmptyArrayNode<any, any, any, any, any, any>
+export type WrappedNode<Variables extends {} = {}> =
+	| ArrayNode<any, any, any, any, any, Variables, any>
+	| MapNode<any, any, any, any, any, any, Variables, any>
+	| OptionNode<any, any, any, any, any, Variables, any>
+	| NonEmptyArrayNode<any, any, any, any, any, Variables, any>
 
 export type ExtractArrayNodeDataFromWrapped<Wrapped> = Array<TypeOf<Wrapped>>
 
@@ -630,8 +630,8 @@ export function sum<Members extends ReadonlyArray<TypeNode<any, any, any, any, a
 	}
 }
 
-export function map<Key extends Node, Value extends Node>(key: Key, value: Value): MapNode<Key, Value>
-export function map<Key extends Node, Value extends Node, Variables extends NodeVariablesDefinition>(
+export function map<Key extends Node<{}>, Value extends Node<{}>>(key: Key, value: Value): MapNode<Key, Value>
+export function map<Key extends Node<{}>, Value extends Node<{}>, Variables extends NodeVariablesDefinition>(
 	key: Key,
 	value: Value,
 	variables: Variables
@@ -644,7 +644,7 @@ export function map<Key extends Node, Value extends Node, Variables extends Node
 	ExtractMapNodeCacheEntryFromKeyValue<Key, Value>,
 	Variables
 >
-export function map<Key extends Node, Value extends Node, Variables extends NodeVariablesDefinition = {}>(
+export function map<Key extends Node<{}>, Value extends Node<{}>, Variables extends NodeVariablesDefinition = {}>(
 	key: Key,
 	value: Value,
 	variables: Variables = EMPTY_VARIABLES
@@ -657,6 +657,13 @@ export function map<Key extends Node, Value extends Node, Variables extends Node
 	ExtractMapNodeCacheEntryFromKeyValue<Key, Value>,
 	Variables
 > {
+	if (__DEV__ && !isEmptyObject(key.__variables_definition__)) {
+		console.warn(`variables will be ignored on map key`)
+	}
+	if (__DEV__ && !isEmptyObject(value.__variables_definition__)) {
+		console.warn(`variables will be ignored on map value`)
+	}
+
 	return {
 		key,
 		tag: 'Map',
@@ -669,8 +676,8 @@ export function map<Key extends Node, Value extends Node, Variables extends Node
 	}
 }
 
-export function array<Wrapped extends Node>(wrapped: Wrapped): ArrayNode<Wrapped>
-export function array<Wrapped extends Node, Variables extends NodeVariablesDefinition>(
+export function array<Wrapped extends Node<{}>>(wrapped: Wrapped): ArrayNode<Wrapped>
+export function array<Wrapped extends Node<{}>, Variables extends NodeVariablesDefinition>(
 	wrapped: Wrapped,
 	variables: Variables
 ): ArrayNode<
@@ -681,7 +688,7 @@ export function array<Wrapped extends Node, Variables extends NodeVariablesDefin
 	ExtractArrayNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 >
-export function array<Wrapped extends Node, Variables extends NodeVariablesDefinition = {}>(
+export function array<Wrapped extends Node<{}>, Variables extends NodeVariablesDefinition = {}>(
 	wrapped: Wrapped,
 	variables: Variables = EMPTY_VARIABLES
 ): ArrayNode<
@@ -692,6 +699,10 @@ export function array<Wrapped extends Node, Variables extends NodeVariablesDefin
 	ExtractArrayNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 > {
+	if (__DEV__ && !isEmptyObject(wrapped.__variables_definition__)) {
+		console.warn(`variables will be ignored on array value`)
+	}
+
 	return {
 		tag: 'Array',
 		wrapped,
@@ -703,8 +714,8 @@ export function array<Wrapped extends Node, Variables extends NodeVariablesDefin
 	}
 }
 
-export function option<Wrapped extends Node>(wrapped: Wrapped): OptionNode<Wrapped>
-export function option<Wrapped extends Node, Variables extends NodeVariablesDefinition>(
+export function option<Wrapped extends Node<{}>>(wrapped: Wrapped): OptionNode<Wrapped>
+export function option<Wrapped extends Node<{}>, Variables extends NodeVariablesDefinition>(
 	wrapped: Wrapped,
 	variables: Variables
 ): OptionNode<
@@ -715,7 +726,7 @@ export function option<Wrapped extends Node, Variables extends NodeVariablesDefi
 	ExtractOptionNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 >
-export function option<Wrapped extends Node, Variables extends NodeVariablesDefinition = {}>(
+export function option<Wrapped extends Node<{}>, Variables extends NodeVariablesDefinition = {}>(
 	wrapped: Wrapped,
 	variables: Variables = EMPTY_VARIABLES
 ): OptionNode<
@@ -726,6 +737,10 @@ export function option<Wrapped extends Node, Variables extends NodeVariablesDefi
 	ExtractOptionNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 > {
+	if (__DEV__ && !isEmptyObject(wrapped.__variables_definition__)) {
+		console.warn(`variables will be ignored on option value`)
+	}
+
 	return {
 		tag: 'Option',
 		wrapped,
@@ -737,8 +752,8 @@ export function option<Wrapped extends Node, Variables extends NodeVariablesDefi
 	}
 }
 
-export function nonEmptyArray<Wrapped extends Node>(wrapped: Wrapped): NonEmptyArrayNode<Wrapped>
-export function nonEmptyArray<Wrapped extends Node, Variables extends NodeVariablesDefinition>(
+export function nonEmptyArray<Wrapped extends Node<{}>>(wrapped: Wrapped): NonEmptyArrayNode<Wrapped>
+export function nonEmptyArray<Wrapped extends Node<{}>, Variables extends NodeVariablesDefinition>(
 	wrapped: Wrapped,
 	variables: Variables
 ): NonEmptyArrayNode<
@@ -749,7 +764,7 @@ export function nonEmptyArray<Wrapped extends Node, Variables extends NodeVariab
 	ExtractNonEmptyArrayNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 >
-export function nonEmptyArray<Wrapped extends Node, Variables extends NodeVariablesDefinition = {}>(
+export function nonEmptyArray<Wrapped extends Node<{}>, Variables extends NodeVariablesDefinition = {}>(
 	wrapped: Wrapped,
 	variables: Variables = EMPTY_VARIABLES
 ): NonEmptyArrayNode<
@@ -760,6 +775,10 @@ export function nonEmptyArray<Wrapped extends Node, Variables extends NodeVariab
 	ExtractNonEmptyArrayNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 > {
+	if (__DEV__ && !isEmptyObject(wrapped.__variables_definition__)) {
+		console.warn(`variables will be ignored on nonEmptyArray value`)
+	}
+
 	return {
 		tag: 'NonEmptyArray',
 		wrapped,
