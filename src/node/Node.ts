@@ -1,25 +1,10 @@
-import { Eq } from 'fp-ts/lib/Eq'
-import { Lazy } from 'fp-ts/lib/function'
-import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
+import {Eq} from 'fp-ts/lib/Eq'
+import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
-import { Show } from 'fp-ts/lib/Show'
-import { Encoder } from 'io-ts/lib/Encoder'
+import {Encoder} from 'io-ts/lib/Encoder'
 import * as M from '../model/Model'
 import {
-	CLOSE_BRACKET,
-	CLOSE_PAREN,
-	COLON,
-	constEmptyString,
-	DOLLAR_SIGN,
-	ELLIPSIS,
-	EXCLAMATION,
 	isEmptyObject,
-	isEmptyString,
-	ON,
-	OPEN_BRACKET,
-	OPEN_PAREN,
-	OPEN_SPACE,
-	TYPENAME
 } from '../shared'
 
 export type TypeOf<T> = T extends { readonly strictModel: M.Model<infer A> } ? A : never
@@ -301,7 +286,6 @@ interface NodeDefinition<
 	readonly strictModel: M.Model<StrictData>
 	readonly partialModel: M.Model<PartialData>
 	readonly variablesModel: M.Model<ExtractDefinitionType<Variables>>
-	readonly print: Lazy<string>
 	// for internal use
 
 	readonly __sub_variables_definition__: ChildrenVariables
@@ -368,7 +352,6 @@ export function int<V extends NodeVariablesDefinition = {}>(
 		strictModel: M.number,
 		partialModel: M.number,
 		variablesModel: definitionToModel(variables),
-		print: constEmptyString,
 		__sub_variables_definition__: EMPTY_VARIABLES,
 		__variables_definition__: variables,
 	}
@@ -388,7 +371,6 @@ export function float<V extends NodeVariablesDefinition = {}>(
 		strictModel: M.number,
 		partialModel: M.number,
 		variablesModel: definitionToModel(variables),
-		print: constEmptyString,
 		__sub_variables_definition__: EMPTY_VARIABLES,
 		__variables_definition__: variables,
 	}
@@ -408,7 +390,6 @@ export function string<V extends NodeVariablesDefinition = {}>(
 		strictModel: M.string,
 		partialModel: M.string,
 		variablesModel: definitionToModel(variables),
-		print: constEmptyString,
 		__sub_variables_definition__: EMPTY_VARIABLES,
 		__variables_definition__: variables,
 	}
@@ -428,7 +409,6 @@ export function boolean<V extends NodeVariablesDefinition = {}>(
 		strictModel: M.boolean,
 		partialModel: M.boolean,
 		variablesModel: definitionToModel(variables),
-		print: constEmptyString,
 		__sub_variables_definition__: EMPTY_VARIABLES,
 		__variables_definition__: variables,
 	}
@@ -456,7 +436,6 @@ export function scalar<Name extends string, Data, Variables extends NodeVariable
 		strictModel: model,
 		partialModel: model,
 		variablesModel: definitionToModel(variables),
-		print: constEmptyString,
 		__sub_variables_definition__: EMPTY_VARIABLES,
 		__variables_definition__: variables,
 	}
@@ -518,36 +497,6 @@ function extractTypeMemberPartialModels<Members extends { [K in keyof Members]: 
 	return x
 }
 
-function printVariablesNode<V extends NodeVariablesDefinition>(variables: V): string {
-	const tokens: string[] = [OPEN_PAREN]
-	const keys = Object.keys(variables)
-	const length = keys.length
-	const last = length - 1
-	let i = 0
-	for (; i < length; i++) {
-		const key = keys[i]
-		tokens.push(key, COLON, OPEN_SPACE, DOLLAR_SIGN, key, i === last ? '' : ', ')
-	}
-	tokens.push(CLOSE_PAREN)
-	return tokens.join('')
-}
-
-function printTypeNodeMembers(members: { [K: string]: Node }): Lazy<string> {
-	return () => {
-		const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE]
-		for (const [key, value] of Object.entries(members)) {
-			tokens.push(key)
-			if (!isEmptyObject(value.__variables_definition__)) {
-				tokens.push(printVariablesNode(value.__variables_definition__))
-			}
-			const val = value.print()
-			tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [OPEN_SPACE, val, OPEN_SPACE]))
-		}
-		tokens.push(CLOSE_BRACKET)
-		return tokens.join('')
-	}
-}
-
 export function type<Name extends string, Members extends { [K in keyof Members]: Node }>(
 	__typename: Name,
 	members: Members
@@ -593,7 +542,6 @@ export function type<
 		strictModel: M.type(extractTypeMemberStrictModels(members)) as any,
 		partialModel: M.partial(extractTypeMemberPartialModels(members)) as any,
 		variablesModel: definitionToModel(variables),
-		print: printTypeNodeMembers(members),
 		__sub_variables_definition__: getTypeChildrenVariables(members),
 		__variables_definition__: variables,
 	}
@@ -629,27 +577,6 @@ function getSumPartialModel<Members extends ReadonlyArray<TypeNode<any, any, any
 	...members: Members
 ): M.Model<{ [K in keyof Members]: TypeOfPartial<Members[K]> & { __typename?: ExtractTypeName<Members[K]> } }[number]> {
 	return sumTypename(getSumObject(...members))
-}
-
-function printSumNode<Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>>(
-	...members: Members
-): Lazy<string> {
-	return () => {
-		const tokens: string[] = [OPEN_BRACKET, TYPENAME]
-		members.forEach((member) => {
-			tokens.push(
-				ELLIPSIS,
-				OPEN_SPACE,
-				ON,
-				OPEN_SPACE,
-				member.__typename,
-				OPEN_SPACE,
-				printTypeNodeMembers(member.members)()
-			)
-		})
-		tokens.push(CLOSE_BRACKET)
-		return tokens.join('')
-	}
 }
 
 function getSumChildrenVariables<Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>>(
@@ -695,7 +622,6 @@ export function sum<Members extends ReadonlyArray<TypeNode<any, any, any, any, a
 			tag: 'Sum',
 			strictModel: getSumModel(...newMembers),
 			partialModel: getSumPartialModel(...newMembers),
-			print: printSumNode(...members),
 			variablesModel: definitionToModel(variables),
 			membersRecord: getSumMembersRecord(...newMembers),
 			__variables_definition__: variables,
@@ -738,7 +664,6 @@ export function map<Key extends Node, Value extends Node, Variables extends Node
 		partialModel: M.map(key.strictModel, value.partialModel),
 		variablesModel: definitionToModel(variables),
 		wrapped: value,
-		print: value.print,
 		__sub_variables_definition__: mergeNodeVariables(value),
 		__variables_definition__: variables,
 	}
@@ -773,7 +698,6 @@ export function array<Wrapped extends Node, Variables extends NodeVariablesDefin
 		strictModel: M.array(wrapped.strictModel),
 		partialModel: M.array(wrapped.partialModel),
 		variablesModel: definitionToModel(variables),
-		print: wrapped.print,
 		__sub_variables_definition__: mergeNodeVariables(wrapped),
 		__variables_definition__: variables,
 	}
@@ -808,7 +732,6 @@ export function option<Wrapped extends Node, Variables extends NodeVariablesDefi
 		strictModel: M.option(wrapped.strictModel),
 		partialModel: M.option(wrapped.partialModel),
 		variablesModel: definitionToModel(variables),
-		print: wrapped.print,
 		__sub_variables_definition__: mergeNodeVariables(wrapped),
 		__variables_definition__: variables
 	}
@@ -843,7 +766,6 @@ export function nonEmptyArray<Wrapped extends Node, Variables extends NodeVariab
 		strictModel: M.nonEmptyArray(wrapped.strictModel),
 		partialModel: M.nonEmptyArray(wrapped.partialModel),
 		variablesModel: definitionToModel(variables),
-		print: wrapped.print,
 		__sub_variables_definition__: mergeNodeVariables(wrapped),
 		__variables_definition__: variables
 	}
@@ -864,68 +786,9 @@ export function mutation<Result extends Node, Variables extends NodeVariablesDef
 		strictModel: result.strictModel,
 		partialModel: result.partialModel,
 		variablesModel: definitionToModel(variables),
-		print: result.print,
 		__sub_variables_definition__: mergeNodeVariables(result),
 		__variables_definition__: variables
 	}
-}
-
-function printVariables<V extends NodeVariablesDefinition>(variables: V): string {
-	const tokens: string[] = [OPEN_PAREN]
-	const keys = Object.keys(variables)
-	const length = keys.length
-	const last = length - 1
-	let i = 0
-	for (; i < length; i++) {
-		const key = keys[i]
-		tokens.push(DOLLAR_SIGN, key, COLON, OPEN_SPACE, printVariableName(variables[key]), i === last ? '' : ', ')
-	}
-	tokens.push(CLOSE_PAREN)
-	return tokens.join('')
-}
-
-function isOptionNode(node: Node): node is OptionNode<any> {
-	return node.tag === 'Option'
-}
-
-function printVariableName(node: Node, isOptional: boolean = false): string {
-	const optionalString = isOptional ? '' : EXCLAMATION
-	switch (node.tag) {
-		case 'Array':
-		case 'NonEmptyArray':
-			return `[${printVariableName(node.wrapped, isOptionNode(node.wrapped))}]${optionalString}`
-		case 'Map':
-			return `Map[${printVariableName(node.key)}, ${printVariableName(
-				node.wrapped,
-				isOptionNode(node.wrapped)
-			)}]${optionalString}`
-		case 'Option':
-			return printVariableName(node.wrapped, true)
-		case 'Boolean':
-		case 'String':
-		case 'Int':
-		case 'Float':
-			return `${node.tag}${optionalString}`
-		case 'Scalar':
-			return `${node.name}${optionalString}`
-		case 'Type':
-			return `${node.__typename}${optionalString}`
-		default:
-			return ''
-	}
-}
-
-export function print<N extends string, T extends { [K in keyof T]: Node }>(
-	schema: SchemaNode<N, T>,
-	operation: string,
-	operationName: string
-): string {
-	const tokens = [operation, ' ', operationName]
-	if (!isEmptyObject(schema.__variables_definition__)) {
-		tokens.push(printVariables(schema.__variables_definition__))
-	}
-	tokens.push(OPEN_SPACE, schema.print())
-	return tokens.join('')
 }
 
 export function pickFromType<T extends TypeNode<any, any, any, any, any, any, any, any>, P extends keyof T['members']>(
@@ -1083,48 +946,4 @@ export function useCustomCache<T extends Node>(node: T, customCache: CustomCache
 			useCustomCache: customCache
 		}
 	}
-}
-
-export const showNode: Show<Node> = {
-	show: (node) => {
-		switch (node.tag) {
-			case 'Boolean':
-			case 'Int':
-			case 'Float':
-			case 'String':
-				return node.tag
-			case 'Scalar':
-				return `Scalar: ${node.name}`
-			case 'Map':
-				return `Map<${showNode.show(node.key)}, ${showNode.show(node.wrapped)}>`
-			case 'Option':
-				return `Option<${showNode.show(node.wrapped)}>`
-			case 'Array':
-				return `Array<${showNode.show(node.wrapped)}`
-			case 'NonEmptyArray':
-				return `NonEmptyArray<${showNode.show(node.wrapped)}`
-			case 'Sum':
-				return showSumNode.show(node)
-			case 'Type':
-				return showTypeNode.show(node)
-			default:
-				return node.tag
-		}
-	}
-}
-
-export const showSumNode: Show<SumNode<any>> = {
-	show: (node) =>
-		`{ ${Object.keys(node.members)
-			.map((k) => `${k}: ${node.members[k].__typename}`)
-			.join(', ')} }`
-}
-
-export const showTypeNode: Show<TypeNode<string, any, any>> = {
-	show: (node) =>
-		`{ ${Object.keys(node.members)
-			.map((k) =>
-				`${k}: ${node.members[k].tag} ${node.members[k].__typename || node.members[k].name || ''}`.trimEnd()
-			)
-			.join(', ')} }`
 }

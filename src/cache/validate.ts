@@ -1,8 +1,9 @@
-import { isNonEmpty } from 'fp-ts/lib/Array'
-import { Tree } from 'fp-ts/lib/Tree'
-import { tree } from 'io-ts/lib/Decoder'
+import {isNonEmpty} from 'fp-ts/lib/Array'
+import {Tree} from 'fp-ts/lib/Tree'
+import {tree} from 'io-ts/lib/Decoder'
 import * as N from '../node'
-import { isMapNode, isScalarNode, isSumNode, isTypeNode, isWrappedNode } from './shared'
+import {showNode, showTypeNode} from '../node/show';
+import {isMapNode, isScalarNode, isSumNode, isTypeNode, isWrappedNode} from './shared'
 
 const VALIDATIONS: WeakMap<N.SchemaNode<any, any>, WeakMap<N.SchemaNode<any, any>, Array<Tree<string>>>> = new WeakMap()
 
@@ -36,7 +37,7 @@ function validateNode(x: N.Node, y: N.Node): Array<Tree<string>> {
 	} else if (x.tag === y.tag) {
 		return []
 	} else {
-		return [tree(`cannot use node ${N.showNode.show(y)}, should be assignable to ${N.showNode.show(x)}`)]
+		return [tree(`cannot use node ${showNode.show(y)}, should be assignable to ${showNode.show(x)}`)]
 	}
 }
 
@@ -51,7 +52,7 @@ function validateTypeNode<SchemaNode extends N.TypeNode<any, any, any>, RequestN
 		const xk = xMembers[k]
 		const yk = yMembers[k]
 		if (xk === undefined) {
-			errors.push(tree(`request has expected field ${k} that is unavailable on ${N.showTypeNode.show(xk)}`))
+			errors.push(tree(`request has expected field ${k} that is unavailable on ${showTypeNode.show(xk)}`))
 		} else {
 			const mErrors = validateNode(xk, yk)
 			if (isNonEmpty(mErrors)) {
@@ -106,7 +107,7 @@ function validateSumNode<SchemaNode extends N.SumNode<any, any>, RequestNode ext
 		const xk = xMembers[k]
 		const yk = yMembers[k]
 		if (xk === undefined) {
-			errors.push(tree(`request has sum member ${k} that is unavailable in schema ${N.showTypeNode.show(xk)}`))
+			errors.push(tree(`request has sum member ${k} that is unavailable in schema ${showTypeNode.show(xk)}`))
 		} else {
 			const mErrors = validateNode(xk, yk)
 			if (isNonEmpty(mErrors)) {
