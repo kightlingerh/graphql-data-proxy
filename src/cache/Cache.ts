@@ -7,8 +7,8 @@ import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { chain, isNone, isSome, none, option, Option, some } from 'fp-ts/lib/Option'
 import { fromCompare } from 'fp-ts/lib/Ord'
 import { Reader } from 'fp-ts/lib/Reader'
+import {CacheNode} from '../node/Node';
 import * as N from '../node/Node'
-import { CacheNode } from '../node/Node'
 import { CacheError, CacheResult, CacheWriteResult, cacheWriteResultMonoid, concatEvict, Persist } from '../shared'
 import { isEntityNode } from './shared'
 import { validate } from './validate'
@@ -17,6 +17,8 @@ export interface CacheDependencies {
 	id?: string
 	persist?: Persist
 }
+
+type AnyCacheNode = CacheNode<any>
 
 export interface Cache<R> {
 	write(variables: N.TypeOfMergedVariables<R>): Reader<N.TypeOfPartial<R>, CacheWriteResult>
@@ -40,7 +42,7 @@ export function make<S extends N.SchemaNode<any, any>>(schema: S) {
 	}
 }
 
-function read(schema: N.Node, request: N.Node, variables: object, cache: CacheNode): CacheResult<Option<any>> {
+function read(schema: N.Node, request: N.Node, variables: object, cache: AnyCacheNode): CacheResult<Option<any>> {
 	if (isEntityNode(schema)) {
 		return () => cache.get(encode(request, variables)) || none
 	}
@@ -68,7 +70,7 @@ function readTypeNode(
 	schema: N.TypeNode<any, any>,
 	request: N.TypeNode<any, any>,
 	variables: object,
-	cache: CacheNode
+	cache: AnyCacheNode
 ): CacheResult<Option<any>> {
 	return () => {
 		const requestCache = getCache(schema, request, variables, cache, () => shallowReactive({}))
@@ -89,7 +91,7 @@ function readTypeNode(
 
 const arraySequenceOption = sequence(option)
 
-function readArrayNode(schema: N.ArrayNode<any>, request: N.ArrayNode<any>, variables: object, cache: CacheNode) {
+function readArrayNode(schema: N.ArrayNode<any>, request: N.ArrayNode<any>, variables: object, cache: AnyCacheNode) {
 	return () => {
 		const cacheEntry = !!schema?.__cache__?.useCustomCache
 			? schema.__cache__.useCustomCache(schema, request, variables, cache)
@@ -98,7 +100,7 @@ function readArrayNode(schema: N.ArrayNode<any>, request: N.ArrayNode<any>, vari
 			return none
 		}
 		return arraySequenceOption(
-			cacheEntry.map((val: CacheNode) => read(schema.wrapped, request.wrapped, variables, val)())
+			cacheEntry.map((val: AnyCacheNode) => read(schema.wrapped, request.wrapped, variables, val)())
 		)
 	}
 }
@@ -107,7 +109,7 @@ function readNonEmptyArrayNode(
 	schema: N.NonEmptyArrayNode<any>,
 	request: N.NonEmptyArrayNode<any>,
 	variables: object,
-	cache: CacheNode
+	cache: AnyCacheNode
 ) {
 	return () => {
 		const cacheEntry = !!schema?.__cache__?.useCustomCache
@@ -117,17 +119,17 @@ function readNonEmptyArrayNode(
 			return none
 		}
 		return pipe(
-			cacheEntry as Option<CacheNode[]>,
+			cacheEntry as Option<AnyCacheNode[]>,
 			chain((entry) =>
 				arraySequenceOption(
-					entry.map((val: CacheNode) => read(schema.wrapped, request.wrapped, variables, val)())
+					entry.map((val: AnyCacheNode) => read(schema.wrapped, request.wrapped, variables, val)())
 				)
 			)
 		)
 	}
 }
 
-function readOptionNode(schema: N.OptionNode<any>, request: N.OptionNode<any>, variables: object, cache: CacheNode) {
+function readOptionNode(schema: N.OptionNode<any>, request: N.OptionNode<any>, variables: object, cache: AnyCacheNode) {
 	return () => {
 		const cacheEntry = !!schema?.__cache__?.useCustomCache
 			? schema.__cache__.useCustomCache(schema, request, variables, cache)
@@ -137,7 +139,7 @@ function readOptionNode(schema: N.OptionNode<any>, request: N.OptionNode<any>, v
 		}
 		return some(
 			pipe(
-				cacheEntry as Option<CacheNode>,
+				cacheEntry as Option<AnyCacheNode>,
 				chain((entry) => read(schema.wrapped, request.wrapped, variables, entry)())
 			)
 		)
@@ -146,17 +148,17 @@ function readOptionNode(schema: N.OptionNode<any>, request: N.OptionNode<any>, v
 
 const mapSequenceOption = getWitherable(fromCompare(constant(0 as const))).sequence(option)
 
-function readMapNode(schema: N.MapNode<any, any>, request: N.MapNode<any, any>, variables: object, cache: CacheNode) {
+function readMapNode(schema: N.MapNode<any, any>, request: N.MapNode<any, any>, variables: object, cache: AnyCacheNode) {
 	return () => {
 		return pipe(
-			getCache(schema, request, variables, cache, () => shallowReactive(new Map())) as Map<any, CacheNode>,
+			getCache(schema, request, variables, cache, () => shallowReactive(new Map())) as Map<any, AnyCacheNode>,
 			map((val) => read(schema.wrapped, request.wrapped, variables, val)()),
 			mapSequenceOption
 		)
 	}
 }
 
-function readSumNode(schema: N.SumNode<any>, request: N.SumNode<any>, variables: object, cache: CacheNode) {
+function readSumNode(schema: N.SumNode<any>, request: N.SumNode<any>, variables: object, cache: AnyCacheNode) {
 	return () => {
 		const cacheEntry = cache.get(encode(request, variables))
 		if (!cacheEntry) {
@@ -171,7 +173,7 @@ function readSumNode(schema: N.SumNode<any>, request: N.SumNode<any>, variables:
 	}
 }
 
-function write(data: any, schema: N.Node, request: N.Node, variables: object, cache: CacheNode): CacheWriteResult {
+function write(data: any, schema: N.Node, request: N.Node, variables: object, cache: AnyCacheNode): CacheWriteResult {
 	if (schema?.__cache__?.isEntity) {
 		return writeToEntity(data, request, variables, cache)
 	}
@@ -199,7 +201,7 @@ function write(data: any, schema: N.Node, request: N.Node, variables: object, ca
 	}
 }
 
-function writeToEntity(data: any, request: N.Node, variables: object, cache: CacheNode) {
+function writeToEntity(data: any, request: N.Node, variables: object, cache: AnyCacheNode) {
 	return () => {
 		const key = encode(request, variables)
 		const currentValue = cache.get(key)
@@ -215,7 +217,7 @@ function writeToTypeNode<T extends N.TypeNode<any, any>>(
 	schema: T,
 	request: T,
 	variables: N.TypeOfMergedVariables<T>,
-	cache: CacheNode
+	cache: AnyCacheNode
 ) {
 	return () => {
 		let evict = constVoid
@@ -238,7 +240,7 @@ function writeToArrayNode(
 	schema: N.ArrayNode<any>,
 	request: N.ArrayNode<any>,
 	variables: object,
-	cache: CacheNode
+	cache: AnyCacheNode
 ) {
 	return () => {
 		const key = encode(request, variables)
@@ -264,7 +266,7 @@ function writeToNonEmptyArrayNode(
 	schema: N.NonEmptyArrayNode<any>,
 	request: N.NonEmptyArrayNode<any>,
 	variables: object,
-	cache: CacheNode
+	cache: AnyCacheNode
 ) {
 	return () => {
 		const key = encode(request, variables)
@@ -287,7 +289,7 @@ function writeToOptionNode(
 	schema: N.OptionNode<any>,
 	request: N.OptionNode<any>,
 	variables: object,
-	cache: CacheNode
+	cache: AnyCacheNode
 ) {
 	return () => {
 		const key = encode(request, variables)
@@ -315,7 +317,7 @@ function writeToMapNode(
 	schema: N.MapNode<any, any>,
 	request: N.MapNode<any, any>,
 	variables: object,
-	cache: CacheNode
+	cache: AnyCacheNode
 ) {
 	return () => {
 		let evict = constVoid
@@ -341,7 +343,7 @@ function writeToSumNode(
 	schema: N.SumNode<any>,
 	request: N.SumNode<any, any>,
 	variables: object,
-	cache: CacheNode
+	cache: AnyCacheNode
 ) {
 	return () => {
 		const key = encode(request, variables)
@@ -369,7 +371,7 @@ function getCache(
 	schemaNode: N.Node,
 	requestNode: N.Node,
 	variables: object,
-	cacheNode: CacheNode,
+	cacheNode: AnyCacheNode,
 	cacheData: Lazy<unknown>,
 	data?: any
 ) {
@@ -382,7 +384,7 @@ function getCache(
 	}
 }
 
-function makeCache(key: string, cacheNode: CacheNode, cacheData: Lazy<unknown>) {
+function makeCache(key: string, cacheNode: AnyCacheNode, cacheData: Lazy<unknown>) {
 	let requestCache = cacheNode.get(key)
 	if (!requestCache) {
 		requestCache = cacheData()

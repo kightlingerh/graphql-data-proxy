@@ -76,7 +76,7 @@ export interface IntNode<
 	RefsData = O.Option<number>,
 	CacheEntry = O.Option<number>,
 	Variables extends NodeVariablesDefinition = {}
-> extends NodeDefinition<Data, PartialData, RefsData,  CacheEntry, Variables> {
+> extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables> {
 	readonly tag: 'Int'
 }
 
@@ -192,9 +192,10 @@ export interface OptionNode<
 	Data = ExtractOptionNodeDataFromWrapped<Wrapped>,
 	PartialData = ExtractOptionNodePartialDataFromWrapped<Wrapped>,
 	RefsData = ExtractOptionNodeRefsFromWrapped<Wrapped>,
+	CacheEntry = ExtractOptionNodeCacheEntryFromWrapped<Wrapped>,
 	Variables extends NodeVariablesDefinition = {},
 	ChildrenVariables extends NodeVariablesDefinition = ExtractChildrenVariablesDefinitionFromWrapped<Wrapped>
-> extends NodeDefinition<Data, PartialData, RefsData, Variables, ChildrenVariables> {
+> extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables, ChildrenVariables> {
 	readonly tag: 'Option'
 	readonly wrapped: Wrapped
 }
@@ -205,14 +206,17 @@ export type ExtractNonEmptyArrayNodePartialDataFromWrapped<Wrapped> = NonEmptyAr
 
 export type ExtractNonEmptyArrayNodeRefsFromWrapped<Wrapped> = O.Option<NonEmptyArray<TypeOfRefs<Wrapped>>>
 
+export type ExtractNonEmptyArrayNodeCacheEntryFromWrapped<Wrapped> = O.Option<NonEmptyArray<CacheNode<TypeOfCacheEntry<Wrapped>>>>
+
 export interface NonEmptyArrayNode<
 	Wrapped extends Node,
 	Data = ExtractNonEmptyArrayNodeDataFromWrapped<Wrapped>,
 	PartialData = ExtractNonEmptyArrayNodePartialDataFromWrapped<Wrapped>,
 	RefsData = ExtractNonEmptyArrayNodeRefsFromWrapped<Wrapped>,
+	CacheEntry = ExtractNonEmptyArrayNodeCacheEntryFromWrapped<Wrapped>,
 	Variables extends NodeVariablesDefinition = {},
 	ChildrenVariables extends NodeVariablesDefinition = ExtractChildrenVariablesDefinitionFromWrapped<Wrapped>
-> extends NodeDefinition<Data, PartialData, RefsData, Variables, ChildrenVariables> {
+> extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables, ChildrenVariables> {
 	readonly tag: 'NonEmptyArray'
 	readonly wrapped: Wrapped
 }
@@ -241,14 +245,19 @@ export type ExtractSumNodeChildrenVariablesDefinitionFromMembers<
 	}[number]
 >
 
+export type ExtractSumNodeCacheEntryFromMembers<
+	Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>
+> = { [K in keyof Members]: [ExtractTypeName<Members[K]>, TypeOfCacheEntry<Members[K]>] }[number]
+
 export interface SumNode<
 	Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>,
 	Data = ExtractSumNodeDataFromMembers<Members>,
 	PartialData = ExtractSumNodePartialDataFromMembers<Members>,
 	RefsData = ExtractSumNodeRefsFromMembers<Members>,
+	CacheEntry = ExtractSumNodeCacheEntryFromMembers<Members>,
 	Variables extends NodeVariablesDefinition = {},
 	ChildrenVariables extends NodeVariablesDefinition = ExtractSumNodeChildrenVariablesDefinitionFromMembers<Members>
-> extends NodeDefinition<Data, PartialData, RefsData, Variables, ChildrenVariables> {
+> extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables, ChildrenVariables> {
 	readonly tag: 'Sum'
 	readonly members: Members
 	readonly membersRecord: Record<ExtractTypeName<{ [K in keyof Members]: Members[K] }[number]>, Members[number]>
@@ -259,10 +268,10 @@ export interface MutationNode<
 	Data = TypeOf<Node>,
 	PartialData = TypeOfPartial<Node>,
 	RefsData = TypeOfRefs<Result>,
-	CacheEntry = T
+	CacheEntry = TypeOfCacheEntry<Result>,
 	Variables extends NodeVariablesDefinition = {},
 	ChildrenVariables extends NodeVariablesDefinition = {} & ExtractChildrenVariablesDefinition<Result>
-> extends NodeDefinition<Data, PartialData, RefsData, Variables, ChildrenVariables> {
+> extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables, ChildrenVariables> {
 	readonly tag: 'Mutation'
 	readonly result: Result
 }
@@ -295,7 +304,7 @@ interface NodeDefinition<
 	readonly nodeVariablesDefinition: Variables
 	readonly variablesModel: M.Model<ExtractDefinitionType<Variables>>
 	readonly print: Lazy<string>
-	readonly __cache_entry__?: CacheEntry,
+	readonly __cache_entry__?: CacheEntry
 	readonly __refs__?: RefsData
 	readonly __cache__?: NodeCacheConfig
 }
@@ -304,16 +313,12 @@ export type EncodedVariables = string
 
 export interface CacheNode<CacheEntry> extends Map<EncodedVariables, CacheEntry> {}
 
-// export type CacheEntry = any
-
-// export interface CacheNode extends Map<EncodedVariables, CacheEntry> {}
-
 export interface CustomCache<T> {
 	(
 		schemaNode: T,
 		requestNode: T,
 		variables: TypeOfMergedVariables<T>,
-		cacheNode: any,
+		cacheNode: CacheNode<TypeOfCacheEntry<T>>,
 		data?: TypeOfPartial<T>
 	): TypeOfRefs<T>
 }
@@ -345,17 +350,17 @@ const EMPTY_VARIABLES_MODEL = M.type({})
 
 const EMPTY_VARIABLES: any = {}
 
-export function definitionToModel<V extends NodeVariablesDefinition>(
-	variables: V
-): M.Model<{ [K in keyof V]: TypeOf<V[K]> }> {
+function definitionToModel<V extends NodeVariablesDefinition>(variables: V): M.Model<{ [K in keyof V]: TypeOf<V[K]> }> {
 	return isEmptyObject(variables) ? (EMPTY_VARIABLES_MODEL as any) : M.type(extractTypeMemberStrictModels(variables))
 }
 
 export function int(): IntNode
-export function int<V extends NodeVariablesDefinition>(variables: V): IntNode<number, number, O.Option<number>, V>
+export function int<V extends NodeVariablesDefinition>(
+	variables: V
+): IntNode<number, number, O.Option<number>, O.Option<number>, V>
 export function int<V extends NodeVariablesDefinition = {}>(
 	variables: V = EMPTY_VARIABLES
-): IntNode<number, number, O.Option<number>, V> {
+): IntNode<number, number, O.Option<number>, O.Option<number>, V> {
 	return {
 		tag: 'Int',
 		strictModel: M.number,
@@ -370,10 +375,12 @@ export function int<V extends NodeVariablesDefinition = {}>(
 export const staticInt = int()
 
 export function float(): FloatNode
-export function float<V extends NodeVariablesDefinition>(variables: V): FloatNode<number, number, O.Option<number>, V>
+export function float<V extends NodeVariablesDefinition>(
+	variables: V
+): FloatNode<number, number, O.Option<number>, O.Option<number>, V>
 export function float<V extends NodeVariablesDefinition = {}>(
 	variables: V = EMPTY_VARIABLES
-): FloatNode<number, number, O.Option<number>, V> {
+): FloatNode<number, number, O.Option<number>, O.Option<number>, V> {
 	return {
 		tag: 'Float',
 		strictModel: M.number,
@@ -388,10 +395,12 @@ export function float<V extends NodeVariablesDefinition = {}>(
 export const staticFloat = float()
 
 export function string(): StringNode
-export function string<V extends NodeVariablesDefinition>(variables: V): StringNode<string, string, O.Option<string>, V>
+export function string<V extends NodeVariablesDefinition>(
+	variables: V
+): StringNode<string, string, O.Option<string>, O.Option<string>, V>
 export function string<V extends NodeVariablesDefinition = {}>(
 	variables: V = EMPTY_VARIABLES
-): StringNode<string, string, O.Option<string>, V> {
+): StringNode<string, string, O.Option<string>, O.Option<string>, V> {
 	return {
 		tag: 'String',
 		strictModel: M.string,
@@ -408,10 +417,10 @@ export const staticString = string()
 export function boolean(): BooleanNode
 export function boolean<V extends NodeVariablesDefinition>(
 	variables: V
-): BooleanNode<boolean, boolean, O.Option<boolean>, V>
+): BooleanNode<boolean, boolean, O.Option<boolean>, O.Option<boolean>, V>
 export function boolean<V extends NodeVariablesDefinition = {}>(
 	variables: V = EMPTY_VARIABLES
-): BooleanNode<boolean, boolean, O.Option<boolean>, V> {
+): BooleanNode<boolean, boolean, O.Option<boolean>, O.Option<boolean>, V> {
 	return {
 		tag: 'Boolean',
 		strictModel: M.boolean,
@@ -433,12 +442,12 @@ export function scalar<Name extends string, Data, Variables extends NodeVariable
 	name: Name,
 	model: M.Model<Data>,
 	variables: Variables
-): ScalarNode<Name, Data, Data, O.Option<Data>, Variables>
+): ScalarNode<Name, Data, Data, O.Option<Data>, O.Option<Data>, Variables>
 export function scalar<Name extends string, Data, Variables extends NodeVariablesDefinition = {}>(
 	name: Name,
 	model: M.Model<Data>,
 	variables: Variables = EMPTY_VARIABLES
-): ScalarNode<Name, Data, Data, O.Option<Data>, Variables> {
+): ScalarNode<Name, Data, Data, O.Option<Data>, O.Option<Data>, Variables> {
 	return {
 		name,
 		tag: 'Scalar',
@@ -451,31 +460,39 @@ export function scalar<Name extends string, Data, Variables extends NodeVariable
 	}
 }
 
+function mergeNodeVariables<T extends Node>(
+	node: T
+): ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T> {
+	const x: any = {}
+	for (const [k, v] of Object.entries(node.childrenVariablesDefinition)) {
+		if (__DEV__ && x[k] !== undefined) {
+			console.warn(
+				`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
+			)
+		}
+		x[k] = v
+	}
+
+	for (const [k, v] of Object.entries(node.nodeVariablesDefinition)) {
+		if (__DEV__ && x[k] !== undefined) {
+			console.warn(
+				`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
+			)
+		}
+		x[k] = v
+	}
+	return x
+}
+
 function getTypeChildrenVariables<T extends { [K in keyof T]: Node }>(
 	members: T
 ): {} & Intersection<
 	Values<{ [K in keyof T]: ExtractChildrenVariablesDefinition<T[K]> & ExtractVariablesDefinition<T[K]> }>
 > {
 	const x: any = {}
-	Object.keys(members).forEach((key) => {
-		for (const [k, v] of Object.entries(members[key as keyof T].childrenVariablesDefinition)) {
-			if (x[k] !== undefined) {
-				console.warn(
-					`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
-				)
-			}
-			x[k] = v
-		}
-
-		for (const [k, v] of Object.entries(members[key as keyof T].nodeVariablesDefinition)) {
-			if (x[k] !== undefined) {
-				console.warn(
-					`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
-				)
-			}
-			x[k] = v
-		}
-	})
+	for (const k in members) {
+		Object.assign(x, mergeNodeVariables(members[k]))
+	}
 	return x
 }
 
@@ -483,9 +500,9 @@ function extractTypeMemberStrictModels<Members extends { [K in keyof Members]: N
 	members: Members
 ): { [K in keyof Members]: Members[K]['strictModel'] } {
 	const x: any = {}
-	Object.keys(members).forEach((key) => {
+	for (const key in members) {
 		x[key as keyof Members] = members[key as keyof Members].strictModel
-	})
+	}
 	return x
 }
 
@@ -493,9 +510,9 @@ function extractTypeMemberPartialModels<Members extends { [K in keyof Members]: 
 	members: Members
 ): { [K in keyof Members]: Members[K]['partialModel'] } {
 	const x: any = {}
-	Object.keys(members).forEach((key) => {
+	for (const key in members) {
 		x[key as keyof Members] = members[key as keyof Members].partialModel
-	})
+	}
 	return x
 }
 
@@ -547,6 +564,7 @@ export function type<
 	ExtractTypeNodeDataFromMembers<Members>,
 	ExtractTypeNodePartialDataFromMembers<Members>,
 	ExtractTypeNodeRefsFromMembers<Members>,
+	ExtractTypeNodeCacheEntryFromMembers<Members>,
 	Variables
 >
 export function type<
@@ -563,6 +581,7 @@ export function type<
 	ExtractTypeNodeDataFromMembers<Members>,
 	ExtractTypeNodePartialDataFromMembers<Members>,
 	ExtractTypeNodeRefsFromMembers<Members>,
+	ExtractTypeNodeCacheEntryFromMembers<Members>,
 	Variables
 > {
 	return {
@@ -585,29 +604,6 @@ export function schema<Name extends string, Members extends { [K in keyof Member
 	return type(__typename, members)
 }
 
-function mergeVariablesDefinitionWithChildren<T extends Node>(
-	node: T
-): ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T> {
-	const x: any = {}
-	for (const [k, v] of Object.entries(node.childrenVariablesDefinition)) {
-		if (x[k] !== undefined) {
-			console.warn(
-				`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
-			)
-		}
-		x[k] = v
-	}
-	for (const [k, v] of Object.entries(node.nodeVariablesDefinition)) {
-		if (x[k] !== undefined) {
-			console.warn(
-				`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
-			)
-		}
-		x[k] = v
-	}
-	return x
-}
-
 function getSumObject<Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>>(...members: Members) {
 	const m: any = {}
 	members.forEach((member) => {
@@ -619,16 +615,18 @@ function getSumObject<Members extends ReadonlyArray<TypeNode<any, any, any, any,
 	return m
 }
 
+const sumTypename = M.sum('__typename')
+
 function getSumModel<Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>>(
 	...members: Members
 ): M.Model<{ [K in keyof Members]: TypeOf<Members[K]> & { __typename: ExtractTypeName<Members[K]> } }[number]> {
-	return M.sum('__typename')(getSumObject(...members))
+	return sumTypename(getSumObject(...members))
 }
 
 function getSumPartialModel<Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>>(
 	...members: Members
 ): M.Model<{ [K in keyof Members]: TypeOfPartial<Members[K]> & { __typename?: ExtractTypeName<Members[K]> } }[number]> {
-	return M.sum('__typename')(getSumObject(...members))
+	return sumTypename(getSumObject(...members))
 }
 
 function printSumNode<Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>>(
@@ -656,25 +654,7 @@ function getSumChildrenVariables<Members extends ReadonlyArray<TypeNode<any, any
 	...members: Members
 ): ExtractSumNodeChildrenVariablesDefinitionFromMembers<Members> {
 	const x: any = {}
-	members.forEach((member) => {
-		for (const [k, v] of Object.entries(member.childrenVariablesDefinition)) {
-			if (x[k] !== undefined) {
-				console.warn(
-					`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
-				)
-			}
-			x[k] = v
-		}
-
-		for (const [k, v] of Object.entries(member.nodeVariablesDefinition)) {
-			if (x[k] !== undefined) {
-				console.warn(
-					`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
-				)
-			}
-			x[k] = v
-		}
-	})
+	members.forEach((member) => Object.assign(x, mergeNodeVariables(member)))
 	return x
 }
 
@@ -696,6 +676,7 @@ export function sum<Members extends ReadonlyArray<TypeNode<any, any, any, any, a
 		ExtractSumNodeDataFromMembers<Members>,
 		ExtractSumNodePartialDataFromMembers<Members>,
 		ExtractSumNodeRefsFromMembers<Members>,
+		ExtractSumNodeCacheEntryFromMembers<Members>,
 		Variables
 	> => {
 		const newMembers = members.map((member) =>
@@ -732,6 +713,7 @@ export function map<Key extends Node, Value extends Node, Variables extends Node
 	ExtractMapNodeDataFromKeyValue<Key, Value>,
 	ExtractMapNodePartialDataFromKeyValue<Key, Value>,
 	ExtractMapNodeRefsFromKeyValue<Key, Value>,
+	ExtractMapNodeCacheEntryFromKeyValue<Key, Value>,
 	Variables
 >
 export function map<Key extends Node, Value extends Node, Variables extends NodeVariablesDefinition = {}>(
@@ -744,13 +726,14 @@ export function map<Key extends Node, Value extends Node, Variables extends Node
 	ExtractMapNodeDataFromKeyValue<Key, Value>,
 	ExtractMapNodePartialDataFromKeyValue<Key, Value>,
 	ExtractMapNodeRefsFromKeyValue<Key, Value>,
+	ExtractMapNodeCacheEntryFromKeyValue<Key, Value>,
 	Variables
 > {
 	return {
 		tag: 'Map',
 		strictModel: M.map(key.strictModel, value.strictModel),
 		partialModel: M.map(key.strictModel, value.partialModel),
-		childrenVariablesDefinition: mergeVariablesDefinitionWithChildren(value),
+		childrenVariablesDefinition: mergeNodeVariables(value),
 		nodeVariablesDefinition: variables,
 		variablesModel: definitionToModel(variables),
 		key,
@@ -768,6 +751,7 @@ export function array<Wrapped extends Node, Variables extends NodeVariablesDefin
 	ExtractArrayNodeDataFromWrapped<Wrapped>,
 	ExtractArrayNodePartialDataFromWrapped<Wrapped>,
 	ExtractArrayNodeRefsFromWrapped<Wrapped>,
+	ExtractArrayNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 >
 export function array<Wrapped extends Node, Variables extends NodeVariablesDefinition = {}>(
@@ -778,6 +762,7 @@ export function array<Wrapped extends Node, Variables extends NodeVariablesDefin
 	ExtractArrayNodeDataFromWrapped<Wrapped>,
 	ExtractArrayNodePartialDataFromWrapped<Wrapped>,
 	ExtractArrayNodeRefsFromWrapped<Wrapped>,
+	ExtractArrayNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 > {
 	return {
@@ -785,7 +770,7 @@ export function array<Wrapped extends Node, Variables extends NodeVariablesDefin
 		wrapped,
 		strictModel: M.array(wrapped.strictModel),
 		partialModel: M.array(wrapped.partialModel),
-		childrenVariablesDefinition: mergeVariablesDefinitionWithChildren(wrapped),
+		childrenVariablesDefinition: mergeNodeVariables(wrapped),
 		variablesModel: definitionToModel(variables),
 		nodeVariablesDefinition: variables,
 		print: wrapped.print
@@ -801,6 +786,7 @@ export function option<Wrapped extends Node, Variables extends NodeVariablesDefi
 	ExtractOptionNodeDataFromWrapped<Wrapped>,
 	ExtractOptionNodePartialDataFromWrapped<Wrapped>,
 	ExtractOptionNodeRefsFromWrapped<Wrapped>,
+	ExtractOptionNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 >
 export function option<Wrapped extends Node, Variables extends NodeVariablesDefinition = {}>(
@@ -811,6 +797,7 @@ export function option<Wrapped extends Node, Variables extends NodeVariablesDefi
 	ExtractOptionNodeDataFromWrapped<Wrapped>,
 	ExtractOptionNodePartialDataFromWrapped<Wrapped>,
 	ExtractOptionNodeRefsFromWrapped<Wrapped>,
+	ExtractOptionNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 > {
 	return {
@@ -818,7 +805,7 @@ export function option<Wrapped extends Node, Variables extends NodeVariablesDefi
 		wrapped,
 		strictModel: M.option(wrapped.strictModel),
 		partialModel: M.option(wrapped.partialModel),
-		childrenVariablesDefinition: mergeVariablesDefinitionWithChildren(wrapped),
+		childrenVariablesDefinition: mergeNodeVariables(wrapped),
 		variablesModel: definitionToModel(variables),
 		nodeVariablesDefinition: variables,
 		print: wrapped.print
@@ -834,6 +821,7 @@ export function nonEmptyArray<Wrapped extends Node, Variables extends NodeVariab
 	ExtractNonEmptyArrayNodeDataFromWrapped<Wrapped>,
 	ExtractNonEmptyArrayNodePartialDataFromWrapped<Wrapped>,
 	ExtractNonEmptyArrayNodeRefsFromWrapped<Wrapped>,
+	ExtractNonEmptyArrayNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 >
 export function nonEmptyArray<Wrapped extends Node, Variables extends NodeVariablesDefinition = {}>(
@@ -844,6 +832,7 @@ export function nonEmptyArray<Wrapped extends Node, Variables extends NodeVariab
 	ExtractNonEmptyArrayNodeDataFromWrapped<Wrapped>,
 	ExtractNonEmptyArrayNodePartialDataFromWrapped<Wrapped>,
 	ExtractNonEmptyArrayNodeRefsFromWrapped<Wrapped>,
+	ExtractNonEmptyArrayNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 > {
 	return {
@@ -851,7 +840,7 @@ export function nonEmptyArray<Wrapped extends Node, Variables extends NodeVariab
 		wrapped,
 		strictModel: M.nonEmptyArray(wrapped.strictModel),
 		partialModel: M.nonEmptyArray(wrapped.partialModel),
-		childrenVariablesDefinition: mergeVariablesDefinitionWithChildren(wrapped),
+		childrenVariablesDefinition: mergeNodeVariables(wrapped),
 		variablesModel: definitionToModel(variables),
 		nodeVariablesDefinition: variables,
 		print: wrapped.print
@@ -862,17 +851,17 @@ export function mutation<Result extends Node>(result: Result): MutationNode<Resu
 export function mutation<Result extends Node, Variables extends NodeVariablesDefinition>(
 	result: Result,
 	variables: Variables
-): MutationNode<Result, TypeOf<Result>, TypeOfPartial<Result>, TypeOfRefs<Result>, Variables>
+): MutationNode<Result, TypeOf<Result>, TypeOfPartial<Result>, TypeOfRefs<Result>, TypeOfCacheEntry<Result>, Variables>
 export function mutation<Result extends Node, Variables extends NodeVariablesDefinition = {}>(
 	result: Result,
 	variables: Variables = EMPTY_VARIABLES
-): MutationNode<Result, TypeOf<Result>, TypeOfPartial<Result>, TypeOfRefs<Result>, Variables> {
+): MutationNode<Result, TypeOf<Result>, TypeOfPartial<Result>, TypeOfRefs<Result>, TypeOfCacheEntry<Result>, Variables> {
 	return {
 		tag: 'Mutation',
 		result: result,
 		strictModel: result.strictModel,
 		partialModel: result.partialModel,
-		childrenVariablesDefinition: mergeVariablesDefinitionWithChildren(result),
+		childrenVariablesDefinition: mergeNodeVariables(result),
 		variablesModel: definitionToModel(variables),
 		nodeVariablesDefinition: variables,
 		print: result.print
@@ -937,7 +926,7 @@ export function print<N extends string, T extends { [K in keyof T]: Node }>(
 	return tokens.join('')
 }
 
-export function pickFromType<T extends TypeNode<any, any, any, any, any, any, any>, P extends keyof T['members']>(
+export function pickFromType<T extends TypeNode<any, any, any, any, any, any, any, any>, P extends keyof T['members']>(
 	node: T,
 	...keys: P[]
 ): TypeNode<
@@ -946,6 +935,7 @@ export function pickFromType<T extends TypeNode<any, any, any, any, any, any, an
 	ExtractTypeNodeDataFromMembers<Pick<T['members'], P>>,
 	ExtractTypeNodePartialDataFromMembers<Pick<T['members'], P>>,
 	ExtractTypeNodeRefsFromMembers<Pick<T['members'], P>>,
+	ExtractTypeNodeCacheEntryFromMembers<Pick<T['members'], P>>,
 	ExtractVariablesDefinition<T>
 > {
 	const n: any = {}
@@ -955,7 +945,7 @@ export function pickFromType<T extends TypeNode<any, any, any, any, any, any, an
 	return type(node.__typename, n, node.nodeVariablesDefinition) as any
 }
 
-export function omitFromType<T extends TypeNode<any, any, any, any, any, any, any>, P extends keyof T['members']>(
+export function omitFromType<T extends TypeNode<any, any, any, any, any, any, any, any>, P extends keyof T['members']>(
 	node: T,
 	...keys: P[]
 ): TypeNode<
@@ -964,26 +954,27 @@ export function omitFromType<T extends TypeNode<any, any, any, any, any, any, an
 	ExtractTypeNodeDataFromMembers<Omit<T['members'], P>>,
 	ExtractTypeNodePartialDataFromMembers<Omit<T['members'], P>>,
 	ExtractTypeNodeRefsFromMembers<Omit<T['members'], P>>,
+	ExtractTypeNodeCacheEntryFromMembers<Omit<T['members'], P>>,
 	ExtractVariablesDefinition<T>
 > {
 	const n: any = {}
 	const members = node.members
-	Object.keys(members).forEach((k) => {
+	for (const k in members) {
 		if (!keys.includes(k as P)) {
 			n[k] = members[k as keyof T]
 		}
-	})
+	}
 	return type(node.__typename, n, node.nodeVariablesDefinition) as any
 }
 
-export function useEq<T extends NodeDefinition<any, any, any, any, any>>(node: T, eq: Eq<TypeOf<T>>): T {
+export function useEq<T extends NodeDefinition<any, any, any, any, any, any>>(node: T, eq: Eq<TypeOf<T>>): T {
 	return {
 		...node,
 		strictModel: M.useEq(node.strictModel, eq)
 	}
 }
 
-export function eqById<T extends TypeNode<any, Record<'id', Node>, any, any, any, any, any>>(node: T): T {
+export function eqById<T extends TypeNode<any, Record<'id', Node>, any, any, any, any, any, any>>(node: T): T {
 	return {
 		...node,
 		strictModel: M.eqById(node.strictModel)
@@ -997,14 +988,14 @@ export function useEncoder<T extends NodeDefinition<any, any, any, any, any>>(no
 	}
 }
 
-export function encodeById<T extends TypeNode<any, Record<'id', Node>, any, any, any, any, any>>(node: T): T
+export function encodeById<T extends TypeNode<any, Record<'id', Node>, any, any, any, any, any, any>>(node: T): T
 export function encodeById<
-	T extends SumNode<ReadonlyArray<TypeNode<any, Record<'id', Node>, any, any, any, any, any>>>
+	T extends SumNode<ReadonlyArray<TypeNode<any, Record<'id', Node>, any, any, any, any, any, any>>>
 >(node: T): T
 export function encodeById<
 	T extends
-		| TypeNode<any, Record<'id', Node>, any, any, any, any, any>
-		| SumNode<ReadonlyArray<TypeNode<any, Record<'id', Node>, any, any, any, any, any>>>
+		| TypeNode<any, Record<'id', Node>, any, any, any, any, any, any>
+		| SumNode<ReadonlyArray<TypeNode<any, Record<'id', Node>, any, any, any, any, any, any>>>
 >(node: T): T {
 	switch (node.tag) {
 		case 'Type':
@@ -1028,7 +1019,7 @@ export function encodeById<
 	}
 }
 
-type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, any, any, any>
+type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, any, any, any, any>
 	? TypeNode<
 			T['__typename'],
 			T['members'],
@@ -1037,7 +1028,7 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			O.Option<TypeOf<T>>,
 			ExtractVariablesDefinition<T>
 	  >
-	: T extends ArrayNode<any, any, any, any, any, any>
+	: T extends ArrayNode<any, any, any, any, any, any, any>
 	? ArrayNode<
 			T['wrapped'],
 			ExtractArrayNodeDataFromWrapped<T['wrapped']>,
@@ -1045,7 +1036,7 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			O.Option<TypeOf<T>[]>,
 			ExtractVariablesDefinition<T>
 	  >
-	: T extends NonEmptyArrayNode<any, any, any, any, any, any>
+	: T extends NonEmptyArrayNode<any, any, any, any, any, any, any>
 	? NonEmptyArrayNode<
 			T['wrapped'],
 			ExtractNonEmptyArrayNodeDataFromWrapped<T['wrapped']>,
@@ -1053,7 +1044,7 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			O.Option<NonEmptyArray<TypeOf<T>>>,
 			ExtractVariablesDefinition<T>
 	  >
-	: T extends OptionNode<any, any, any, any, any, any>
+	: T extends OptionNode<any, any, any, any, any, any, any>
 	? OptionNode<
 			T['wrapped'],
 			ExtractOptionNodeDataFromWrapped<T['wrapped']>,
@@ -1061,7 +1052,7 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			O.Option<TypeOf<T>>,
 			ExtractVariablesDefinition<T>
 	  >
-	: T extends MapNode<any, any, any, any, any, any, any>
+	: T extends MapNode<any, any, any, any, any, any, any, any>
 	? MapNode<
 			T['key'],
 			T['wrapped'],
