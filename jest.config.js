@@ -7,7 +7,7 @@ module.exports = {
     // collectCoverage: true,
     // collectCoverageFrom: [
     //     'src/**/*.ts',
-    //     '!src/tree/index.ts',
+    //     '!src/tree/shared.ts',
     // ],
     // transform: {
     //     '^.+\\.tsx?$': 'ts-jest'
@@ -22,5 +22,5 @@ module.exports = {
     //         statements: 100
     //     }
     // },
-    // modulePathIgnorePatterns: ['util']
+    modulePathIgnorePatterns: ['shared']
 }

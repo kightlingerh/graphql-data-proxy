@@ -238,6 +238,9 @@ function writeToTypeNode(
 		let evict = constVoid
 		for (const k in data) {
 			if (entry[k] === undefined) {
+				if (schema.members[k] === undefined) {
+					console.log(k, entry, schema.members)
+				}
 				entry[k] = isEmptyObject(schema.members[k].__variables_definition__)
 					? makeCacheEntry(schema.members[k], request.members[k], variables, data[k])
 					: shallowReactive(new Map())
