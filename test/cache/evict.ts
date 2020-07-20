@@ -22,7 +22,7 @@ const PersonNode = N.type('Person', {
 })
 
 const Person: N.TypeOfPartial<typeof PersonNode> = {
-	id: 'some-id',
+	id: '1',
 	personalInfo: {
 		pictureUrl: none,
 		firstName: 'Harry',
@@ -48,7 +48,7 @@ const PersonFinal: N.TypeOfPartial<typeof PersonNode> = {
 
 describe('evict', () => {
 	it('evict should clear entire write', () => {
-		const cache = make(PersonNode)({})(PersonNode)
+		const cache = make({})(PersonNode)(PersonNode)
 		assert.deepStrictEqual(isRight(cache), true)
 		const evict = pipe(
 			fromEither(cache),
@@ -66,7 +66,7 @@ describe('evict', () => {
 		assert.deepStrictEqual(isRight(postEvictReadResult) && isNone(postEvictReadResult.right), true)
 	}),
 		it('evict should clear only partial update', () => {
-			const cache = make(PersonNode)({})(PersonNode)
+			const cache = make({})(PersonNode)(PersonNode)
 			assert.deepStrictEqual(isRight(cache), true)
 
 			const read = pipe(

@@ -1,3 +1,4 @@
+import { shallowRef } from '@vue/reactivity'
 import * as assert from 'assert'
 import { isRight } from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
@@ -24,7 +25,7 @@ const PersonNode = N.type('Person', {
 const PEOPLE_CACHE = new Map()
 
 function usePeopleCache() {
-	return PEOPLE_CACHE
+	return shallowRef(PEOPLE_CACHE)
 }
 
 const AllPeopleNode = N.useCustomCache(N.map(IdNode, PersonNode), usePeopleCache)
@@ -79,8 +80,9 @@ const PeopleReqeustVariables: N.TypeOfMergedVariables<typeof People> = {
 
 describe('useCustomCache', () => {
 	it('nodes that use same custom cache should hold equivalent data', () => {
-		const peopleCache = make(People)({})(PeopleRequest)
-		const allPeopleCache = make(People)({})(AllPeopleRequest)
+		const cache = make({})(People)
+		const peopleCache = cache(PeopleRequest)
+		const allPeopleCache = cache(AllPeopleRequest)
 		assert.deepStrictEqual(isRight(peopleCache) && isRight(allPeopleCache), true)
 
 		pipe(
@@ -113,8 +115,9 @@ describe('useCustomCache', () => {
 		)
 	}),
 		it('should read data even on unwritten node', () => {
-			const peopleCache = make(People)({})(PeopleRequest)
-			const allPeopleCache = make(People)({})(AllPeopleRequest)
+			const cache = make({})(People)
+			const peopleCache = cache(PeopleRequest)
+			const allPeopleCache = cache(AllPeopleRequest)
 			assert.deepStrictEqual(isRight(peopleCache) && isRight(allPeopleCache), true)
 
 			pipe(

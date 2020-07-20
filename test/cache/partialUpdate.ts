@@ -48,7 +48,7 @@ const Person1Final: N.TypeOfPartial<typeof PersonNode> = {
 
 describe('partial update', () => {
 	it('should apply partial update to cache entry', () => {
-		const cache = make(PersonNode)({})(PersonNode)
+		const cache = make({})(PersonNode)(PersonNode)
 		assert.deepStrictEqual(isRight(cache), true)
 
 		// initial write

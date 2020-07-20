@@ -1,15 +1,22 @@
-import { shallowReactive } from '@vue/reactivity'
+import { Ref, shallowReactive, shallowRef } from '@vue/reactivity'
 import { isNonEmpty, makeBy, sequence } from 'fp-ts/lib/Array'
 import { left, right } from 'fp-ts/lib/Either'
-import { constant, constVoid, Lazy, pipe } from 'fp-ts/lib/function'
+import { constant, constVoid, pipe } from 'fp-ts/lib/function'
 import { getWitherable, map } from 'fp-ts/lib/Map'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
-import { chain, isNone, isSome, none, option, Option, some } from 'fp-ts/lib/Option'
+import { chain, isNone, isSome, none, option, Option, Some, some } from 'fp-ts/lib/Option'
 import { fromCompare } from 'fp-ts/lib/Ord'
 import { Reader } from 'fp-ts/lib/Reader'
-import { CacheNode } from '../node/Node'
 import * as N from '../node/Node'
-import { CacheError, CacheResult, CacheWriteResult, cacheWriteResultMonoid, concatEvict, Persist } from '../shared'
+import {
+	CacheError,
+	CacheResult,
+	CacheWriteResult,
+	cacheWriteResultMonoid,
+	concatEvict,
+	isEmptyObject,
+	Persist
+} from '../shared'
 import { isEntityNode } from './shared'
 import { validate } from './validate'
 
@@ -18,16 +25,14 @@ export interface CacheDependencies {
 	persist?: Persist
 }
 
-type AnyCacheNode = CacheNode<any>
-
 export interface Cache<R> {
 	write(variables: N.TypeOfMergedVariables<R>): Reader<N.TypeOfPartial<R>, CacheWriteResult>
 	read(variables: N.TypeOfMergedVariables<R>): CacheResult<Option<N.TypeOf<R>>>
 }
 
-export function make<S extends N.SchemaNode<any, any>>(schema: S) {
-	return (_: CacheDependencies) => {
-		const cache = new Map()
+export function make(_: CacheDependencies) {
+	return <S extends N.SchemaNode<any, any>>(schema: S) => {
+		const cache = {}
 		return <R extends N.SchemaNode<any, any>>(request: R) => {
 			const errors = validate(schema, request)
 			if (isNonEmpty(errors)) {
@@ -42,9 +47,9 @@ export function make<S extends N.SchemaNode<any, any>>(schema: S) {
 	}
 }
 
-function read(schema: N.Node, request: N.Node, variables: object, cache: AnyCacheNode): CacheResult<Option<any>> {
+function read(schema: N.Node, request: N.Node, variables: object, cache: any): CacheResult<Option<any>> {
 	if (isEntityNode(schema)) {
-		return () => cache.get(encode(request, variables)) || none
+		return readEntity(cache)
 	}
 	switch (request.tag) {
 		case 'Type':
@@ -62,24 +67,41 @@ function read(schema: N.Node, request: N.Node, variables: object, cache: AnyCach
 		case 'Mutation':
 			return constant(none)
 		default:
-			return () => cache.get(encode(request, variables)) || none
+			return readEntity(cache)
 	}
+}
+
+function readEntity(cache: Ref<Option<any>>) {
+	return () => cache.value
 }
 
 function readTypeNode(
 	schema: N.TypeNode<any, any>,
 	request: N.TypeNode<any, any>,
 	variables: object,
-	cache: AnyCacheNode
+	entry: any
 ): CacheResult<Option<any>> {
 	return () => {
-		const requestCache = getCache(schema, request, variables, cache, () => shallowReactive({}))
 		const x: any = {}
 		for (const k in request.members) {
-			if (requestCache[k] === undefined) {
-				requestCache[k] = shallowReactive(new Map())
+			if (entry[k] === undefined) {
+				entry[k] = isEmptyObject(schema.members[k].__variables_definition__)
+					? makeCacheEntry(schema.members[k], request.members[k], variables)
+					: shallowReactive(new Map())
 			}
-			const result = read(schema.members[k], request.members[k], variables, requestCache[k])()
+			let memberCache
+			if (isEmptyObject(schema.members[k].__variables_definition__)) {
+				memberCache = entry[k]
+			} else {
+				const key = encode(request, variables)
+				memberCache = entry[k].get(key)
+				if (!memberCache) {
+					memberCache = makeCacheEntry(schema.members[k], request.members[k], variables)
+					entry[k].set(key, memberCache)
+				}
+			}
+
+			const result = read(schema.members[k], request.members[k], variables, memberCache)()
 			if (isNone(result)) {
 				return none
 			}
@@ -91,17 +113,9 @@ function readTypeNode(
 
 const arraySequenceOption = sequence(option)
 
-function readArrayNode(schema: N.ArrayNode<any>, request: N.ArrayNode<any>, variables: object, cache: AnyCacheNode) {
+function readArrayNode(schema: N.ArrayNode<any>, request: N.ArrayNode<any>, variables: object, cache: Ref<any[]>) {
 	return () => {
-		const cacheEntry = !!schema?.__cache__?.useCustomCache
-			? schema.__cache__.useCustomCache(schema, request, variables, cache)
-			: cache.get(encode(request, variables))
-		if (!cacheEntry) {
-			return none
-		}
-		return arraySequenceOption(
-			cacheEntry.map((val: AnyCacheNode) => read(schema.wrapped, request.wrapped, variables, val)())
-		)
+		return arraySequenceOption(cache.value.map((val) => read(schema.wrapped, request.wrapped, variables, val)()))
 	}
 }
 
@@ -109,37 +123,28 @@ function readNonEmptyArrayNode(
 	schema: N.NonEmptyArrayNode<any>,
 	request: N.NonEmptyArrayNode<any>,
 	variables: object,
-	cache: AnyCacheNode
+	cache: Ref<Option<NonEmptyArray<any>>>
 ) {
 	return () => {
-		const cacheEntry = !!schema?.__cache__?.useCustomCache
-			? schema.__cache__.useCustomCache(schema, request, variables, cache)
-			: cache.get(encode(request, variables))
-		if (!cacheEntry) {
-			return none
-		}
 		return pipe(
-			cacheEntry as Option<AnyCacheNode[]>,
+			cache.value,
 			chain((entry) =>
-				arraySequenceOption(
-					entry.map((val: AnyCacheNode) => read(schema.wrapped, request.wrapped, variables, val)())
-				)
+				arraySequenceOption(entry.map((val: any) => read(schema.wrapped, request.wrapped, variables, val)()))
 			)
 		)
 	}
 }
 
-function readOptionNode(schema: N.OptionNode<any>, request: N.OptionNode<any>, variables: object, cache: AnyCacheNode) {
+function readOptionNode(
+	schema: N.OptionNode<any>,
+	request: N.OptionNode<any>,
+	variables: object,
+	cache: Ref<Option<any>>
+) {
 	return () => {
-		const cacheEntry = !!schema?.__cache__?.useCustomCache
-			? schema.__cache__.useCustomCache(schema, request, variables, cache)
-			: cache.get(encode(request, variables))
-		if (!cacheEntry) {
-			return some(none)
-		}
 		return some(
 			pipe(
-				cacheEntry as Option<AnyCacheNode>,
+				cache.value,
 				chain((entry) => read(schema.wrapped, request.wrapped, variables, entry)())
 			)
 		)
@@ -152,35 +157,37 @@ function readMapNode(
 	schema: N.MapNode<any, any>,
 	request: N.MapNode<any, any>,
 	variables: object,
-	cache: AnyCacheNode
+	cache: Ref<Map<any, any>>
 ) {
 	return () => {
 		return pipe(
-			getCache(schema, request, variables, cache, () => shallowReactive(new Map())) as Map<any, AnyCacheNode>,
+			cache.value,
 			map((val) => read(schema.wrapped, request.wrapped, variables, val)()),
 			mapSequenceOption
 		)
 	}
 }
 
-function readSumNode(schema: N.SumNode<any>, request: N.SumNode<any>, variables: object, cache: AnyCacheNode) {
-	return () => {
-		const cacheEntry = cache.get(encode(request, variables))
-		if (!cacheEntry) {
-			return none
-		}
-		return readTypeNode(
-			schema.membersRecord[cacheEntry[0]],
-			request.membersRecord[cacheEntry[0]],
-			variables,
-			cacheEntry[1]
-		)()
-	}
+function readSumNode(
+	schema: N.SumNode<any>,
+	request: N.SumNode<any>,
+	variables: object,
+	cache: Ref<Option<[string, any]>>
+) {
+	return () =>
+		isNone(cache.value)
+			? none
+			: readTypeNode(
+					schema.membersRecord[cache.value.value[0]],
+					request.membersRecord[cache.value.value[0]],
+					variables,
+					cache.value.value[1]
+			  )()
 }
 
-function write(data: any, schema: N.Node, request: N.Node, variables: object, cache: AnyCacheNode): CacheWriteResult {
+function write(data: any, schema: N.Node, request: N.Node, variables: object, cache: any): CacheWriteResult {
 	if (schema?.__cache__?.isEntity) {
-		return writeToEntity(data, request, variables, cache)
+		return writeToEntity(data, cache)
 	}
 	switch (request.tag) {
 		case 'Scalar':
@@ -188,7 +195,7 @@ function write(data: any, schema: N.Node, request: N.Node, variables: object, ca
 		case 'Float':
 		case 'Boolean':
 		case 'Int':
-			return writeToEntity(data, request, variables, cache)
+			return writeToEntity(data, cache)
 		case 'Type':
 			return writeToTypeNode(data, schema as N.TypeNode<any, any>, request, variables, cache)
 		case 'Array':
@@ -206,35 +213,48 @@ function write(data: any, schema: N.Node, request: N.Node, variables: object, ca
 	}
 }
 
-function writeToEntity(data: any, request: N.Node, variables: object, cache: AnyCacheNode) {
+function writeToEntity(data: any, cache: Ref<Option<any>>) {
 	return () => {
-		const key = encode(request, variables)
-		const currentValue = cache.get(key)
-		cache.set(key, some(data))
+		const currentValue = cache.value
+		const newValue = some(data)
+		cache.value = newValue
+
 		return () => {
-			cache.set(key, currentValue ?? none)
+			if (cache.value === newValue) {
+				cache.value = currentValue
+			}
 		}
 	}
 }
 
-function writeToTypeNode<T extends N.TypeNode<any, any>>(
-	data: N.TypeOfPartial<T>,
-	schema: T,
-	request: T,
-	variables: N.TypeOfMergedVariables<T>,
-	cache: AnyCacheNode
+function writeToTypeNode(
+	data: any,
+	schema: N.TypeNode<any, any, any, any, any, any, any, any>,
+	request: N.TypeNode<any, any, any, any, any, any, any, any>,
+	variables: object,
+	entry: any
 ) {
 	return () => {
 		let evict = constVoid
-		const requestCache = getCache(schema, request, variables, cache, () => shallowReactive({}), data)
 		for (const k in data) {
-			if (requestCache[k] === undefined) {
-				requestCache[k] = shallowReactive(new Map())
+			if (entry[k] === undefined) {
+				entry[k] = isEmptyObject(schema.members[k].__variables_definition__)
+					? makeCacheEntry(schema.members[k], request.members[k], variables, data[k])
+					: shallowReactive(new Map())
 			}
-			evict = concatEvict(
-				evict,
-				write(data[k], schema.members[k], request.members[k], variables, requestCache[k])()
-			)
+			let memberCache
+			if (isEmptyObject(schema.members[k].__variables_definition__)) {
+				memberCache = entry[k]
+			} else {
+				const key = encode(request, variables)
+				memberCache = entry[k].get(key)
+				if (!memberCache) {
+					memberCache = makeCacheEntry(schema.members[k], request.members[k], variables, data[k])
+					entry[k].set(key, memberCache)
+				}
+			}
+
+			evict = concatEvict(evict, write(data[k], schema.members[k], request.members[k], variables, memberCache)())
 		}
 		return evict
 	}
@@ -245,23 +265,17 @@ function writeToArrayNode(
 	schema: N.ArrayNode<any>,
 	request: N.ArrayNode<any>,
 	variables: object,
-	cache: AnyCacheNode
+	entry: Ref<any[]>
 ) {
 	return () => {
-		const key = encode(request, variables)
-		const currentValue = cache.get(key)
-		const newValue = shallowReactive(makeBy(data.length, () => shallowReactive(new Map())))
+		const currentValue = entry.value
+		const newValue = makeBy(data.length, (i) => makeCacheEntry(schema.wrapped, request.wrapped, variables, data[i]))
 		data.forEach((val, index) => {
-			const evict = write(val, schema.wrapped, request.wrapped, variables, newValue[index])()
-			return evict
+			write(val, schema.wrapped, request.wrapped, variables, newValue[index])()
 		})
-		cache.set(key, newValue)
+		entry.value = newValue
 		return () => {
-			if (currentValue) {
-				cache.set(key, currentValue)
-			} else {
-				cache.delete(key)
-			}
+			if (entry.value === newValue) entry.value = currentValue
 		}
 	}
 }
@@ -271,19 +285,18 @@ function writeToNonEmptyArrayNode(
 	schema: N.NonEmptyArrayNode<any>,
 	request: N.NonEmptyArrayNode<any>,
 	variables: object,
-	cache: AnyCacheNode
+	entry: Ref<Option<NonEmptyArray<any>>>
 ) {
 	return () => {
-		const key = encode(request, variables)
-		const currentValue = cache.get(key)
-		const newValue = shallowReactive(makeBy(data.length, () => shallowReactive(new Map())))
-		data.forEach((val, index) => write(val, schema.wrapped, request.wrapped, variables, newValue[index])())
-		cache.set(key, some(newValue))
+		const currentValue = entry.value
+		const newValue = some(
+			makeBy(data.length, (i) => makeCacheEntry(schema.wrapped, request.wrapped, variables, data[i]))
+		) as Some<NonEmptyArray<any>>
+		data.forEach((val, index) => write(val, schema.wrapped, request.wrapped, variables, newValue.value[index])())
+		entry.value = newValue
 		return () => {
-			if (currentValue) {
-				cache.set(key, currentValue)
-			} else {
-				cache.delete(key)
+			if (entry.value === newValue) {
+				entry.value = currentValue
 			}
 		}
 	}
@@ -294,24 +307,23 @@ function writeToOptionNode(
 	schema: N.OptionNode<any>,
 	request: N.OptionNode<any>,
 	variables: object,
-	cache: AnyCacheNode
+	cache: Ref<Option<any>>
 ) {
 	return () => {
-		const key = encode(request, variables)
+		const currentValue = cache.value
 		if (isSome(data)) {
-			let cacheEntry = getCache(schema, request, variables, cache, () => some(shallowReactive(new Map())), data)
-			if (isNone(cacheEntry)) {
-				cacheEntry = some(shallowReactive(new Map()))
-				cache.set(key, cacheEntry)
-			}
-			return write(data.value, schema.wrapped, request.wrapped, variables, cacheEntry.value)()
-		} else {
-			const currentValue = cache.get(key)
-			cache.set(key, none)
-			return () => {
-				if (currentValue) {
-					cache.set(key, currentValue)
+			if (isNone(currentValue)) {
+				cache.value = some(makeCacheEntry(schema.wrapped, request.wrapped, variables, data))
+				write(data.value, schema.wrapped, request.wrapped, variables, (cache as any).value.value)()
+				return () => {
+					cache.value = currentValue
 				}
+			}
+			return write(data.value, schema.wrapped, request.wrapped, variables, (cache as any).value.value)()
+		} else {
+			cache.value = none
+			return () => {
+				cache.value = currentValue
 			}
 		}
 	}
@@ -322,22 +334,33 @@ function writeToMapNode(
 	schema: N.MapNode<any, any>,
 	request: N.MapNode<any, any>,
 	variables: object,
-	cache: AnyCacheNode
+	cache: Ref<Map<any, any>>
 ) {
 	return () => {
+		const cacheValue = cache.value
 		let evict = constVoid
-		const requestCache = getCache(schema, request, variables, cache, () => shallowReactive(new Map()), data)
 		for (const [k, v] of data.entries()) {
-			evict = concatEvict(
-				evict,
-				write(
-					v,
-					schema.wrapped,
-					request.wrapped,
-					variables,
-					makeCache(k, requestCache, () => shallowReactive(new Map()))
-				)()
-			)
+			if (cacheValue.has(k)) {
+				if (v) {
+					evict = concatEvict(
+						evict,
+						write(v, schema.wrapped, request.wrapped, variables, cacheValue.get(k))()
+					)
+				} else {
+					const currentValue = cacheValue.get(k)
+					cacheValue.delete(k)
+					evict = concatEvict(evict, () => {
+						if (!cacheValue.has(k)) {
+							cacheValue.set(k, currentValue)
+						}
+					})
+				}
+			} else {
+				const newCacheEntry = makeCacheEntry(schema.wrapped, request.wrapped, variables, v)
+				cacheValue.set(k, newCacheEntry)
+				write(v, schema.wrapped, request.wrapped, variables, newCacheEntry)()
+				evict = concatEvict(evict, () => cacheValue.delete(k))
+			}
 		}
 		return evict
 	}
@@ -348,23 +371,28 @@ function writeToSumNode(
 	schema: N.SumNode<any>,
 	request: N.SumNode<any, any>,
 	variables: object,
-	cache: AnyCacheNode
+	cache: Ref<Option<[string, any]>>
 ) {
 	return () => {
-		const key = encode(request, variables)
-		let requestCache = cache.get(key)
-		if (!requestCache || requestCache[0] !== data.__typename) {
-			requestCache = shallowReactive([data.__typename, shallowReactive(new Map())] as const)
-			cache.set(key, requestCache)
+		if (isNone(cache.value) || cache.value.value[0] !== data.__typename) {
+			cache.value = some([
+				data.__typename,
+				makeCacheEntry(
+					schema.membersRecord[data.__typename],
+					request.membersRecord[data.__typename],
+					variables,
+					data
+				)
+			] as any)
 		}
-		const __typename = data.__typename || requestCache[0]
+		const __typename = data.__typename || (cache as any).value.value[0]
 		if (!!__typename) {
 			return writeToTypeNode(
 				data,
 				schema.membersRecord[__typename],
 				request.membersRecord[__typename],
 				variables,
-				requestCache[1]
+				(cache as any).value.value
 			)()
 		} else {
 			return constVoid
@@ -372,30 +400,12 @@ function writeToSumNode(
 	}
 }
 
-function getCache(
-	schemaNode: N.Node,
-	requestNode: N.Node,
-	variables: object,
-	cacheNode: AnyCacheNode,
-	cacheData: Lazy<unknown>,
-	data?: any
-) {
+function makeCacheEntry(schemaNode: N.Node, requestNode: N.Node, variables: object, data?: any) {
 	if (!!schemaNode?.__cache__?.useCustomCache) {
-		return makeCache(encode(requestNode, variables), cacheNode, () =>
-			(schemaNode as any).__cache__.useCustomCache(schemaNode, requestNode, variables, cacheNode, data)
-		)
+		return schemaNode.__cache__.useCustomCache(schemaNode, requestNode, variables, data)
 	} else {
-		return makeCache(encode(requestNode, variables), cacheNode, cacheData)
+		return defaultCacheEntry(schemaNode)
 	}
-}
-
-function makeCache(key: string, cacheNode: AnyCacheNode, cacheData: Lazy<unknown>) {
-	let requestCache = cacheNode.get(key)
-	if (!requestCache) {
-		requestCache = cacheData()
-		cacheNode.set(key, requestCache)
-	}
-	return requestCache
 }
 
 function encode(node: N.Node, data: any): string {
@@ -403,5 +413,27 @@ function encode(node: N.Node, data: any): string {
 		return JSON.stringify(node.variablesModel.encode(data))
 	} catch {
 		return 'unknown'
+	}
+}
+
+function defaultCacheEntry<T extends N.Node>(node: T): N.TypeOfCacheEntry<T> {
+	if (isEntityNode(node)) {
+		return shallowRef<Option<N.TypeOf<T>>>(none) as N.TypeOfCacheEntry<T>
+	}
+	switch (node.tag) {
+		case 'Type':
+			return {} as N.TypeOfCacheEntry<T>
+		case 'Array':
+			return shallowRef([]) as N.TypeOfCacheEntry<T>
+		case 'NonEmptyArray':
+		case 'Sum':
+		case 'Option':
+			return shallowRef(none) as N.TypeOfCacheEntry<T>
+		case 'Map':
+			return shallowRef(shallowReactive(new Map())) as N.TypeOfCacheEntry<T>
+		case 'Mutation':
+			return defaultCacheEntry((node as any).result) as N.TypeOfCacheEntry<T>
+		default:
+			return shallowRef<Option<N.TypeOf<T>>>(none) as N.TypeOfCacheEntry<T>
 	}
 }

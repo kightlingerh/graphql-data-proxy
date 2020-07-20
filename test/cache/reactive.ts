@@ -3,7 +3,7 @@ import * as assert from 'assert'
 import { isRight } from 'fp-ts/lib/Either'
 import { pipe } from 'fp-ts/lib/function'
 import { chain, fromEither, rightIO } from 'fp-ts/lib/IOEither'
-import { isSome, none, some } from 'fp-ts/lib/Option'
+import { isSome, none } from 'fp-ts/lib/Option'
 import { make } from '../../src/cache/Cache'
 import * as M from '../../src/model/index'
 import * as N from '../../src/node/index'
@@ -35,7 +35,8 @@ const Person1: N.TypeOf<typeof PersonNode> = {
 const Person1Update: N.TypeOfPartial<typeof PersonNode> = {
 	id: '1',
 	personalInfo: {
-		highSchool: some('La Canada High School')
+		lastName: 'Baldwin'
+		// highSchool: some('La Canada High School')
 	}
 }
 
@@ -49,7 +50,7 @@ const Person1Final: N.TypeOfPartial<typeof PersonNode> = {
 
 describe('reactivity', () => {
 	it('computed cache listener should react to cache updates', () => {
-		const cache = make(PersonNode)({})(PersonNode)
+		const cache = make({})(PersonNode)(PersonNode)
 		assert.deepStrictEqual(isRight(cache), true)
 
 		// initial write
