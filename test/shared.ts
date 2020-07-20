@@ -14,7 +14,7 @@ export const PersonalInfoNode = N.type('PersonalInfo', {
 })
 
 export const StatisticsNode = N.map(N.staticString, N.option(N.staticFloat), {
-	ids: N.nonEmptyArray(N.staticString)
+	statisticIds: N.nonEmptyArray(N.staticString)
 })
 
 export const PersonNode = N.type('Person', {
@@ -47,7 +47,7 @@ export const Person1: N.TypeOf<typeof PersonNode> = {
 }
 
 export const Person1Variables: N.TypeOfMergedVariables<typeof PersonNode> = {
-	ids: ['1', '2']
+	statisticIds: ['1', '2']
 }
 
 export const Person2: N.TypeOf<typeof PersonNode> = {
@@ -68,7 +68,7 @@ export const Person2: N.TypeOf<typeof PersonNode> = {
 }
 
 export const Person2Variables: N.TypeOfMergedVariables<typeof PersonNode> = {
-	ids: ['1', '2', '3']
+	statisticIds: ['1', '2', '3']
 }
 
 export const Person1CompleteUpdate: N.TypeOfPartial<typeof PersonNode> = {
