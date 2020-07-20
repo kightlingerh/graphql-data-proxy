@@ -1,4 +1,4 @@
-import { shallowRef } from '@vue/reactivity'
+import { shallowReactive, shallowRef } from '@vue/reactivity'
 import * as assert from 'assert'
 import { isRight } from 'fp-ts/lib/Either'
 import { constant, pipe } from 'fp-ts/lib/function'
@@ -26,7 +26,7 @@ const PeopleNode_ = N.map(IdNode, PersonNode, {
 	ids: N.nonEmptyArray(IdNode)
 })
 
-const usePeopleCache = constant(shallowRef(new Map()) as N.TypeOfCacheEntry<typeof PeopleNode_>)
+const usePeopleCache = constant(shallowRef(shallowReactive(new Map())))
 
 const PeopleNode = N.useCustomCache(PeopleNode_, usePeopleCache)
 

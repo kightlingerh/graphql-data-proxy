@@ -921,7 +921,7 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['members'],
 			ExtractTypeNodeDataFromMembers<T['members']>,
 			ExtractTypeNodePartialDataFromMembers<T['members']>,
-			O.Option<TypeOf<T>>,
+			Ref<O.Option<TypeOf<T>>>,
 			Ref<O.Option<TypeOf<T>>>,
 			ExtractVariablesDefinition<T>
 	  >
@@ -930,8 +930,8 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['wrapped'],
 			ExtractArrayNodeDataFromWrapped<T['wrapped']>,
 			ExtractArrayNodePartialDataFromWrapped<T['wrapped']>,
-			O.Option<TypeOf<T>[]>,
-			Ref<O.Option<TypeOf<T>[]>>,
+			Ref<O.Option<TypeOf<T>>>,
+			Ref<O.Option<TypeOf<T>>>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T extends NonEmptyArrayNode<any, any, any, any, any, any, any>
@@ -939,8 +939,8 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['wrapped'],
 			ExtractNonEmptyArrayNodeDataFromWrapped<T['wrapped']>,
 			ExtractNonEmptyArrayNodePartialDataFromWrapped<T['wrapped']>,
-			O.Option<NonEmptyArray<TypeOf<T>>>,
-			Ref<O.Option<NonEmptyArray<TypeOf<T>>>>,
+			Ref<O.Option<TypeOf<T>>>,
+			Ref<O.Option<TypeOf<T>>>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T extends OptionNode<any, any, any, any, any, any, any>
@@ -948,7 +948,7 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['wrapped'],
 			ExtractOptionNodeDataFromWrapped<T['wrapped']>,
 			ExtractOptionNodePartialDataFromWrapped<T['wrapped']>,
-			O.Option<TypeOf<T>>,
+			Ref<O.Option<TypeOf<T>>>,
 			Ref<O.Option<TypeOf<T>>>,
 			ExtractVariablesDefinition<T>
 	  >
@@ -958,8 +958,17 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['wrapped'],
 			ExtractMapNodeDataFromKeyValue<T['key'], T['wrapped']>,
 			ExtractMapNodePartialDataFromKeyValue<T['key'], T['wrapped']>,
-			O.Option<Map<TypeOf<T['key']>, TypeOf<T['wrapped']>>>,
-			Ref<O.Option<Map<TypeOf<T['key']>, TypeOf<T['wrapped']>>>>,
+			Ref<O.Option<TypeOf<T>>>,
+			Ref<O.Option<TypeOf<T>>>,
+			ExtractVariablesDefinition<T>
+	  >
+	: T extends SumNode<any, any, any, any, any, any, any>
+	? SumNode<
+			T['members'],
+			ExtractSumNodeDataFromMembers<T['members']>,
+			ExtractSumNodePartialDataFromMembers<T['members']>,
+			Ref<O.Option<TypeOf<T>>>,
+			Ref<O.Option<TypeOf<T>>>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T

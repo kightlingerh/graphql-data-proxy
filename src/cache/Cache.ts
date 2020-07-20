@@ -472,12 +472,7 @@ function writeToMapNode(
 		let evict = constVoid
 		for (const [k, v] of data.entries()) {
 			if (cacheValue.has(k)) {
-				if (v) {
-					evict = concatEvict(
-						evict,
-						write(v, schema.wrapped, request.wrapped, variables, cacheValue.get(k))()
-					)
-				} else {
+				if (v === null || v === undefined) {
 					const currentValue = cacheValue.get(k)
 					cacheValue.delete(k)
 					evict = concatEvict(evict, () => {
@@ -485,6 +480,11 @@ function writeToMapNode(
 							cacheValue.set(k, currentValue)
 						}
 					})
+				} else {
+					evict = concatEvict(
+						evict,
+						write(v, schema.wrapped, request.wrapped, variables, cacheValue.get(k))()
+					)
 				}
 			} else {
 				const newCacheEntry = makeStaticCacheEntry(schema.wrapped, request.wrapped, variables, v)
