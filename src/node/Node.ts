@@ -37,7 +37,7 @@ export type PrimitiveNode<Variables extends {} = {}> =
 export interface StringNode<
 	Data = string,
 	PartialData = string,
-	RefsData = O.Option<string>,
+	RefsData = Ref<O.Option<string>>,
 	CacheEntry = Ref<O.Option<string>>,
 	Variables extends NodeVariablesDefinition = {}
 > extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables> {
@@ -47,7 +47,7 @@ export interface StringNode<
 export interface BooleanNode<
 	Data = boolean,
 	PartialData = boolean,
-	RefsData = O.Option<boolean>,
+	RefsData = Ref<O.Option<boolean>>,
 	CacheEntry = Ref<O.Option<boolean>>,
 	Variables extends NodeVariablesDefinition = {}
 > extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables> {
@@ -57,7 +57,7 @@ export interface BooleanNode<
 export interface IntNode<
 	Data = number,
 	PartialData = number,
-	RefsData = O.Option<number>,
+	RefsData = Ref<O.Option<number>>,
 	CacheEntry = Ref<O.Option<number>>,
 	Variables extends NodeVariablesDefinition = {}
 > extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables> {
@@ -67,7 +67,7 @@ export interface IntNode<
 export interface FloatNode<
 	Data = number,
 	PartialData = number,
-	RefsData = O.Option<number>,
+	RefsData = Ref<O.Option<number>>,
 	CacheEntry = Ref<O.Option<number>>,
 	Variables extends NodeVariablesDefinition = {}
 > extends NodeDefinition<Data, PartialData, RefsData, CacheEntry, Variables> {
@@ -128,7 +128,7 @@ export type ExtractArrayNodeDataFromWrapped<Wrapped> = Array<TypeOf<Wrapped>>
 
 export type ExtractArrayNodePartialDataFromWrapped<Wrapped> = Array<TypeOfPartial<Wrapped>>
 
-export type ExtractArrayNodeRefsFromWrapped<Wrapped> = Array<TypeOfRefs<Wrapped>>
+export type ExtractArrayNodeRefsFromWrapped<Wrapped> = Ref<Array<TypeOfRefs<Wrapped>>>
 
 export type ExtractChildrenVariablesDefinitionFromWrapped<Wrapped> = {} & ExtractChildrenVariablesDefinition<Wrapped> &
 	ExtractVariablesDefinition<Wrapped>
@@ -154,7 +154,7 @@ export type ExtractMapNodePartialDataFromKeyValue<Key, Value> = Map<TypeOf<Key>,
 
 export type ExtractMapNodeRefsFromKeyValue<Key, Value> = Ref<Map<TypeOf<Key>, TypeOfRefs<Value>>>
 
-export type ExtractMapNodeCacheEntryFromKeyValue<Key, Value> = Map<TypeOf<Key>, TypeOfCacheEntry<Value>>
+export type ExtractMapNodeCacheEntryFromKeyValue<Key, Value> = Ref<Map<TypeOf<Key>, TypeOfCacheEntry<Value>>>
 
 export interface MapNode<
 	Key extends Node,
@@ -175,7 +175,7 @@ export type ExtractOptionNodeDataFromWrapped<Wrapped> = O.Option<TypeOf<Wrapped>
 
 export type ExtractOptionNodePartialDataFromWrapped<Wrapped> = O.Option<TypeOfPartial<Wrapped>>
 
-export type ExtractOptionNodeRefsFromWrapped<Wrapped> = O.Option<TypeOfRefs<Wrapped>>
+export type ExtractOptionNodeRefsFromWrapped<Wrapped> = Ref<O.Option<TypeOfRefs<Wrapped>>>
 
 export type ExtractOptionNodeCacheEntryFromWrapped<Wrapped> = Ref<O.Option<TypeOfCacheEntry<Wrapped>>>
 
@@ -196,7 +196,7 @@ export type ExtractNonEmptyArrayNodeDataFromWrapped<Wrapped> = NonEmptyArray<Typ
 
 export type ExtractNonEmptyArrayNodePartialDataFromWrapped<Wrapped> = NonEmptyArray<TypeOfPartial<Wrapped>>
 
-export type ExtractNonEmptyArrayNodeRefsFromWrapped<Wrapped> = O.Option<NonEmptyArray<TypeOfRefs<Wrapped>>>
+export type ExtractNonEmptyArrayNodeRefsFromWrapped<Wrapped> = Ref<O.Option<NonEmptyArray<TypeOfRefs<Wrapped>>>>
 
 export type ExtractNonEmptyArrayNodeCacheEntryFromWrapped<Wrapped> = Ref<
 	O.Option<NonEmptyArray<TypeOfCacheEntry<Wrapped>>>
@@ -229,7 +229,7 @@ export type ExtractSumNodePartialDataFromMembers<
 
 export type ExtractSumNodeRefsFromMembers<
 	Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any, any>>
-> = O.Option<{ [K in keyof Members]: TypeOfRefs<Members[K]> }[number]>
+> = Ref<O.Option<{ [K in keyof Members]: TypeOfRefs<Members[K]> }[number]>>
 
 export type ExtractSumNodeChildrenVariablesDefinitionFromMembers<
 	Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any, any>>
@@ -274,7 +274,7 @@ export interface ScalarNode<
 	Name extends string,
 	Data,
 	PartialData = Data,
-	RefsData = O.Option<Data>,
+	RefsData = Ref<O.Option<Data>>,
 	CacheEntry = Ref<O.Option<Data>>,
 	Variables extends NodeVariablesDefinition = {},
 	ChildrenVariables extends NodeVariablesDefinition = {}
@@ -309,13 +309,7 @@ export type EncodedVariables = string
 export interface CacheNode<CacheEntry> extends Map<EncodedVariables, CacheEntry> {}
 
 export interface CustomCache<T> {
-	(
-		schemaNode: T,
-		requestNode: T,
-		variables: TypeOfMergedVariables<T>,
-		cacheNode: CacheNode<TypeOfCacheEntry<T>>,
-		data?: TypeOfPartial<T>
-	): TypeOfRefs<T>
+	(schemaNode: T, requestNode: T, variables: TypeOfMergedVariables<T>, data?: TypeOfPartial<T>): TypeOfCacheEntry<T>
 }
 
 export interface NodeCacheConfig<T = any> {
@@ -354,10 +348,10 @@ export function getDefinitionModel<V extends NodeVariablesDefinition>(
 export function int(): IntNode
 export function int<V extends NodeVariablesDefinition>(
 	variables: V
-): IntNode<number, number, O.Option<number>, Ref<O.Option<number>>, V>
+): IntNode<number, number, Ref<O.Option<number>>, Ref<O.Option<number>>, V>
 export function int<V extends NodeVariablesDefinition = {}>(
 	variables: V = EMPTY_VARIABLES
-): IntNode<number, number, O.Option<number>, Ref<O.Option<number>>, V> {
+): IntNode<number, number, Ref<O.Option<number>>, Ref<O.Option<number>>, V> {
 	return {
 		tag: 'Int',
 		strictModel: M.number,
@@ -373,10 +367,10 @@ export const staticInt = int()
 export function float(): FloatNode
 export function float<V extends NodeVariablesDefinition>(
 	variables: V
-): FloatNode<number, number, O.Option<number>, Ref<O.Option<number>>, V>
+): FloatNode<number, number, Ref<O.Option<number>>, Ref<O.Option<number>>, V>
 export function float<V extends NodeVariablesDefinition = {}>(
 	variables: V = EMPTY_VARIABLES
-): FloatNode<number, number, O.Option<number>, Ref<O.Option<number>>, V> {
+): FloatNode<number, number, Ref<O.Option<number>>, Ref<O.Option<number>>, V> {
 	return {
 		tag: 'Float',
 		strictModel: M.number,
@@ -392,10 +386,10 @@ export const staticFloat = float()
 export function string(): StringNode
 export function string<V extends NodeVariablesDefinition>(
 	variables: V
-): StringNode<string, string, O.Option<string>, Ref<O.Option<string>>, V>
+): StringNode<string, string, Ref<O.Option<string>>, Ref<O.Option<string>>, V>
 export function string<V extends NodeVariablesDefinition = {}>(
 	variables: V = EMPTY_VARIABLES
-): StringNode<string, string, O.Option<string>, Ref<O.Option<string>>, V> {
+): StringNode<string, string, Ref<O.Option<string>>, Ref<O.Option<string>>, V> {
 	return {
 		tag: 'String',
 		strictModel: M.string,
@@ -411,10 +405,10 @@ export const staticString = string()
 export function boolean(): BooleanNode
 export function boolean<V extends NodeVariablesDefinition>(
 	variables: V
-): BooleanNode<boolean, boolean, O.Option<boolean>, Ref<O.Option<boolean>>, V>
+): BooleanNode<boolean, boolean, Ref<O.Option<boolean>>, Ref<O.Option<boolean>>, V>
 export function boolean<V extends NodeVariablesDefinition = {}>(
 	variables: V = EMPTY_VARIABLES
-): BooleanNode<boolean, boolean, O.Option<boolean>, Ref<O.Option<boolean>>, V> {
+): BooleanNode<boolean, boolean, Ref<O.Option<boolean>>, Ref<O.Option<boolean>>, V> {
 	return {
 		tag: 'Boolean',
 		strictModel: M.boolean,
@@ -430,17 +424,17 @@ export const staticBoolean = boolean()
 export function scalar<Name extends string, Data>(
 	name: Name,
 	model: M.Model<Data>
-): ScalarNode<Name, Data, Data, O.Option<Data>>
+): ScalarNode<Name, Data, Data, Ref<O.Option<Data>>>
 export function scalar<Name extends string, Data, Variables extends NodeVariablesDefinition>(
 	name: Name,
 	model: M.Model<Data>,
 	variables: Variables
-): ScalarNode<Name, Data, Data, O.Option<Data>, Ref<O.Option<Data>>, Variables>
+): ScalarNode<Name, Data, Data, Ref<O.Option<Data>>, Ref<O.Option<Data>>, Variables>
 export function scalar<Name extends string, Data, Variables extends NodeVariablesDefinition = {}>(
 	name: Name,
 	model: M.Model<Data>,
 	variables: Variables = EMPTY_VARIABLES
-): ScalarNode<Name, Data, Data, O.Option<Data>, Ref<O.Option<Data>>, Variables> {
+): ScalarNode<Name, Data, Data, Ref<O.Option<Data>>, Ref<O.Option<Data>>, Variables> {
 	return {
 		name,
 		tag: 'Scalar',
