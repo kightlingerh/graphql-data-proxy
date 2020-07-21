@@ -51,7 +51,10 @@ export function make(_: CacheDependencies) {
 
 function toRefs(schema: N.Node, request: N.Node, variables: object, cache: any): CacheResult<any> {
 	if (isEntityNode(schema)) {
-		return cache
+		return () => cache
+	}
+	if (isEntityNode(request)) {
+		return () => computed(read(schema, request, variables, cache))
 	}
 	switch (request.tag) {
 		case 'Type':
