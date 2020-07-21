@@ -52,7 +52,7 @@ function validateTypeNode<SchemaNode extends N.TypeNode<any, any, any>, RequestN
 		const xk = xMembers[k]
 		const yk = yMembers[k]
 		if (xk === undefined) {
-			errors.push(tree(`request has expected field ${k} that is unavailable on ${showTypeNode.show(xk)}`))
+			errors.push(tree(`request has expected field ${k} that is unavailable on ${showNode.show(x)}`))
 		} else {
 			const mErrors = validateNode(xk, yk)
 			if (isNonEmpty(mErrors)) {

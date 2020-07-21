@@ -451,7 +451,7 @@ function mergeNodeVariables<T extends Node>(
 ): {} & ExtractChildrenVariablesDefinition<T> & ExtractVariablesDefinition<T> {
 	const x: any = {}
 	for (const [k, v] of Object.entries(node.__sub_variables_definition__)) {
-		if (__DEV__ && x[k] !== undefined) {
+		if (x[k] !== undefined) {
 			console.warn(
 				`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
 			)
@@ -460,7 +460,7 @@ function mergeNodeVariables<T extends Node>(
 	}
 
 	for (const [k, v] of Object.entries(node.__variables_definition__)) {
-		if (__DEV__ && x[k] !== undefined) {
+		if (x[k] !== undefined) {
 			console.warn(
 				`the variable name ${k} is being used in multiple places, try to use unique values unless you want the value overwritten`
 			)
@@ -662,10 +662,10 @@ export function map<Key extends Node<{}>, Value extends Node<{}>, Variables exte
 	ExtractMapNodeCacheEntryFromKeyValue<Key, Value>,
 	Variables
 > {
-	if (__DEV__ && !isEmptyObject(key.__variables_definition__)) {
+	if (!isEmptyObject(key.__variables_definition__)) {
 		console.warn(`variables will be ignored on map key`)
 	}
-	if (__DEV__ && !isEmptyObject(value.__variables_definition__)) {
+	if (!isEmptyObject(value.__variables_definition__)) {
 		console.warn(`variables will be ignored on map value`)
 	}
 
@@ -704,7 +704,7 @@ export function array<Wrapped extends Node<{}>, Variables extends NodeVariablesD
 	ExtractArrayNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 > {
-	if (__DEV__ && !isEmptyObject(wrapped.__variables_definition__)) {
+	if (!isEmptyObject(wrapped.__variables_definition__)) {
 		console.warn(`variables will be ignored on array value`)
 	}
 
@@ -742,7 +742,7 @@ export function option<Wrapped extends Node<{}>, Variables extends NodeVariables
 	ExtractOptionNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 > {
-	if (__DEV__ && !isEmptyObject(wrapped.__variables_definition__)) {
+	if (!isEmptyObject(wrapped.__variables_definition__)) {
 		console.warn(`variables will be ignored on option value`)
 	}
 
@@ -780,7 +780,7 @@ export function nonEmptyArray<Wrapped extends Node<{}>, Variables extends NodeVa
 	ExtractNonEmptyArrayNodeCacheEntryFromWrapped<Wrapped>,
 	Variables
 > {
-	if (__DEV__ && !isEmptyObject(wrapped.__variables_definition__)) {
+	if (!isEmptyObject(wrapped.__variables_definition__)) {
 		console.warn(`variables will be ignored on nonEmptyArray value`)
 	}
 

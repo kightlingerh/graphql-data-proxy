@@ -4,11 +4,6 @@ import { Node, SumNode, TypeNode } from './Node'
 export const showNode: Show<Node> = {
 	show: (node) => {
 		switch (node.tag) {
-			case 'Boolean':
-			case 'Int':
-			case 'Float':
-			case 'String':
-				return node.tag
 			case 'Scalar':
 				return `Scalar: ${node.name}`
 			case 'Map':
@@ -28,17 +23,13 @@ export const showNode: Show<Node> = {
 		}
 	}
 }
-export const showSumNode: Show<SumNode<any>> = {
+export const showSumNode: Show<SumNode<TypeNode<any, any>[]>> = {
 	show: (node) =>
-		`{ ${Object.keys(node.members)
-			.map((k) => `${k}: ${node.members[k].__typename}`)
-			.join(', ')} }`
+		`{\n  ${node.members.map((member) => `${member.__typename}:  ${showTypeNode.show(member)}`).join(',\n  ')}  \n}`
 }
-export const showTypeNode: Show<TypeNode<string, any, any>> = {
+export const showTypeNode: Show<TypeNode<any, any>> = {
 	show: (node) =>
-		`{ ${Object.keys(node.members)
-			.map((k) =>
-				`${k}: ${node.members[k].tag} ${node.members[k].__typename || node.members[k].name || ''}`.trimEnd()
-			)
-			.join(', ')} }`
+		`{\n  ${Object.keys(node.members)
+			.map((k) => `${k}: ${showNode.show(node.members[k])}`.trimEnd())
+			.join(',\n')}  \n}`
 }
