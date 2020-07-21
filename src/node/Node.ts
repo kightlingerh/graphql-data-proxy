@@ -930,8 +930,8 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['wrapped'],
 			ExtractArrayNodeDataFromWrapped<T['wrapped']>,
 			ExtractArrayNodePartialDataFromWrapped<T['wrapped']>,
-			Ref<O.Option<TypeOf<T>>>,
-			Ref<O.Option<TypeOf<T>>>,
+			Ref<O.Option<TypeOf<T['wrapped']>[]>>,
+			Ref<O.Option<TypeOf<T['wrapped']>[]>>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T extends NonEmptyArrayNode<any, any, any, any, any, any, any>
@@ -939,8 +939,8 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['wrapped'],
 			ExtractNonEmptyArrayNodeDataFromWrapped<T['wrapped']>,
 			ExtractNonEmptyArrayNodePartialDataFromWrapped<T['wrapped']>,
-			Ref<O.Option<TypeOf<T>>>,
-			Ref<O.Option<TypeOf<T>>>,
+			Ref<O.Option<NonEmptyArray<TypeOf<T['wrapped']>>>>,
+			Ref<O.Option<NonEmptyArray<TypeOf<T['wrapped']>>>>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T extends OptionNode<any, any, any, any, any, any, any>
@@ -948,8 +948,8 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['wrapped'],
 			ExtractOptionNodeDataFromWrapped<T['wrapped']>,
 			ExtractOptionNodePartialDataFromWrapped<T['wrapped']>,
-			Ref<O.Option<TypeOf<T>>>,
-			Ref<O.Option<TypeOf<T>>>,
+			Ref<O.Option<O.Option<TypeOf<T['wrapped']>>>>,
+			Ref<O.Option<O.Option<TypeOf<T['wrapped']>>>>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T extends MapNode<any, any, any, any, any, any, any, any>
@@ -958,8 +958,8 @@ type ExtractEntityType<T extends Node> = T extends TypeNode<any, any, any, any, 
 			T['wrapped'],
 			ExtractMapNodeDataFromKeyValue<T['key'], T['wrapped']>,
 			ExtractMapNodePartialDataFromKeyValue<T['key'], T['wrapped']>,
-			Ref<O.Option<TypeOf<T>>>,
-			Ref<O.Option<TypeOf<T>>>,
+			Ref<O.Option<Map<TypeOf<T['key']>, TypeOf<T['wrapped']>>>>,
+			Ref<O.Option<Map<TypeOf<T['key']>, TypeOf<T['wrapped']>>>>,
 			ExtractVariablesDefinition<T>
 	  >
 	: T extends SumNode<any, any, any, any, any, any, any>
