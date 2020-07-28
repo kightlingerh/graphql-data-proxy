@@ -27,7 +27,7 @@ function printTypeNodeMembers(members: { [K: string]: Node }): string {
 	return tokens.join('')
 }
 
-function printVariables<V extends NodeVariablesDefinition>(variables: V): string {
+function printVariables<V extends NodeVariablesDefinition>(variables: V, isRoot: boolean = false): string {
 	const tokens: string[] = [OPEN_PAREN]
 	const keys = Object.keys(variables)
 	const length = keys.length
@@ -35,7 +35,7 @@ function printVariables<V extends NodeVariablesDefinition>(variables: V): string
 	let i = 0
 	for (; i < length; i++) {
 		const key = keys[i]
-		tokens.push(DOLLAR_SIGN, key, COLON, OPEN_SPACE, printVariableName(variables[key]), i === last ? '' : ', ')
+		tokens.push(isRoot ? DOLLAR_SIGN : '', key, COLON, OPEN_SPACE, isRoot ? printVariableName(variables[key]) : `$${key}`, i === last ? '' : ', ')
 	}
 	tokens.push(CLOSE_PAREN)
 	return tokens.join('')
@@ -120,7 +120,7 @@ export function print<N extends string, T extends { [K in keyof T]: Node }>(
 ): string {
 	const tokens = [operation, OPEN_SPACE, operationName]
 	if (!isEmptyObject(schema.__sub_variables_definition__)) {
-		tokens.push(printVariables(schema.__sub_variables_definition__))
+		tokens.push(printVariables(schema.__sub_variables_definition__, true))
 	}
 	tokens.push(OPEN_SPACE, printNode(schema))
 	return tokens.join('')
