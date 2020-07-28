@@ -35,7 +35,14 @@ function printVariables<V extends NodeVariablesDefinition>(variables: V, isRoot:
 	let i = 0
 	for (; i < length; i++) {
 		const key = keys[i]
-		tokens.push(isRoot ? DOLLAR_SIGN : '', key, COLON, OPEN_SPACE, isRoot ? printVariableName(variables[key]) : `$${key}`, i === last ? '' : ', ')
+		tokens.push(
+			isRoot ? DOLLAR_SIGN : '',
+			key,
+			COLON,
+			OPEN_SPACE,
+			isRoot ? printVariableName(variables[key]) : `$${key}`,
+			i === last ? '' : ', '
+		)
 	}
 	tokens.push(CLOSE_PAREN)
 	return tokens.join('')
