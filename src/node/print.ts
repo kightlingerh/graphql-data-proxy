@@ -79,14 +79,14 @@ function isOptionNode(node: Node): node is OptionNode<any> {
 	return node.tag === 'Option'
 }
 
-function printSumNodeMembers<Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>>(
-	...members: Members
+function printSumNodeMembers(
+	members: ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>
 ): string {
-	const tokens: string[] = [OPEN_BRACKET, TYPENAME]
+	const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE, TYPENAME]
 	members.forEach((member) => {
 		tokens.push(
-			ELLIPSIS,
 			OPEN_SPACE,
+			ELLIPSIS,
 			ON,
 			OPEN_SPACE,
 			member.__typename,
@@ -99,6 +99,9 @@ function printSumNodeMembers<Members extends ReadonlyArray<TypeNode<any, any, an
 }
 
 function printNode(node: Node): string {
+	if (node?.__cache__?.isLocal) {
+		return ''
+	}
 	switch (node.tag) {
 		case 'String':
 		case 'Boolean':
