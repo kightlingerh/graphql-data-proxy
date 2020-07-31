@@ -16,12 +16,14 @@ const ON = 'on'
 function printTypeNodeMembers(members: { [K: string]: Node }): string {
 	const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE]
 	for (const [key, value] of Object.entries(members)) {
-		tokens.push(key)
-		if (!isEmptyObject(value.__variables_definition__)) {
-			tokens.push(printVariables(value.__variables_definition__))
+		if (!value?.__cache__?.isLocal) {
+			tokens.push(key)
+			if (!isEmptyObject(value.__variables_definition__)) {
+				tokens.push(printVariables(value.__variables_definition__))
+			}
+			const val = printNode(value)
+			tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [OPEN_SPACE, val, OPEN_SPACE]))
 		}
-		const val = printNode(value)
-		tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [OPEN_SPACE, val, OPEN_SPACE]))
 	}
 	tokens.push(CLOSE_BRACKET)
 	return tokens.join('')
@@ -79,14 +81,12 @@ function isOptionNode(node: Node): node is OptionNode<any> {
 	return node.tag === 'Option'
 }
 
-function printSumNodeMembers<Members extends ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>>(
-	...members: Members
-): string {
-	const tokens: string[] = [OPEN_BRACKET, TYPENAME]
+function printSumNodeMembers(members: ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>): string {
+	const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE, TYPENAME]
 	members.forEach((member) => {
 		tokens.push(
-			ELLIPSIS,
 			OPEN_SPACE,
+			ELLIPSIS,
 			ON,
 			OPEN_SPACE,
 			member.__typename,

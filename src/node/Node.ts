@@ -314,6 +314,7 @@ export interface CustomCache<T> {
 
 export interface NodeCacheConfig<T = any> {
 	readonly isEntity?: boolean
+	readonly isLocal?: boolean
 	readonly useCustomCache?: CustomCache<T>
 }
 
@@ -979,6 +980,16 @@ export function markAsEntity<T extends Node>(node: T): ExtractEntityType<T> {
 		__cache__: {
 			...node.__cache__,
 			isEntity: true
+		}
+	} as any
+}
+
+export function markAsLocal<T extends Node>(node: T): T {
+	return {
+		...node,
+		__cache__: {
+			...node.__cache__,
+			isLocal: true
 		}
 	} as any
 }

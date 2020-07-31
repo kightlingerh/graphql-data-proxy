@@ -26,19 +26,40 @@ export function validate(schema: N.SchemaNode<any, any>, request: N.SchemaNode<a
 }
 
 function validateNode(x: N.Node, y: N.Node): Array<Tree<string>> {
+	const variableErrors = validateVariablesDefinition(x.__variables_definition__, y.__variables_definition__)
 	if (isWrappedNode(x) && isWrappedNode(y)) {
-		return validateWrappedNode(x, y)
+		return [...variableErrors, ...validateWrappedNode(x, y)]
 	} else if (isTypeNode(x) && isTypeNode(y)) {
-		return validateTypeNode(x, y)
+		return [...variableErrors, ...validateTypeNode(x, y)]
 	} else if (isScalarNode(x) && isScalarNode(y)) {
-		return validateScalarNode(x, y)
+		return [...variableErrors, ...validateScalarNode(x, y)]
 	} else if (isSumNode(x) && isSumNode(y)) {
-		return validateSumNode(x, y)
+		return [...variableErrors, ...validateSumNode(x, y)]
 	} else if (x.tag === y.tag) {
-		return []
+		return variableErrors
 	} else {
-		return [tree(`cannot use node ${showNode.show(y)}, should be assignable to ${showNode.show(x)}`)]
+		return [
+			...variableErrors,
+			tree(`cannot use node ${showNode.show(y)}, should be assignable to ${showNode.show(x)}`)
+		]
 	}
+}
+
+function validateVariablesDefinition(x: N.NodeVariablesDefinition, y: N.NodeVariablesDefinition): Array<Tree<string>> {
+	const errors: Array<Tree<string>> = []
+	for (const k in y) {
+		const xk = x[k]
+		const yk = y[k]
+		if (xk === undefined) {
+			errors.push(tree(`request has expected variable ${k} that is unavailable on ${JSON.stringify(x)}`))
+		} else {
+			const mErrors = validateNode(xk, yk)
+			if (isNonEmpty(mErrors)) {
+				errors.push(tree(`invalid request on ${k}`, mErrors))
+			}
+		}
+	}
+	return errors
 }
 
 function validateTypeNode<SchemaNode extends N.TypeNode<any, any, any>, RequestNode extends N.TypeNode<any, any, any>>(
