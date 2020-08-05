@@ -536,7 +536,8 @@ function writeToSumNode(
 
 function makeStaticCacheEntry(schemaNode: N.Node, requestNode: N.Node, variables: object, data?: any) {
 	if (!!schemaNode?.__cache__?.useCustomCache) {
-		return schemaNode.__cache__.useCustomCache(schemaNode, requestNode, variables, data)
+		const customCacheEntry = schemaNode.__cache__.useCustomCache(schemaNode, requestNode, variables, data)
+		return isSome(customCacheEntry) ? customCacheEntry.value : defaultCacheEntry(schemaNode)
 	} else {
 		return defaultCacheEntry(schemaNode)
 	}

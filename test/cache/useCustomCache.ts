@@ -26,7 +26,7 @@ const PeopleNode_ = N.map(IdNode, PersonNode, {
 	ids: N.nonEmptyArray(IdNode)
 })
 
-const usePeopleCache = constant(shallowRef(shallowReactive(new Map())))
+const usePeopleCache = constant(some(shallowRef(shallowReactive(new Map()))))
 
 const PeopleNode = N.useCustomCache(PeopleNode_, usePeopleCache)
 

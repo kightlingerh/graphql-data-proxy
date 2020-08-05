@@ -309,7 +309,9 @@ export type EncodedVariables = string
 export interface CacheNode<CacheEntry> extends Map<EncodedVariables, CacheEntry> {}
 
 export interface CustomCache<T> {
-	(schemaNode: T, requestNode: T, variables: TypeOfMergedVariables<T>, data?: TypeOfPartial<T>): TypeOfCacheEntry<T>
+	(schemaNode: T, requestNode: T, variables: TypeOfMergedVariables<T>, data?: TypeOfPartial<T>): O.Option<
+		TypeOfCacheEntry<T>
+	>
 }
 
 export interface NodeCacheConfig<T = any> {
