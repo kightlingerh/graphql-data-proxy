@@ -99,6 +99,9 @@ function printSumNodeMembers(members: ReadonlyArray<TypeNode<any, any, any, any,
 }
 
 function printNode(node: Node): string {
+	if (node?.__cache__?.isLocal) {
+		return ''
+	}
 	switch (node.tag) {
 		case 'String':
 		case 'Boolean':
