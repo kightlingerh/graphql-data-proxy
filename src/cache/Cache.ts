@@ -34,6 +34,7 @@ export interface Cache<R> {
 export function make(_: CacheDependencies) {
 	return <S extends N.SchemaNode<any, any>>(schema: S) => {
 		const cache = {}
+		console.log(cache)
 		return <R extends N.SchemaNode<any, any>>(request: R) => {
 			const errors = validate(schema, request)
 			if (isNonEmpty(errors)) {
