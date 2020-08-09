@@ -1,4 +1,4 @@
-import { computed, Ref, shallowReactive, shallowRef } from '@vue/reactivity'
+import { computed, Ref, shallowReactive, shallowRef } from 'vue'
 import { isNonEmpty, makeBy, sequence } from 'fp-ts/lib/Array'
 import { left, right } from 'fp-ts/lib/Either'
 import { constant, constVoid, pipe } from 'fp-ts/lib/function'
