@@ -357,8 +357,8 @@ export function int<V extends NodeVariablesDefinition = {}>(
 ): IntNode<number, number, Ref<O.Option<number>>, Ref<O.Option<number>>, V> {
 	return {
 		tag: 'Int',
-		strictModel: M.number,
-		partialModel: M.number,
+		strictModel: M.int,
+		partialModel: M.int,
 		variablesModel: getDefinitionModel(variables),
 		__sub_variables_definition__: EMPTY_VARIABLES,
 		__variables_definition__: variables
@@ -376,8 +376,8 @@ export function float<V extends NodeVariablesDefinition = {}>(
 ): FloatNode<number, number, Ref<O.Option<number>>, Ref<O.Option<number>>, V> {
 	return {
 		tag: 'Float',
-		strictModel: M.number,
-		partialModel: M.number,
+		strictModel: M.float,
+		partialModel: M.float,
 		variablesModel: getDefinitionModel(variables),
 		__sub_variables_definition__: EMPTY_VARIABLES,
 		__variables_definition__: variables

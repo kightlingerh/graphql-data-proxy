@@ -32,10 +32,45 @@ export const string: Model<string> = {
 	...C.string
 }
 
+
 export const number: Model<number> = {
 	equals: EQ.eqNumber.equals,
 	is: G.number.is,
 	...C.number
+}
+
+function decodeInt(u: unknown) {
+	if (G.string.is(u)) {
+		try {
+			const int = parseInt(u, 10)
+			return isNaN(int) ? D.failure(`cannot decode ${JSON.stringify(u)}, should be string | number`) : D.success(int)
+		} catch {
+			return D.failure(`cannot decode ${JSON.stringify(u)}, should be string | number`)
+		}
+	}
+	return pipe(D.number.decode(u), EITHER.map(Math.trunc))
+}
+
+export const int: Model<number> = {
+	...number,
+	decode: decodeInt
+}
+
+function decodeFloat(u: unknown) {
+	if (G.string.is(u)) {
+		try {
+			const int = parseFloat(u)
+			return isNaN(int) ? D.failure(`cannot decode ${JSON.stringify(u)}, should be string | number`) : D.success(int)
+		} catch {
+			return D.failure(`cannot decode ${JSON.stringify(u)}, should be string | number`)
+		}
+	}
+	return D.number.decode(u)
+}
+
+export const float: Model<number> = {
+	...number,
+	decode: decodeFloat
 }
 
 export const boolean: Model<boolean> = {
