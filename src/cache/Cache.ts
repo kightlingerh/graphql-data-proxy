@@ -1,5 +1,5 @@
 import { computed, Ref, shallowReactive, shallowRef } from 'vue'
-import { isNonEmpty, makeBy, sequence } from 'fp-ts/lib/Array'
+import { isNonEmpty, makeBy, traverse } from 'fp-ts/lib/Array'
 import { left, right } from 'fp-ts/lib/Either'
 import { constant, constVoid, pipe } from 'fp-ts/lib/function'
 import { getWitherable, map } from 'fp-ts/lib/Map'
@@ -33,7 +33,7 @@ export interface Cache<R> {
 
 export function make(_: CacheDependencies) {
 	return <S extends N.SchemaNode<any, any>>(schema: S) => {
-		const cache = {}
+		const cache: object = Object.create(null)
 		console.log(cache)
 		return <R extends N.SchemaNode<any, any>>(request: R) => {
 			const errors = validate(schema, request)
@@ -230,7 +230,7 @@ function getTypeNodeMemberCacheEntry(
 ) {
 	if (entry[member] === undefined) {
 		entry[member] = isEmptyObject(schema.members[member].__variables_definition__)
-			? makeStaticCacheEntry(schema.members[member], request.members[member], variables, data && data[member])
+			? useStaticCacheEntry(schema.members[member], request.members[member], variables, data && data[member])
 			: new Map()
 	}
 	let memberCache
@@ -240,7 +240,7 @@ function getTypeNodeMemberCacheEntry(
 		const encodedVariables = encode(request, variables)
 		memberCache = entry[member].get(encodedVariables)
 		if (!memberCache) {
-			memberCache = makeStaticCacheEntry(
+			memberCache = useStaticCacheEntry(
 				schema.members[member],
 				request.members[member],
 				variables,
@@ -252,12 +252,10 @@ function getTypeNodeMemberCacheEntry(
 	return memberCache
 }
 
-const arraySequenceOption = sequence(option)
+const arrayTraverseOption = traverse(option)
 
 function readArrayNode(schema: N.ArrayNode<any>, request: N.ArrayNode<any>, variables: object, cache: Ref<any[]>) {
-	return () => {
-		return arraySequenceOption(cache.value.map((val) => read(schema.wrapped, request.wrapped, variables, val)()))
-	}
+	return () => arrayTraverseOption((val) => read(schema.wrapped, request.wrapped, variables, val)())(cache.value)
 }
 
 function readNonEmptyArrayNode(
@@ -270,7 +268,7 @@ function readNonEmptyArrayNode(
 		return pipe(
 			cache.value,
 			chain((entry) =>
-				arraySequenceOption(entry.map((val: any) => read(schema.wrapped, request.wrapped, variables, val)()))
+				arrayTraverseOption((val: any) => read(schema.wrapped, request.wrapped, variables, val)())(entry)
 			)
 		)
 	}
@@ -403,7 +401,7 @@ function writeToArrayNode(
 	return () => {
 		const currentValue = entry.value
 		const newValue = makeBy(data.length, (i) =>
-			makeStaticCacheEntry(schema.wrapped, request.wrapped, variables, data[i])
+			useStaticCacheEntry(schema.wrapped, request.wrapped, variables, data[i])
 		)
 		data.forEach((val, index) => {
 			write(val, schema.wrapped, request.wrapped, variables, newValue[index])()
@@ -425,7 +423,7 @@ function writeToNonEmptyArrayNode(
 	return () => {
 		const currentValue = entry.value
 		const newValue = some(
-			makeBy(data.length, (i) => makeStaticCacheEntry(schema.wrapped, request.wrapped, variables, data[i]))
+			makeBy(data.length, (i) => useStaticCacheEntry(schema.wrapped, request.wrapped, variables, data[i]))
 		) as Some<NonEmptyArray<any>>
 		data.forEach((val, index) => write(val, schema.wrapped, request.wrapped, variables, newValue.value[index])())
 		entry.value = newValue
@@ -448,7 +446,7 @@ function writeToOptionNode(
 		const currentValue = cache.value
 		if (isSome(data)) {
 			if (isNone(currentValue)) {
-				cache.value = some(makeStaticCacheEntry(schema.wrapped, request.wrapped, variables, data))
+				cache.value = some(useStaticCacheEntry(schema.wrapped, request.wrapped, variables, data))
 				write(data.value, schema.wrapped, request.wrapped, variables, (cache as any).value.value)()
 				return () => {
 					cache.value = currentValue
@@ -491,7 +489,7 @@ function writeToMapNode(
 					)
 				}
 			} else {
-				const newCacheEntry = makeStaticCacheEntry(schema.wrapped, request.wrapped, variables, v)
+				const newCacheEntry = useStaticCacheEntry(schema.wrapped, request.wrapped, variables, v)
 				cacheValue.set(k, newCacheEntry)
 				write(v, schema.wrapped, request.wrapped, variables, newCacheEntry)()
 				evict = concatEvict(evict, () => cacheValue.delete(k))
@@ -512,7 +510,7 @@ function writeToSumNode(
 		if (isNone(cache.value) || cache.value.value[0] !== data.__typename) {
 			cache.value = some([
 				data.__typename,
-				makeStaticCacheEntry(
+				useStaticCacheEntry(
 					schema.membersRecord[data.__typename],
 					request.membersRecord[data.__typename],
 					variables,
@@ -535,12 +533,12 @@ function writeToSumNode(
 	}
 }
 
-function makeStaticCacheEntry(schemaNode: N.Node, requestNode: N.Node, variables: object, data?: any) {
+function useStaticCacheEntry(schemaNode: N.Node, requestNode: N.Node, variables: object, data?: any) {
 	if (!!schemaNode?.__cache__?.useCustomCache) {
 		const customCacheEntry = schemaNode.__cache__.useCustomCache(schemaNode, requestNode, variables, data)
-		return isSome(customCacheEntry) ? customCacheEntry.value : defaultCacheEntry(schemaNode)
+		return isSome(customCacheEntry) ? customCacheEntry.value : useDefaultCacheEntry(schemaNode)
 	} else {
-		return defaultCacheEntry(schemaNode)
+		return useDefaultCacheEntry(schemaNode)
 	}
 }
 
@@ -552,13 +550,13 @@ function encode(node: N.Node, data: any): string {
 	}
 }
 
-function defaultCacheEntry<T extends N.Node>(node: T): N.TypeOfCacheEntry<T> {
+function useDefaultCacheEntry<T extends N.Node>(node: T): N.TypeOfCacheEntry<T> {
 	if (isEntityNode(node)) {
 		return shallowRef<Option<N.TypeOf<T>>>(none) as N.TypeOfCacheEntry<T>
 	}
 	switch (node.tag) {
 		case 'Type':
-			return {} as N.TypeOfCacheEntry<T>
+			return Object.create(null) as N.TypeOfCacheEntry<T>
 		case 'Array':
 			return shallowRef([]) as N.TypeOfCacheEntry<T>
 		case 'NonEmptyArray':
@@ -568,7 +566,7 @@ function defaultCacheEntry<T extends N.Node>(node: T): N.TypeOfCacheEntry<T> {
 		case 'Map':
 			return shallowRef(shallowReactive(new Map())) as N.TypeOfCacheEntry<T>
 		case 'Mutation':
-			return defaultCacheEntry((node as any).result) as N.TypeOfCacheEntry<T>
+			return useDefaultCacheEntry((node as any).result) as N.TypeOfCacheEntry<T>
 		default:
 			return shallowRef<Option<N.TypeOf<T>>>(none) as N.TypeOfCacheEntry<T>
 	}

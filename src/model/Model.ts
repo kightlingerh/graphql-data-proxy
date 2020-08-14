@@ -32,7 +32,6 @@ export const string: Model<string> = {
 	...C.string
 }
 
-
 export const number: Model<number> = {
 	equals: EQ.eqNumber.equals,
 	is: G.number.is,
@@ -43,7 +42,9 @@ function decodeInt(u: unknown) {
 	if (G.string.is(u)) {
 		try {
 			const int = parseInt(u, 10)
-			return isNaN(int) ? D.failure(`cannot decode ${JSON.stringify(u)}, should be string | number`) : D.success(int)
+			return isNaN(int)
+				? D.failure(`cannot decode ${JSON.stringify(u)}, should be string | number`)
+				: D.success(int)
 		} catch {
 			return D.failure(`cannot decode ${JSON.stringify(u)}, should be string | number`)
 		}
@@ -60,7 +61,9 @@ function decodeFloat(u: unknown) {
 	if (G.string.is(u)) {
 		try {
 			const int = parseFloat(u)
-			return isNaN(int) ? D.failure(`cannot decode ${JSON.stringify(u)}, should be string | number`) : D.success(int)
+			return isNaN(int)
+				? D.failure(`cannot decode ${JSON.stringify(u)}, should be string | number`)
+				: D.success(int)
 		} catch {
 			return D.failure(`cannot decode ${JSON.stringify(u)}, should be string | number`)
 		}
@@ -148,15 +151,6 @@ export function array<T>(val: Model<T>): Model<T[]> {
 	}
 }
 
-const UnknownRecordGuard: G.Guard<Record<string | number, unknown>> = {
-	is: (u: unknown): u is Record<string | number, unknown> => Object.prototype.toString.call(u) === '[object Object]'
-}
-
-const UnknownRecordDecoder: D.Decoder<Record<string | number, unknown>> = D.fromGuard(
-	UnknownRecordGuard,
-	'string | number'
-)
-
 export function map<Key, Value>(key: Model<Key>, value: Model<Value>): Model<Map<Key, Value>> {
 	return {
 		equals: M.getEq(key, value).equals,
@@ -178,17 +172,20 @@ function getMapEncoder<Key, Value>(key: E.Encoder<Key>, value: E.Encoder<Value>)
 	}
 }
 
+export function isObject(obj: any): obj is object {
+	return obj !== null && typeof obj === 'object';
+}
+
+
 function getMapDecoder<Key, Value>(key: D.Decoder<Key>, value: D.Decoder<Value>): D.Decoder<Map<Key, Value>> {
 	return {
 		decode: (u) => {
-			const v = UnknownRecordDecoder.decode(u)
-			if (EITHER.isLeft(v)) {
-				return v
+			if (!isObject(u)) {
+				return EITHER.left([D.tree(`invalid value supplied as map: ${JSON.stringify(u)}, should be an object`)])
 			} else {
-				const r = v.right
 				const m: Map<Key, Value> = new Map()
 				const errors: Array<Tree<string>> = []
-				for (const [k, v] of Object.entries(r)) {
+				for (const [k, v] of Object.entries(u)) {
 					const decodedKey = key.decode(k)
 					const decodedValue = value.decode(v)
 
