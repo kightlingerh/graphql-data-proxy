@@ -173,9 +173,8 @@ function getMapEncoder<Key, Value>(key: E.Encoder<Key>, value: E.Encoder<Value>)
 }
 
 export function isObject(obj: any): obj is object {
-	return obj !== null && typeof obj === 'object';
+	return obj !== null && typeof obj === 'object'
 }
-
 
 function getMapDecoder<Key, Value>(key: D.Decoder<Key>, value: D.Decoder<Value>): D.Decoder<Map<Key, Value>> {
 	return {
@@ -199,7 +198,7 @@ function getMapDecoder<Key, Value>(key: D.Decoder<Key>, value: D.Decoder<Value>)
 						m.set(decodedKey.right, decodedValue.right)
 					}
 				}
-				return isNotEmpty(errors) ? EITHER.left(errors) : D.success(m)
+				return isNotEmpty(errors) ? EITHER.left(errors) : EITHER.right(m)
 			}
 		}
 	}

@@ -237,7 +237,7 @@ function getTypeNodeMemberCacheEntry(
 	if (isEmptyObject(schema.members[member].__variables_definition__)) {
 		memberCache = entry[member]
 	} else {
-		const encodedVariables = encode(request, variables)
+		const encodedVariables = encode(schema, variables)
 		memberCache = entry[member].get(encodedVariables)
 		if (!memberCache) {
 			memberCache = useStaticCacheEntry(
@@ -507,7 +507,7 @@ function writeToSumNode(
 	cache: Ref<Option<[string, any]>>
 ) {
 	return () => {
-		if (isNone(cache.value) || cache.value.value[0] !== data.__typename) {
+		if (isNone(cache.value) || (data.__typename && cache.value.value[0] !== data.__typename)) {
 			cache.value = some([
 				data.__typename,
 				useStaticCacheEntry(
@@ -525,7 +525,7 @@ function writeToSumNode(
 				schema.membersRecord[__typename],
 				request.membersRecord[__typename],
 				variables,
-				(cache as any).value.value
+				(cache as any).value.value[1]
 			)()
 		} else {
 			return constVoid
