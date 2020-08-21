@@ -1,3 +1,4 @@
+import {isNonEmpty} from 'fp-ts/lib/Array';
 import * as A from 'fp-ts/lib/Array'
 import * as EQ from 'fp-ts/lib/Eq'
 import { constant, constNull, flow, Lazy } from 'fp-ts/lib/function'
@@ -21,6 +22,7 @@ import * as D from 'io-ts/lib/Decoder'
 import * as NE from 'fp-ts/lib/NonEmptyArray'
 import * as S from 'fp-ts/lib/Set'
 import { Literal } from 'io-ts/lib/Schemable'
+import {showNode} from '../node';
 
 export interface Model<T> extends C.Codec<T>, G.Guard<T>, EQ.Eq<T> {}
 
@@ -135,7 +137,7 @@ export function nonEmptyArray<T>(val: Model<T>): Model<NE.NonEmptyArray<T>> {
 				return arr
 			} else {
 				const r = arr.right
-				return isNotEmpty(r)
+				return isNonEmpty(r)
 					? D.success(r)
 					: D.failure(`expected non empty array but received ${JSON.stringify(u)}`)
 			}
@@ -191,6 +193,7 @@ function getMapDecoder<Key, Value>(key: D.Decoder<Key>, value: D.Decoder<Value>)
 					if (EITHER.isLeft(decodedKey)) {
 						errors.push(D.tree(`invalid key supplied ${JSON.stringify(k)}`, decodedKey.left))
 					}
+
 					if (EITHER.isLeft(decodedValue)) {
 						errors.push(D.tree(`invalid value supplied ${JSON.stringify(v)}`, decodedValue.left))
 					}
@@ -198,7 +201,10 @@ function getMapDecoder<Key, Value>(key: D.Decoder<Key>, value: D.Decoder<Value>)
 						m.set(decodedKey.right, decodedValue.right)
 					}
 				}
-				return isNotEmpty(errors) ? EITHER.left(errors) : EITHER.right(m)
+				if (isNonEmpty(errors)) {
+					console.log(u, errors);
+				}
+				return isNonEmpty(errors) ? EITHER.left(errors) : EITHER.right(m)
 			}
 		}
 	}
@@ -250,10 +256,6 @@ function setToArray<T>(set: Set<T>): T[] {
 
 function arrayToSet<T>(a: T[]): Set<T> {
 	return new Set(a)
-}
-
-function isNotEmpty<A>(as: Array<A>): as is NE.NonEmptyArray<A> {
-	return as.length > 0
 }
 
 export function option<T>(val: Model<T>, lazy: Lazy<T | null> = constNull): Model<O.Option<T>> {
