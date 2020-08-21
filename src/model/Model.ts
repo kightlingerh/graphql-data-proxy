@@ -1,4 +1,4 @@
-import {isNonEmpty} from 'fp-ts/lib/Array';
+import { isNonEmpty } from 'fp-ts/lib/Array'
 import * as A from 'fp-ts/lib/Array'
 import * as EQ from 'fp-ts/lib/Eq'
 import { constant, constNull, flow, Lazy } from 'fp-ts/lib/function'
@@ -22,7 +22,6 @@ import * as D from 'io-ts/lib/Decoder'
 import * as NE from 'fp-ts/lib/NonEmptyArray'
 import * as S from 'fp-ts/lib/Set'
 import { Literal } from 'io-ts/lib/Schemable'
-import {showNode} from '../node';
 
 export interface Model<T> extends C.Codec<T>, G.Guard<T>, EQ.Eq<T> {}
 
@@ -202,7 +201,7 @@ function getMapDecoder<Key, Value>(key: D.Decoder<Key>, value: D.Decoder<Value>)
 					}
 				}
 				if (isNonEmpty(errors)) {
-					console.log(u, errors);
+					console.log(u, errors)
 				}
 				return isNonEmpty(errors) ? EITHER.left(errors) : EITHER.right(m)
 			}
