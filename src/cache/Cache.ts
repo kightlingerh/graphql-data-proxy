@@ -237,7 +237,7 @@ function getTypeNodeMemberCacheEntry(
 	if (isEmptyObject(schema.members[member].__variables_definition__)) {
 		memberCache = entry[member]
 	} else {
-		const encodedVariables = encode(schema, variables)
+		const encodedVariables = encode(schema.members[member], variables)
 		memberCache = entry[member].get(encodedVariables)
 		if (!memberCache) {
 			memberCache = useStaticCacheEntry(
@@ -544,7 +544,7 @@ function useStaticCacheEntry(schemaNode: N.Node, requestNode: N.Node, variables:
 
 function encode(node: N.Node, data: any): string {
 	try {
-		console.log(data)
+		console.log(data, node.variablesModel.encode(data), JSON.stringify(node.variablesModel.encode(data)))
 		return JSON.stringify(node.variablesModel.encode(data))
 	} catch {
 		return 'unknown'
