@@ -544,7 +544,6 @@ function useStaticCacheEntry(schemaNode: N.Node, requestNode: N.Node, variables:
 
 function encode(node: N.Node, data: any): string {
 	try {
-		console.log(data, node.variablesModel.encode(data), JSON.stringify(node.variablesModel.encode(data)))
 		return JSON.stringify(node.variablesModel.encode(data))
 	} catch {
 		return 'unknown'

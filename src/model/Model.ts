@@ -191,6 +191,7 @@ function getMapDecoder<Key, Value>(key: D.Decoder<Key>, value: D.Decoder<Value>)
 
 					if (EITHER.isLeft(decodedKey)) {
 						errors.push(D.tree(`invalid key supplied ${JSON.stringify(k)}`, decodedKey.left))
+						console.log(`invalid key supplied ${JSON.stringify(k)}`)
 					}
 
 					if (EITHER.isLeft(decodedValue)) {
@@ -199,9 +200,6 @@ function getMapDecoder<Key, Value>(key: D.Decoder<Key>, value: D.Decoder<Value>)
 					if (EITHER.isRight(decodedKey) && EITHER.isRight(decodedValue)) {
 						m.set(decodedKey.right, decodedValue.right)
 					}
-				}
-				if (isNonEmpty(errors)) {
-					console.log(u, errors)
 				}
 				return isNonEmpty(errors) ? EITHER.left(errors) : EITHER.right(m)
 			}
