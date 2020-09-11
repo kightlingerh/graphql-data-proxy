@@ -1,5 +1,6 @@
 import { Ref } from '@vue/reactivity'
 import { Eq } from 'fp-ts/lib/Eq'
+import { constUndefined } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { Encoder } from 'io-ts/lib/Encoder'
@@ -983,17 +984,25 @@ export function markAsEntity<T extends Node>(node: T): ExtractEntityType<T> {
 			...node.__cache__,
 			isEntity: true
 		}
-	} as any
+	} as ExtractEntityType<T>
 }
 
 export function markAsLocal<T extends Node>(node: T): T {
 	return {
 		...node,
+		strictModel: {
+			...node.strictModel,
+			encode: constUndefined
+		},
+		partialModel: {
+			...node.partialModel,
+			encode: constUndefined
+		},
 		__cache__: {
 			...node.__cache__,
 			isLocal: true
 		}
-	} as any
+	} as T
 }
 
 export function useCustomCache<T extends Node>(node: T, customCache: CustomCache<T>): T {
