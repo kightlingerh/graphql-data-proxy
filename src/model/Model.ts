@@ -208,11 +208,12 @@ function getMapDecoder<Key, Value>(key: D.Decoder<Key>, value: D.Decoder<Value>)
 }
 
 function getMapGuard<Key, Value>(key: G.Guard<Key>, value: G.Guard<Value>): G.Guard<Map<Key, Value>> {
+	const nullableValue = G.nullable(value)
 	return {
 		is: (u: unknown): u is Map<Key, Value> => {
 			if (typeof Map !== undefined && u instanceof Map) {
 				for (const [k, v] of u.entries()) {
-					if (!key.is(k) || !value.is(v)) {
+					if (!key.is(k) || !nullableValue.is(v)) {
 						return false
 					}
 				}

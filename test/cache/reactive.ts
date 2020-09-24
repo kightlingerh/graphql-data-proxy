@@ -24,6 +24,10 @@ const PersonNode = N.type('Person', {
 	personalInfo: PersonalInfoNode
 })
 
+const SchemaNode = N.type('Schema', {
+	people: N.map(IdNode, PersonNode)
+})
+
 const Person1: N.TypeOf<typeof PersonNode> = {
 	id: '1',
 	personalInfo: {
@@ -33,6 +37,14 @@ const Person1: N.TypeOf<typeof PersonNode> = {
 		highSchool: none,
 		parents: []
 	}
+}
+
+const People: N.TypeOf<typeof SchemaNode> = {
+	people: new Map([[Person1.id, Person1]])
+}
+
+const DeletePeople: N.TypeOf<typeof SchemaNode> = {
+	people: new Map([[Person1.id, null as any]])
 }
 
 const Person1Update: N.TypeOfPartial<typeof PersonNode> = {
@@ -124,5 +136,38 @@ describe('reactivity', () => {
 			)()
 
 			assert.deepStrictEqual(parents.value, Person1Final.personalInfo.parents)
+		}),
+		it('should delete null map entries', () => {
+			const cache = make({})(SchemaNode)(SchemaNode)
+			assert.deepStrictEqual(isRight(cache), true)
+
+			const toPeople = pipe(
+				fromEither(cache),
+				chain((c) => rightIO(c.toRefs({}))),
+				fold(constant(constant(new Map())), (refs) => () => refs.people.value)
+			)
+
+			const people = computed(toPeople)
+
+			// parents is empty
+
+			assert.deepStrictEqual(people.value, new Map())
+
+			// initial write
+			pipe(
+				fromEither(cache),
+				chain((c) => rightIO(c.write({})(People)))
+			)()
+
+			// cache value is updated
+			assert.deepStrictEqual(people.value.size, 1)
+
+			//update
+			pipe(
+				fromEither(cache),
+				chain((c) => rightIO(c.write({})(DeletePeople)))
+			)()
+
+			assert.deepStrictEqual(people.value, new Map())
 		})
 })
