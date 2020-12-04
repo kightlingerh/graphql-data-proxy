@@ -258,7 +258,10 @@ function arrayToSet<T>(a: T[]): Set<T> {
 export function option<T>(val: Model<T>, lazy: Lazy<T | null> = constNull): Model<O.Option<T>> {
 	return {
 		equals: O.getEq(val).equals,
-		decode: (u) => (u === null ? EITHER.right(O.none as O.Option<T>) : pipe(u, val.decode, EITHER.map(O.some))),
+		decode: (u) =>
+			u === null || u === undefined
+				? EITHER.right(O.none as O.Option<T>)
+				: pipe(u, val.decode, EITHER.map(O.some)),
 		encode: O.fold(lazy, val.encode),
 		is: getOptionGuard(val).is
 	}

@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "outDir": "./lib",
+    "outDir": "./es5",
     "declaration": true,
-    "module": "es6",
+    "module": "CommonJS",
     "esModuleInterop": true,
     "noImplicitReturns": false,
     "noUnusedLocals": true,
@@ -10,7 +10,7 @@
     "noFallthroughCasesInSwitch": true,
     "noEmitOnError": false,
     "strict": true,
-    "target": "es6",
+    "target": "ES6",
     "moduleResolution": "node",
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true,
