@@ -1,8 +1,8 @@
-import { Ref } from '@vue/reactivity';
 import { Eq } from 'fp-ts/lib/Eq';
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray';
 import * as O from 'fp-ts/lib/Option';
 import { Encoder } from 'io-ts/lib/Encoder';
+import { Ref } from 'vue';
 import * as M from '../model/Model';
 export declare type TypeOf<T> = T extends {
     readonly strictModel: M.Model<infer A>;

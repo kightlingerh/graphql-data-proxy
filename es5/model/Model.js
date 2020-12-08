@@ -171,11 +171,12 @@ function getMapDecoder(key, value) {
     };
 }
 function getMapGuard(key, value) {
+    const nullableValue = G.nullable(value);
     return {
         is: (u) => {
             if (typeof Map !== undefined && u instanceof Map) {
                 for (const [k, v] of u.entries()) {
-                    if (!key.is(k) || !value.is(v)) {
+                    if (!key.is(k) || !nullableValue.is(v)) {
                         return false;
                     }
                 }

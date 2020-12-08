@@ -1,9 +1,9 @@
-import { Ref } from '@vue/reactivity'
 import { Eq } from 'fp-ts/lib/Eq'
 import { constUndefined } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import { Encoder } from 'io-ts/lib/Encoder'
+import { Ref } from 'vue'
 import * as M from '../model/Model'
 import { isEmptyObject } from '../shared'
 
