@@ -1,10 +1,10 @@
 import { computed, Ref, shallowReactive, shallowRef } from 'vue'
-import { isNonEmpty, makeBy, traverse } from 'fp-ts/lib/Array'
+import { isNonEmpty, makeBy } from 'fp-ts/lib/Array'
 import { left, right } from 'fp-ts/lib/Either'
 import { constant, constVoid, pipe } from 'fp-ts/lib/function'
 import { map } from 'fp-ts/lib/Map'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
-import { chain, isNone, isSome, none, option, Option, Some, some, map as mapO } from 'fp-ts/lib/Option'
+import { chain, isNone, isSome, none, Option, Some, some, map as mapO } from 'fp-ts/lib/Option'
 import { Reader } from 'fp-ts/lib/Reader'
 import * as N from '../node/Node'
 import {
@@ -33,7 +33,6 @@ export interface Cache<R> {
 export function make(_: CacheDependencies) {
 	return <S extends N.SchemaNode<any, any>>(schema: S) => {
 		const cache: object = Object.create(null)
-		console.log(cache)
 		return <R extends N.SchemaNode<any, any>>(request: R) => {
 			const errors = validate(schema, request)
 			if (isNonEmpty(errors)) {
@@ -251,8 +250,6 @@ function getTypeNodeMemberCacheEntry(
 	return memberCache
 }
 
-const arrayTraverseOption = traverse(option)
-
 function readArrayNode(schema: N.ArrayNode<any>, request: N.ArrayNode<any>, variables: object, cache: Ref<any[]>) {
 	return () => {
 		const cv = cache.value
@@ -279,12 +276,11 @@ function readNonEmptyArrayNode(
 	cache: Ref<Option<NonEmptyArray<any>>>
 ) {
 	return () => {
-		return pipe(
-			cache.value,
-			chain((entry) =>
-				arrayTraverseOption((val: any) => read(schema.wrapped, request.wrapped, variables, val)())(entry)
-			)
-		)
+		if (isSome(cache.value)) {
+			return readArrayNode(schema as any, request as any, variables, cache.value as any)()
+		} else {
+			return none
+		}
 	}
 }
 
