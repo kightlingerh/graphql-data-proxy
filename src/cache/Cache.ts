@@ -254,7 +254,22 @@ function getTypeNodeMemberCacheEntry(
 const arrayTraverseOption = traverse(option)
 
 function readArrayNode(schema: N.ArrayNode<any>, request: N.ArrayNode<any>, variables: object, cache: Ref<any[]>) {
-	return () => arrayTraverseOption((val) => read(schema.wrapped, request.wrapped, variables, val)())(cache.value)
+	return () => {
+		const cv = cache.value
+		const length = cv.length
+		const sw = schema.wrapped
+		const rw = request.wrapped
+		const result = new Array(length)
+		for (let i = 0; i < length; i++) {
+			const r = read(sw, rw, variables, cv[i])()
+			if (isSome(r)) {
+				result[i] = r.value
+			} else {
+				return none
+			}
+		}
+		return some(result)
+	}
 }
 
 function readNonEmptyArrayNode(
