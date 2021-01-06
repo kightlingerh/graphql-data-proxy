@@ -2,10 +2,9 @@ import { computed, Ref, shallowReactive, shallowRef } from 'vue'
 import { isNonEmpty, makeBy, traverse } from 'fp-ts/lib/Array'
 import { left, right } from 'fp-ts/lib/Either'
 import { constant, constVoid, pipe } from 'fp-ts/lib/function'
-import { getWitherable, map } from 'fp-ts/lib/Map'
+import { map } from 'fp-ts/lib/Map'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { chain, isNone, isSome, none, option, Option, Some, some, map as mapO } from 'fp-ts/lib/Option'
-import { fromCompare } from 'fp-ts/lib/Ord'
 import { Reader } from 'fp-ts/lib/Reader'
 import * as N from '../node/Node'
 import {
@@ -290,8 +289,6 @@ function readOptionNode(
 	}
 }
 
-const mapSequenceOption = getWitherable(fromCompare(constant(0 as const))).sequence(option)
-
 function readMapNode(
 	schema: N.MapNode<any, any>,
 	request: N.MapNode<any, any>,
@@ -299,11 +296,23 @@ function readMapNode(
 	cache: Ref<Map<any, any>>
 ) {
 	return () => {
-		return pipe(
-			cache.value,
-			map((val) => read(schema.wrapped, request.wrapped, variables, val)()),
-			mapSequenceOption
-		)
+		const v = cache.value
+		if (v.size === 0) {
+			return some(v)
+		} else {
+			const result = new Map()
+			const sw = schema.wrapped
+			const rw = request.wrapped
+			for (const [key, value] of v.entries()) {
+				const r = read(sw, rw, variables, value)()
+				if (isSome(r)) {
+					result.set(key, r.value)
+				} else {
+					return none
+				}
+			}
+			return some(result)
+		}
 	}
 }
 
