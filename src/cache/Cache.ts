@@ -80,7 +80,7 @@ function toRefsTypeNode(
 	entry: any
 ): CacheResult<any> {
 	return () => {
-		const x: any = {}
+		const x: any = Object.create(null)
 		for (const k in request.members) {
 			x[k] = toRefs(
 				schema.members[k],
@@ -107,10 +107,9 @@ function toRefsNonEmptyArrayNode(
 ) {
 	return () => {
 		return computed(() =>
-			pipe(
-				cache.value,
-				mapO((entry) => entry.map((val: any) => toRefs(schema.wrapped, request.wrapped, variables, val)()))
-			)
+			mapO((entry: NonEmptyArray<any>) =>
+				entry.map((val: any) => toRefs(schema.wrapped, request.wrapped, variables, val)())
+			)(cache.value)
 		)
 	}
 }
@@ -122,12 +121,7 @@ function toRefsOptionNode(
 	cache: Ref<Option<any>>
 ) {
 	return () => {
-		return computed(() =>
-			pipe(
-				cache.value,
-				mapO((entry) => toRefs(schema.wrapped, request.wrapped, variables, entry)())
-			)
-		)
+		return computed(() => mapO((entry) => toRefs(schema.wrapped, request.wrapped, variables, entry)())(cache.value))
 	}
 }
 
@@ -138,12 +132,7 @@ function toRefsMapNode(
 	cache: Ref<Map<any, any>>
 ) {
 	return () => {
-		return computed(() =>
-			pipe(
-				cache.value,
-				map((val) => toRefs(schema.wrapped, request.wrapped, variables, val)())
-			)
-		)
+		return computed(() => map((val) => toRefs(schema.wrapped, request.wrapped, variables, val)())(cache.value))
 	}
 }
 
