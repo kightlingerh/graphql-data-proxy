@@ -225,6 +225,16 @@ function getMapGuard<Key, Value>(key: G.Guard<Key>, value: G.Guard<Value>): G.Gu
 	}
 }
 
+function setToArray<T>(set: Set<T>): T[] {
+	const x: T[] = []
+	set.forEach((e) => x.push(e))
+	return x
+}
+
+function arrayToSet<T>(a: T[]): Set<T> {
+	return new Set(a)
+}
+
 export function set<T>(model: Model<T>): Model<Set<T>> {
 	const a = array(model)
 	return {
@@ -244,16 +254,6 @@ export function set<T>(model: Model<T>): Model<Set<T>> {
 			}
 		}
 	}
-}
-
-function setToArray<T>(set: Set<T>): T[] {
-	const x: T[] = []
-	set.forEach((e) => x.push(e))
-	return x
-}
-
-function arrayToSet<T>(a: T[]): Set<T> {
-	return new Set(a)
 }
 
 export function option<T>(val: Model<T>, lazy: Lazy<T | null> = constNull): Model<O.Option<T>> {

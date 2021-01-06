@@ -568,10 +568,6 @@ function useDefaultCacheEntry<T extends N.Node>(node: T): N.TypeOfCacheEntry<T> 
 			return Object.create(null) as N.TypeOfCacheEntry<T>
 		case 'Array':
 			return shallowRef([]) as N.TypeOfCacheEntry<T>
-		case 'NonEmptyArray':
-		case 'Sum':
-		case 'Option':
-			return shallowRef(none) as N.TypeOfCacheEntry<T>
 		case 'Map':
 			return shallowRef(shallowReactive(new Map())) as N.TypeOfCacheEntry<T>
 		case 'Mutation':
