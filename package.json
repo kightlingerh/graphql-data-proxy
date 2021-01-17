@@ -21,15 +21,15 @@
     "test": "yarn run prettier-write && yarn run jest"
   },
   "peerDependencies": {
-    "vue": "^3.0.4",
-    "fp-ts": "^2.6.5",
-    "io-ts": "^2.2.1"
+    "vue": "^3.0.5",
+    "fp-ts": "^2.9.3",
+    "io-ts": "^2.2.13"
   },
   "devDependencies": {
     "@types/jest": "^26.0.4",
-    "vue": "^3.0.4",
-    "fp-ts": "^2.6.5",
-    "io-ts": "^2.2.1",
+    "vue": "^3.0.5",
+    "fp-ts": "^2.9.3",
+    "io-ts": "^2.2.13",
     "jest": "^26.1.0",
     "prettier": "^2.0.5",
     "rimraf": "^3.0.2",
