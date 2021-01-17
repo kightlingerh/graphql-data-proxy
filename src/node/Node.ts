@@ -753,8 +753,8 @@ export function option<Wrapped extends Node<{}>, Variables extends NodeVariables
 	return {
 		tag: 'Option',
 		wrapped,
-		strictModel: M.option(wrapped.strictModel),
-		partialModel: M.option(wrapped.partialModel),
+		strictModel: M.fromOption(wrapped.strictModel),
+		partialModel: M.fromOption(wrapped.partialModel),
 		variablesModel: getDefinitionModel(variables),
 		__sub_variables_definition__: mergeNodeVariables(wrapped),
 		__variables_definition__: variables

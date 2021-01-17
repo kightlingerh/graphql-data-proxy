@@ -1,29 +1,34 @@
 import {Either, fold as foldE } from 'fp-ts/Either';
-import {constNull} from 'fp-ts/lib/function';
+import {constNull, Lazy} from 'fp-ts/lib/function';
+import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray';
 import {fold, Option} from 'fp-ts/lib/Option';
-import * as E from 'io-ts/Encoder'
+import * as EN from 'io-ts/Encoder'
 import {Float, Int} from './Guard';
 export * from 'io-ts/Encoder';
 
-export const string = E.id<string>();
+export const string = EN.id<string>();
 
-export const boolean = E.id<boolean>();
+export const boolean = EN.id<boolean>();
 
-export const number = E.id<number>();
+export const number = EN.id<number>();
 
-export const int = E.id<Int>();
+export const int = EN.id<Int>();
 
-export const float = E.id<Float>();
+export const float = EN.id<Float>();
 
-export const option = <O, A>(item: E.Encoder<O, A>): E.Encoder<O | null, Option<A>> => ({
-	encode: fold(constNull, item.encode)
+export function option<O, A>(item: EN.Encoder<O, A>): EN.Encoder<O | null, Option<A>>;
+export function option<O, A>(item: EN.Encoder<O, A>, lazy: Lazy<O>): EN.Encoder<O, Option<A>>;
+export function option<O, A>(item: EN.Encoder<O, A>, lazy?: Lazy<O>): any {
+	return {
+		encode: fold(lazy ?? constNull, item.encode)
+	}
+};
+
+export const either = <OL, OR, L, R>(l: EN.Encoder<OL, L>, r: EN.Encoder<OR, R>): EN.Encoder<OL | OR, Either<L, R>> => ({
+	encode: foldE<L, R, OL | OR>((l as EN.Encoder<OL | OR, L>).encode, (r as EN.Encoder<OL | OR, R>).encode)
 });
 
-export const either = <OL, OR, L, R>(l: E.Encoder<OL, L>, r: E.Encoder<OR, R>): E.Encoder<OL | OR, Either<L, R>> => ({
-	encode: foldE<L, R, OL | OR>((l as E.Encoder<OL | OR, L>).encode, (r as E.Encoder<OL | OR, R>).encode)
-});
-
-export const map = <OM, OK, OA, K, A>(fromPairs: (pairs: Array<[OK, OA]>) => OM) => (k: E.Encoder<OK, K>, a: E.Encoder<OA, A>): E.Encoder<OM, Map<K, A>> => ({
+export const map = <O, OK, OA, K, A>(fromPairs: (pairs: Array<[OK, OA]>) => O) => (k: EN.Encoder<OK, K>, a: EN.Encoder<OA, A>): EN.Encoder<O, Map<K, A>> => ({
 	encode: i => {
 		const pairs: Array<[OK, OA]> = [];
 		for (const [key, value] of i.entries()) {
@@ -33,15 +38,14 @@ export const map = <OM, OK, OA, K, A>(fromPairs: (pairs: Array<[OK, OA]>) => OM)
 	}
 })
 
-export const set = <O, A>(a: E.Encoder<O, A>): E.Encoder<O[], Set<A>> => ({
+export const set = <O, A>(item: EN.Encoder<O, A>): EN.Encoder<O[], Set<A>> => ({
 	encode: i => {
 		const values: O[] = [];
 		i.forEach(value => {
-			values.push(a.encode(value))
+			values.push(item.encode(value))
 		});
 		return values;
 	}
-})
+});
 
-
-
+export const nonEmptyArray = <O, A>(item: EN.Encoder<O, A>): EN.Encoder<Array<O>, NonEmptyArray<A>> => EN.array(item) as any;
