@@ -1,0 +1,59 @@
+import {Int} from '../model/Guard';
+import * as M from '../model/Model';
+import {
+	BaseNode,
+	CustomCache,
+	DynamicNodeConfig,
+	EMPTY_VARIABLES,
+	ExtractNodeDefinitionType,
+	ModifyOutputIfLocal,
+	NO_TRANSFORMATIONS,
+	NodeVariables,
+	StaticNodeConfig,
+	useLocalModel
+} from './shared';
+
+export interface IntNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false>
+	extends BaseNode<number,
+		ModifyOutputIfLocal<IsLocal, number>,
+		Int,
+		number,
+		ModifyOutputIfLocal<IsLocal, number>,
+		Int,
+		Int | undefined,
+		Variables> {
+	readonly tag: 'Int'
+	readonly __customCache?: CustomCache<Int, ExtractNodeDefinitionType<Variables>, Int | undefined>
+}
+
+export interface StaticIntNodeConfig<IsLocal extends boolean>
+	extends StaticNodeConfig<Int, Int | undefined, {}, IsLocal> {
+}
+
+export interface DynamicIntNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
+	extends DynamicNodeConfig<Variables, Int, Int | undefined, {}, IsLocal> {
+}
+
+const INT_TAG = 'Int'
+
+export function int<IsLocal extends boolean = false>(config?: StaticIntNodeConfig<IsLocal>): IntNode<{}, IsLocal>
+export function int<V extends NodeVariables, IsLocal extends boolean = false>(
+	config: DynamicIntNodeConfig<V, IsLocal>
+): IntNode<V, IsLocal>
+export function int<V extends NodeVariables = {}, IsLocal extends boolean = false>(
+	config?: StaticIntNodeConfig<IsLocal> | DynamicIntNodeConfig<V, IsLocal>
+): IntNode<V, IsLocal> {
+	const model = config?.isLocal ? useLocalModel(M.int) : (M.int as any)
+	return {
+		tag: INT_TAG,
+		strict: model,
+		partial: model,
+		variables: config?.variables ?? EMPTY_VARIABLES,
+		__hasTransformations: NO_TRANSFORMATIONS,
+		__customCache: config?.useCustomCache,
+		__isEntity: config?.isEntity,
+		__isLocal: config?.isLocal
+	}
+}
+
+export const staticInt = int()
