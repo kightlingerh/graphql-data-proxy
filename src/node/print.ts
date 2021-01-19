@@ -1,8 +1,10 @@
 import { isEmptyObject, isEmptyString } from '../shared/index'
 import { Node, NodeVariablesDefinition, OptionNode, SchemaNode, TypeNode } from './Node'
 
-const OPEN_BRACKET = '{'
-const CLOSE_BRACKET = '}'
+const OPEN_BRACE = '{'
+const CLOSE_BRACE = '}'
+const OPEN_BRACKET = '[';
+const CLOSE_BRACKET = ']';
 const OPEN_PAREN = '('
 const CLOSE_PAREN = ')'
 const COLON = ':'
@@ -14,7 +16,7 @@ const TYPENAME = '__typename'
 const ON = 'on'
 
 function printTypeNodeMembers(members: { [K: string]: Node }): string {
-	const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE]
+	const tokens: string[] = [OPEN_BRACE, OPEN_SPACE]
 	for (const [key, value] of Object.entries(members)) {
 		if (!value?.__cache__?.isLocal) {
 			tokens.push(key)
@@ -25,7 +27,7 @@ function printTypeNodeMembers(members: { [K: string]: Node }): string {
 			tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [OPEN_SPACE, val, OPEN_SPACE]))
 		}
 	}
-	tokens.push(CLOSE_BRACKET)
+	tokens.push(CLOSE_BRACE)
 	return tokens.join('')
 }
 
@@ -82,7 +84,7 @@ function isOptionNode(node: Node): node is OptionNode<any> {
 }
 
 function printSumNodeMembers(members: ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>): string {
-	const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE, TYPENAME]
+	const tokens: string[] = [OPEN_BRACE, OPEN_SPACE, TYPENAME]
 	members.forEach((member) => {
 		tokens.push(
 			OPEN_SPACE,
@@ -94,7 +96,7 @@ function printSumNodeMembers(members: ReadonlyArray<TypeNode<any, any, any, any,
 			printTypeNodeMembers(member.members)
 		)
 	})
-	tokens.push(CLOSE_BRACKET)
+	tokens.push(CLOSE_BRACE)
 	return tokens.join('')
 }
 

@@ -1,4 +1,4 @@
-import * as M from '../model/Model';
+import * as M from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -10,28 +10,28 @@ import {
 	NodeVariables,
 	StaticNodeConfig,
 	useLocalModel
-} from './shared';
+} from './shared'
 
 export interface BooleanNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false>
-	extends BaseNode<boolean,
+	extends BaseNode<
+		boolean,
 		ModifyOutputIfLocal<IsLocal, boolean>,
 		boolean,
 		boolean,
 		ModifyOutputIfLocal<IsLocal, boolean>,
 		boolean,
 		boolean | undefined,
-		Variables> {
+		Variables
+	> {
 	readonly tag: 'Boolean'
 	readonly __customCache?: CustomCache<boolean, ExtractNodeDefinitionType<Variables>, boolean | undefined>
 }
 
 export interface StaticBooleanNodeConfig<IsLocal extends boolean>
-	extends StaticNodeConfig<boolean, boolean | undefined, {}, IsLocal> {
-}
+	extends StaticNodeConfig<boolean, boolean | undefined, {}, IsLocal> {}
 
 export interface DynamicBooleanNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, boolean, boolean | undefined, {}, IsLocal> {
-}
+	extends DynamicNodeConfig<Variables, boolean, boolean | undefined, {}, IsLocal> {}
 
 const BOOLEAN_TAG = 'Boolean'
 

@@ -1,4 +1,4 @@
-import * as M from '../model/Model';
+import * as M from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -10,30 +10,30 @@ import {
 	NodeVariables,
 	StaticNodeConfig,
 	useLocalModel
-} from './shared';
+} from './shared'
 
 const STRING_TAG = 'String'
 
 export interface StringNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false>
-	extends BaseNode<string,
+	extends BaseNode<
+		string,
 		ModifyOutputIfLocal<IsLocal, string>,
 		string,
 		string,
 		ModifyOutputIfLocal<IsLocal, string>,
 		string,
 		string | undefined,
-		Variables> {
+		Variables
+	> {
 	readonly tag: 'String'
 	readonly __customCache?: CustomCache<string, ExtractNodeDefinitionType<Variables>, string | undefined>
 }
 
 export interface StaticStringNodeConfig<IsLocal extends boolean>
-	extends StaticNodeConfig<string, string | undefined, {}, IsLocal> {
-}
+	extends StaticNodeConfig<string, string | undefined, {}, IsLocal> {}
 
 export interface DynamicStringNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, string, string | undefined, {}, IsLocal> {
-}
+	extends DynamicNodeConfig<Variables, string, string | undefined, {}, IsLocal> {}
 
 export function string<IsLocal extends boolean = false>(
 	config?: StaticStringNodeConfig<IsLocal>

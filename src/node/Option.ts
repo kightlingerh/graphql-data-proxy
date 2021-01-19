@@ -1,5 +1,5 @@
-import {Option} from 'fp-ts/Option';
-import * as M from '../model/Model';
+import { Option } from 'fp-ts/Option'
+import * as M from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -10,7 +10,7 @@ import {
 	ExtractVariablesDefinition,
 	getModel,
 	ModifyOutputIfLocal,
-	Node,
+	AnyBaseNode,
 	NodeVariables,
 	StaticNodeConfig,
 	TypeOf,
@@ -19,10 +19,11 @@ import {
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
 	TypeOfStrictOutput
-} from './shared';
+} from './shared'
 
-export interface OptionNode<Item extends Node, Variables extends NodeVariables = {}, IsLocal extends boolean = false>
-	extends BaseNode<TypeOfStrictInput<Item> | null | undefined,
+export interface OptionNode<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false>
+	extends BaseNode<
+		TypeOfStrictInput<Item> | null | undefined,
 		ModifyOutputIfLocal<IsLocal, TypeOfStrictOutput<Item> | null>,
 		Option<TypeOf<Item>>,
 		TypeOfPartialInput<Item> | null | undefined,
@@ -30,25 +31,26 @@ export interface OptionNode<Item extends Node, Variables extends NodeVariables =
 		Option<TypeOfPartial<Item>>,
 		Option<TypeOfPartial<Item>>,
 		Variables,
-		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>> {
+		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
+	> {
 	readonly tag: 'Option'
 	readonly item: Item
-	readonly __customCache?: CustomCache<Option<TypeOfPartial<Item>>,
+	readonly __customCache?: CustomCache<
+		Option<TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		Option<TypeOfPartial<Item>>>
+		Option<TypeOfPartial<Item>>
+	>
 }
 
-export interface StaticOptionNodeConfig<Item extends Node, IsLocal extends boolean>
-	extends StaticNodeConfig<Option<TypeOfPartial<Item>>, Option<TypeOfPartial<Item>>, {}, IsLocal> {
-}
+export interface StaticOptionNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
+	extends StaticNodeConfig<Option<TypeOfPartial<Item>>, Option<TypeOfPartial<Item>>, {}, IsLocal> {}
 
-export interface DynamicOptionNodeConfig<Item extends Node, Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Option<TypeOfPartial<Item>>, Option<TypeOfPartial<Item>>, {}, IsLocal> {
-}
+export interface DynamicOptionNodeConfig<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean>
+	extends DynamicNodeConfig<Variables, Option<TypeOfPartial<Item>>, Option<TypeOfPartial<Item>>, {}, IsLocal> {}
 
 const OPTION_TAG = 'Option'
 
-function getOptionModel<Item extends Node>(item: Item, isLocal: boolean, isStrict: boolean) {
+function getOptionModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
 	return getModel(
 		M.fromOption(isStrict ? item.strict : item.partial),
 		isLocal,
@@ -57,15 +59,15 @@ function getOptionModel<Item extends Node>(item: Item, isLocal: boolean, isStric
 	)
 }
 
-export function option<Item extends Node, IsLocal extends boolean = false>(
+export function option<Item extends AnyBaseNode, IsLocal extends boolean = false>(
 	item: Item,
 	config?: StaticOptionNodeConfig<Item, IsLocal>
 ): OptionNode<Item, {}, IsLocal>
-export function option<Item extends Node, Variables extends NodeVariables, IsLocal extends boolean = false>(
+export function option<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean = false>(
 	item: Item,
 	config: DynamicOptionNodeConfig<Item, Variables, IsLocal>
 ): OptionNode<Item, Variables, IsLocal>
-export function option<Item extends Node, Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
+export function option<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
 	item: Item,
 	config?: StaticOptionNodeConfig<Item, IsLocal> | DynamicOptionNodeConfig<Item, Variables, IsLocal>
 ): OptionNode<Item, Variables, IsLocal> {

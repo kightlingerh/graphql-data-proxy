@@ -1,4 +1,4 @@
-import * as M from '../model/Model';
+import * as M from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -9,22 +9,26 @@ import {
 	NodeVariables,
 	StaticNodeConfig,
 	useLocalModel
-} from './shared';
+} from './shared'
 
-export interface ScalarNode<Name extends string,
+export interface ScalarNode<
+	Name extends string,
 	Input,
 	Output,
 	Data,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false>
-	extends BaseNode<Input,
+	IsLocal extends boolean = false
+>
+	extends BaseNode<
+		Input,
 		ModifyOutputIfLocal<IsLocal, Output>,
 		Data,
 		Input,
 		ModifyOutputIfLocal<IsLocal, Output>,
 		Data,
 		Data | undefined,
-		Variables> {
+		Variables
+	> {
 	readonly tag: 'Scalar'
 	readonly name: Name
 	readonly __customCache?: CustomCache<Data, ExtractNodeDefinitionType<Variables>, Data | undefined>
@@ -49,22 +53,26 @@ export function scalar<Name extends string, Input, Output, Data, IsLocal extends
 	model: M.Model<Input, Output, Data>,
 	config?: StaticScalarNodeConfig<Data, IsLocal>
 ): ScalarNode<Name, Input, Output, Data, {}, IsLocal>
-export function scalar<Name extends string,
+export function scalar<
+	Name extends string,
 	Input,
 	Output,
 	Data,
 	V extends NodeVariables,
-	IsLocal extends boolean = false>(
+	IsLocal extends boolean = false
+>(
 	name: Name,
 	model: M.Model<Input, Output, Data>,
 	config: DynamicScalarNodeConfig<Data, V, IsLocal>
 ): ScalarNode<Name, Input, Output, Data, V, IsLocal>
-export function scalar<Name extends string,
+export function scalar<
+	Name extends string,
 	Input,
 	Output,
 	Data,
 	V extends NodeVariables,
-	IsLocal extends boolean = false>(
+	IsLocal extends boolean = false
+>(
 	name: Name,
 	model: M.Model<Input, Output, Data>,
 	config?: StaticScalarNodeConfig<Data, IsLocal> | DynamicScalarNodeConfig<Data, V, IsLocal>

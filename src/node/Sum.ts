@@ -1,5 +1,4 @@
-import * as M from '../model/Model';
-import {scalar} from './Scalar';
+import * as M from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -9,9 +8,10 @@ import {
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	getModel,
+	hasDecodingTransformations,
+	hasEncodingTransformations,
 	Intersection,
 	ModifyOutputIfLocal,
-	Node,
 	NodeVariables,
 	StaticNodeConfig,
 	TypeOf,
@@ -21,90 +21,113 @@ import {
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
 	TypeOfStrictOutput
-} from './shared';
-import {
-	DynamicTypeNodeConfig,
-	ExtractTypeName,
-	getTypeMemberPartialModel,
-	getTypeMemberStrictModel,
-	hasDecodingTransformations,
-	hasEncodingTransformations,
-	StaticTypeNodeConfig,
-	TYPE_TAG,
-	TypeNode
-} from './Type';
+} from './shared'
+import { BaseTypeNode, ExtractTypeName, type } from './Type'
 
-type SumNodeTypeOfStrictInput<MS extends ReadonlyArray<TypeNode<any, any, any, any, true>>> = { [K in keyof MS]: TypeOfStrictInput<MS[K]> }[number]
-type SumNodeTypeOfStrictOutput<MS extends ReadonlyArray<TypeNode<any, any, any, any, true>>> = { [K in keyof MS]: TypeOfStrictOutput<MS[K]> }[number]
-type SumNodeTypeOf<MS extends ReadonlyArray<TypeNode<any, any, any, any, true>>> = { [K in keyof MS]: TypeOf<MS[K]> }[number]
-type SumNodeTypeOfPartial<MS extends ReadonlyArray<TypeNode<any, any, any, any, true>>> = {
-	[K in keyof MS]: TypeOfPartial<MS[K]>
+type SumTypeNode = BaseTypeNode<any, any, any, any>
+
+type ExtractTypeOfSumNodeStrictInput<MS extends ReadonlyArray<SumTypeNode>> = {
+	[K in keyof MS]: TypeOfStrictInput<MS[K]> & { __typename: ExtractTypeName<MS[K]> }
 }[number]
-type SumNodeTypeOfPartialInput<MS extends ReadonlyArray<TypeNode<any, any, any, any, true>>> = { [K in keyof MS]: TypeOfPartialInput<MS[K]> }[number]
-type SumNodeTypeOfPartialOutput<MS extends ReadonlyArray<TypeNode<any, any, any, any, true>>> = { [K in keyof MS]: TypeOfPartialOutput<MS[K]> }[number]
-export type SumNodeCacheEntry<MS extends ReadonlyArray<TypeNode<any, any, any, any, true>>> =
-	{ [K in keyof MS]: TypeOfCacheEntry<MS[K]> }[number]
-	| undefined
-export type SumNodeSubVariablesDefinition<MS extends ReadonlyArray<TypeNode<any, any, any, any, true>>> =
-	{}
-	& Intersection<{
-	[K in keyof MS]: ExtractSubVariablesDefinition<MS[K]> & ExtractVariablesDefinition<MS[K]>
-}[number]>
 
-interface SumNode<MS extends ReadonlyArray<TypeNode<any, any, any, any, true>>,
+type ExtractTypeOfSumNodeStrictOutput<MS extends ReadonlyArray<SumTypeNode>> = {
+	[K in keyof MS]: TypeOfStrictOutput<MS[K]> & { __typename: ExtractTypeName<MS[K]> }
+}[number]
+
+type ExtractTypeOfSumNode<MS extends ReadonlyArray<SumTypeNode>> = {
+	[K in keyof MS]: TypeOf<MS[K]> & { __typename: ExtractTypeName<MS[K]> }
+}[number]
+
+type ExtractTypeOfPartialSumNode<MS extends ReadonlyArray<SumTypeNode>> = {
+	[K in keyof MS]: TypeOfPartial<MS[K]> & { __typename?: ExtractTypeName<MS[K]> }
+}[number]
+
+type ExtractTypeOfSumNodePartialInput<MS extends ReadonlyArray<SumTypeNode>> = {
+	[K in keyof MS]: TypeOfPartialInput<MS[K]> & { __typename?: ExtractTypeName<MS[K]> }
+}[number]
+
+type ExtractTypeOfSumNodePartialOutput<MS extends ReadonlyArray<SumTypeNode>> = {
+	[K in keyof MS]: TypeOfPartialOutput<MS[K]> & { __typename?: ExtractTypeName<MS[K]> }
+}[number]
+
+export type ExtractSumNodeCacheEntry<MS extends ReadonlyArray<SumTypeNode>> =
+	| { [K in keyof MS]: TypeOfCacheEntry<MS[K]> & { __typename: ExtractTypeName<MS[K]> } }[number]
+	| undefined
+
+export type ExtractSumNodeSubVariablesDefinition<MS extends ReadonlyArray<SumTypeNode>> = {} & Intersection<
+	{
+		[K in keyof MS]: ExtractSubVariablesDefinition<MS[K]> & ExtractVariablesDefinition<MS[K]>
+	}[number]
+>
+
+export interface SumNode<
+	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false>
-	extends BaseNode<SumNodeTypeOfStrictInput<MS>,
-		ModifyOutputIfLocal<IsLocal, SumNodeTypeOfStrictOutput<MS>>,
-		SumNodeTypeOf<MS>,
-		SumNodeTypeOfPartialInput<MS>,
-		ModifyOutputIfLocal<IsLocal, SumNodeTypeOfPartialOutput<MS>>,
-		SumNodeTypeOfPartial<MS>,
-		SumNodeCacheEntry<MS>,
+	IsLocal extends boolean = false
+>
+	extends BaseNode<
+		ExtractTypeOfSumNodeStrictInput<MS>,
+		ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodeStrictOutput<MS>>,
+		ExtractTypeOfSumNode<MS>,
+		ExtractTypeOfSumNodePartialInput<MS>,
+		ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodePartialOutput<MS>>,
+		ExtractTypeOfPartialSumNode<MS>,
+		ExtractSumNodeCacheEntry<MS>,
 		Variables,
-		SumNodeSubVariablesDefinition<MS>> {
+		ExtractSumNodeSubVariablesDefinition<MS>
+	> {
 	readonly tag: 'Sum'
 	readonly members: MS
 	readonly membersRecord: Record<ExtractTypeName<{ [K in keyof MS]: MS[K] }[number]>, MS[number]>
-	readonly __customCache?: CustomCache<SumNodeTypeOfPartial<MS>,
-		ExtractNodeDefinitionType<SumNodeSubVariablesDefinition<MS> & Variables>,
-		SumNodeTypeOfPartialInput<MS> | undefined>
-}
-
-export interface StaticSumNodeConfig<MS extends ReadonlyArray<TypeNode<any, any, any, any, true>>,
-	IsLocal extends boolean,
-	IncludeTypename extends boolean>
-	extends StaticNodeConfig<SumNodeTypeOfPartial<MS>,
-		SumNodeTypeOfPartialInput<MS> | undefined,
-		{},
-		IsLocal> {
-	includeTypename?: IncludeTypename
-}
-
-export interface DynamicSumNodeConfig<MS extends ReadonlyArray<TypeNode<any, any, any, any, true>>,
-	Variables extends NodeVariables,
-	IsLocal extends boolean,
+	readonly __customCache?: CustomCache<
+		ExtractTypeOfPartialSumNode<MS>,
+		ExtractNodeDefinitionType<ExtractSumNodeSubVariablesDefinition<MS> & Variables>,
+		ExtractTypeOfSumNodePartialInput<MS> | undefined
 	>
-	extends DynamicNodeConfig<Variables,
-		SumNodeTypeOfPartial<MS>,
-		SumNodeTypeOfPartialInput<MS> | undefined, ,
-		{},
-		IsLocal> {
 }
+
+export interface StaticSumNodeConfig<MS extends ReadonlyArray<SumTypeNode>, IsLocal extends boolean>
+	extends StaticNodeConfig<
+		ExtractTypeOfPartialSumNode<MS>,
+		ExtractTypeOfSumNodePartialInput<MS> | undefined,
+		{},
+		IsLocal
+	> {}
+
+export interface DynamicSumNodeConfig<
+	MS extends ReadonlyArray<SumTypeNode>,
+	Variables extends NodeVariables,
+	IsLocal extends boolean
+>
+	extends DynamicNodeConfig<
+		Variables,
+		ExtractTypeOfPartialSumNode<MS>,
+		ExtractTypeOfSumNodePartialInput<MS> | undefined,
+		{},
+		IsLocal
+	> {}
 
 const SUM_TAG = 'Sum'
 
-function getSumMemberModelRecord(members: ReadonlyArray<TypeNode<any, any, any, any, true>>, isStrict: boolean) {
-	const x: any = {};
-	members.forEach(member => {
+function getSumMemberModelRecord(members: ReadonlyArray<SumTypeNode>, isStrict: boolean) {
+	const x: any = Object.create(null)
+	members.forEach((member) => {
 		x[member.__typename] = isStrict ? member.strict : member.partial
-	});
-	return x;
+	})
+	return x
+}
+
+function getSumMemberRecord(members: ReadonlyArray<SumTypeNode>) {
+	const x: any = Object.create(null)
+	members.forEach((member) => {
+		x[member.__typename] = member
+	})
+	return x
 }
 
 function getSumMemberModel(
 	isStrict: boolean,
-	members: ReadonlyArray<TypeNode<any, any, any, any, true>>,
+	members: ReadonlyArray<SumTypeNode>,
 	isLocal: boolean,
 	useIdEncoder: boolean,
 	useIdDecoder: boolean
@@ -117,42 +140,42 @@ function getSumMemberModel(
 	)
 }
 
-export function sum<MS extends ReadonlyArray<TypeNode<any, any, any, any, true>>,
-	IsLocal extends boolean = false,
-	>(
+function addTypenameToMembers<MS extends ReadonlyArray<SumTypeNode>>(members: MS) {
+	return members.map((member) =>
+		member.members.hasOwnProperty('__typename')
+			? member
+			: type(member.__typename, member.members, {
+					variables: member.variables,
+					includeTypename: true
+			  })
+	)
+}
+
+export function sum<MS extends ReadonlyArray<SumTypeNode>, IsLocal extends boolean = false>(
 	ms: MS,
 	config?: StaticSumNodeConfig<MS, IsLocal>
-): TypeNode<Typename, MS, {}, IsLocal, IncludeTypename>
+): SumNode<MS, {}, IsLocal>
 
-export function type<Typename extends string,
-	MS extends Record<string, Node>,
+export function sum<
+	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables,
-	IsLocal extends boolean = false,
-	IncludeTypename extends boolean = false>(
-	__typename: Typename,
-	ms: MS,
-	config: DynamicTypeNodeConfig<MS, Variables, IsLocal, IncludeTypename>
-): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename>
-export function type<Typename extends string,
-	MS extends Record<string, Node>,
+	IsLocal extends boolean = false
+>(ms: MS, config: DynamicSumNodeConfig<MS, Variables, IsLocal>): SumNode<MS, Variables, IsLocal>
+export function sum<
+	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false,
-	IncludeTypename extends boolean = false>(
-	__typename: Typename,
-	ms: MS,
-	config?:
-		| StaticTypeNodeConfig<MS, IsLocal, IncludeTypename>
-		| DynamicTypeNodeConfig<MS, Variables, IsLocal, IncludeTypename>
-): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename> {
-	const members = config?.includeTypename ? {...ms, __typename: scalar(__typename, M.literal(__typename))} : ms
-	const useIdDecoder = !hasDecodingTransformations(ms)
-	const useIdEncoder = !hasEncodingTransformations(ms)
+	IsLocal extends boolean = false
+>(ms: MS, config?: StaticSumNodeConfig<MS, IsLocal> | DynamicSumNodeConfig<MS, Variables, IsLocal>): any {
+	const newMembers = addTypenameToMembers(ms)
+	const membersRecord = getSumMemberRecord(ms)
+	const useIdDecoder = !hasDecodingTransformations(membersRecord)
+	const useIdEncoder = !hasEncodingTransformations(membersRecord)
 	return {
-		tag: TYPE_TAG,
-		__typename,
-		members,
-		strict: getTypeMemberStrictModel(members, !!config?.isLocal, useIdEncoder, useIdDecoder),
-		partial: getTypeMemberPartialModel(members, !!config?.isLocal, useIdEncoder, useIdDecoder),
+		tag: SUM_TAG,
+		members: newMembers,
+		membersRecord,
+		strict: getSumMemberModel(true, newMembers, !!config?.isLocal, useIdEncoder, useIdDecoder),
+		partial: getSumMemberModel(false, newMembers, !!config?.isLocal, useIdEncoder, useIdDecoder),
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: {
 			encoding: !useIdEncoder,
@@ -161,5 +184,5 @@ export function type<Typename extends string,
 		__customCache: config?.useCustomCache,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
-	} as any
+	}
 }

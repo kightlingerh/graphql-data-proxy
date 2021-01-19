@@ -1,10 +1,10 @@
-import {constUndefined} from 'fp-ts/function';
-import * as M from '../model/Model';
-import {isEmptyObject} from '../shared';
+import { constUndefined } from 'fp-ts/function'
+import * as M from '../model/Model'
 
-export type Node = BaseNode<any, any, any, any, any, any, any, any, any>
+export type AnyBaseNode = BaseNode<any, any, any, any, any, any, any, any, any>
 
-export interface BaseNode<StrictInput,
+export interface BaseNode<
+	StrictInput,
 	StrictOutput,
 	StrictData,
 	PartialInput,
@@ -12,7 +12,8 @@ export interface BaseNode<StrictInput,
 	PartialData,
 	CacheEntry,
 	Variables extends NodeVariables = {},
-	SubVariables extends NodeVariables = {}> {
+	SubVariables extends NodeVariables = {}
+> {
 	readonly tag: string
 	readonly strict: M.Model<StrictInput, StrictOutput, StrictData>
 	readonly partial: M.Model<PartialInput, PartialOutput, PartialData>
@@ -35,39 +36,45 @@ export type TypeOfStrictOutput<T> = T extends { readonly strict: M.Model<any, in
 export type TypeOfPartial<T> = T extends { readonly partial: M.Model<any, any, infer A> } ? A : never
 export type TypeOfPartialInput<T> = T extends { readonly partial: M.Model<infer I, any, any> } ? I : never
 export type TypeOfPartialOutput<T> = T extends { readonly partial: M.Model<any, infer O, any> } ? O : never
-export type ExtractVariablesDefinition<T> = T extends { readonly variables: Record<string, Node> }
+export type ExtractVariablesDefinition<T> = T extends { readonly variables: Record<string, AnyBaseNode> }
 	? T['variables']
 	: never
-export type ExtractNodeDefinitionType<T> = T extends Record<string, Node> ? { [K in keyof T]: TypeOf<T[K]> } : never
+export type ExtractNodeDefinitionType<T> = T extends Record<string, AnyBaseNode> ? { [K in keyof T]: TypeOf<T[K]> } : never
 export type TypeOfVariables<T> = ExtractNodeDefinitionType<ExtractVariablesDefinition<T>>
-export type ExtractSubVariablesDefinition<T> = T extends { readonly __subVariables?: Record<string, Node> }
+export type ExtractSubVariablesDefinition<T> = T extends { readonly __subVariables?: Record<string, AnyBaseNode> }
 	? Exclude<T['__subVariables'], undefined>
 	: never
 export type TypeOfSubVariables<T> = ExtractNodeDefinitionType<ExtractSubVariablesDefinition<T>>
 export type TypeOfCacheEntry<T> = T extends { readonly __cacheEntry?: infer A } ? Exclude<A, undefined> : never
 export type TypeOfMergedVariables<T> = TypeOfSubVariables<T> & TypeOfVariables<T>
 
-export interface StaticNodeConfig<PartialData,
+export interface StaticNodeConfig<
+	PartialData,
 	CacheEntry,
 	MergedVariables extends NodeVariables = {},
-	IsLocal extends boolean = false> {
-	readonly variables?: Record<string, Node>
+	IsLocal extends boolean = false
+> {
+	readonly variables?: Record<string, AnyBaseNode>
 	readonly isLocal?: IsLocal
 	readonly isEntity?: boolean
-	readonly useCustomCache?: CustomCache<PartialData,
+	readonly useCustomCache?: CustomCache<
+		PartialData,
 		{ [K in keyof MergedVariables]: TypeOf<MergedVariables[K]> },
-		CacheEntry>
+		CacheEntry
+	>
 }
 
-export interface DynamicNodeConfig<Variables extends NodeVariables,
+export interface DynamicNodeConfig<
+	Variables extends NodeVariables,
 	PartialData,
 	CacheEntry,
 	SubVariables extends NodeVariables = {},
-	IsLocal extends boolean = false> extends StaticNodeConfig<PartialData, CacheEntry, SubVariables & Variables, IsLocal> {
+	IsLocal extends boolean = false
+> extends StaticNodeConfig<PartialData, CacheEntry, SubVariables & Variables, IsLocal> {
 	readonly variables: Variables
 }
 
-export type NodeVariables = Record<string, Node>
+export type NodeVariables = Record<string, AnyBaseNode>
 export type Path = Array<string | number>
 
 export interface CustomCache<PartialData, Variables, CacheEntry> {
@@ -78,7 +85,9 @@ export const EMPTY_VARIABLES: any = {}
 
 export const EMPTY_VARIABLES_MODEL = M.type({})
 
-export function extractMemberStrictModels<MS extends Record<string, Node>>(members: MS): { [K in keyof MS]: MS[K]['strict'] } {
+export function extractMemberStrictModels<MS extends Record<string, AnyBaseNode>>(
+	members: MS
+): { [K in keyof MS]: MS[K]['strict'] } {
 	const x: any = Object.create(null)
 	for (const key in members) {
 		x[key as keyof MS] = members[key as keyof MS].strict
@@ -86,7 +95,7 @@ export function extractMemberStrictModels<MS extends Record<string, Node>>(membe
 	return x
 }
 
-export function extractMemberPartialModels<MS extends Record<string, Node>>(
+export function extractMemberPartialModels<MS extends Record<string, AnyBaseNode>>(
 	members: MS
 ): { [K in keyof MS]: MS[K]['partial'] } {
 	const x: any = Object.create(null)
@@ -94,14 +103,6 @@ export function extractMemberPartialModels<MS extends Record<string, Node>>(
 		x[key as keyof MS] = members[key as keyof MS].partial
 	}
 	return x
-}
-
-export function fromDefinition<V extends NodeVariables>(
-	variables: V
-): M.Model<{ [K in keyof V]: TypeOfStrictInput<V[K]> },
-	{ [K in keyof V]: TypeOfStrictOutput<V[K]> },
-	{ [K in keyof V]: TypeOf<V[K]> }> {
-	return isEmptyObject(variables) ? (EMPTY_VARIABLES_MODEL as any) : M.type(extractMemberStrictModels(variables))
 }
 
 export const NO_TRANSFORMATIONS = {
@@ -117,10 +118,17 @@ export function useLocalModel<I, O, A>(model: M.Model<I, O, A>): M.Model<I, unde
 }
 
 export type ModifyOutputIfLocal<IsLocal, Output> = IsLocal extends true ? undefined : Output
+
 export type Values<T> = T[keyof T]
+
 export type Intersection<T> = (T extends unknown ? (x: T) => 0 : never) extends (x: infer R) => 0 ? R : never
 
-export function getModel(model: M.Model<any, any, any>, isLocal: boolean, useIdEncoder: boolean, useIdDecoder: boolean) {
+export function getModel(
+	model: M.Model<any, any, any>,
+	isLocal: boolean,
+	useIdEncoder: boolean,
+	useIdDecoder: boolean
+) {
 	if (isLocal) {
 		return useLocalModel(model)
 	}
@@ -137,4 +145,22 @@ export function getModel(model: M.Model<any, any, any>, isLocal: boolean, useIdE
 		return M.useIdentityDecoder(model)
 	}
 	return model as any
+}
+
+export function hasEncodingTransformations(ms: Record<string, AnyBaseNode>): boolean {
+	for (const k in ms) {
+		if (ms[k]?.__hasTransformations?.encoding) {
+			return true
+		}
+	}
+	return false
+}
+
+export function hasDecodingTransformations(ms: Record<string, AnyBaseNode>): boolean {
+	for (const k in ms) {
+		if (ms[k]?.__hasTransformations?.decoding) {
+			return true
+		}
+	}
+	return false
 }

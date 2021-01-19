@@ -1,4 +1,4 @@
-import * as M from '../model/Model';
+import * as M from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -9,7 +9,7 @@ import {
 	ExtractVariablesDefinition,
 	getModel,
 	ModifyOutputIfLocal,
-	Node,
+	AnyBaseNode,
 	NodeVariables,
 	StaticNodeConfig,
 	TypeOf,
@@ -18,10 +18,11 @@ import {
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
 	TypeOfStrictOutput
-} from './shared';
+} from './shared'
 
-export interface ArrayNode<Item extends Node, Variables extends NodeVariables = {}, IsLocal extends boolean = false>
-	extends BaseNode<Array<TypeOfStrictInput<Item>>,
+export interface ArrayNode<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false>
+	extends BaseNode<
+		Array<TypeOfStrictInput<Item>>,
 		ModifyOutputIfLocal<IsLocal, Array<TypeOfStrictOutput<Item>>>,
 		Array<TypeOf<Item>>,
 		Array<TypeOfPartialInput<Item>>,
@@ -29,25 +30,26 @@ export interface ArrayNode<Item extends Node, Variables extends NodeVariables = 
 		Array<TypeOfPartial<Item>>,
 		Array<TypeOfPartial<Item>>,
 		Variables,
-		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>> {
+		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
+	> {
 	readonly tag: 'Array'
 	readonly item: Item
-	readonly __customCache?: CustomCache<Array<TypeOfPartial<Item>>,
+	readonly __customCache?: CustomCache<
+		Array<TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		Array<TypeOfPartial<Item>>>
+		Array<TypeOfPartial<Item>>
+	>
 }
 
-export interface StaticArrayNodeConfig<Item extends Node, IsLocal extends boolean>
-	extends StaticNodeConfig<Array<TypeOfPartial<Item>>, Array<TypeOfPartial<Item>>, {}, IsLocal> {
-}
+export interface StaticArrayNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
+	extends StaticNodeConfig<Array<TypeOfPartial<Item>>, Array<TypeOfPartial<Item>>, {}, IsLocal> {}
 
-export interface DynamicArrayNodeConfig<Item extends Node, Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Array<TypeOfPartial<Item>>, Array<TypeOfPartial<Item>>, {}, IsLocal> {
-}
+export interface DynamicArrayNodeConfig<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean>
+	extends DynamicNodeConfig<Variables, Array<TypeOfPartial<Item>>, Array<TypeOfPartial<Item>>, {}, IsLocal> {}
 
 const ARRAY_TAG = 'Array'
 
-function getArrayModel<Item extends Node>(item: Item, isLocal: boolean, isStrict: boolean) {
+function getArrayModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
 	return getModel(
 		M.fromArray(isStrict ? item.strict : item.partial),
 		isLocal,
@@ -56,15 +58,15 @@ function getArrayModel<Item extends Node>(item: Item, isLocal: boolean, isStrict
 	)
 }
 
-export function array<Item extends Node, IsLocal extends boolean = false>(
+export function array<Item extends AnyBaseNode, IsLocal extends boolean = false>(
 	item: Item,
 	config?: StaticArrayNodeConfig<Item, IsLocal>
 ): ArrayNode<Item, {}, IsLocal>
-export function array<Item extends Node, Variables extends NodeVariables, IsLocal extends boolean = false>(
+export function array<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean = false>(
 	item: Item,
 	config: DynamicArrayNodeConfig<Item, Variables, IsLocal>
 ): ArrayNode<Item, Variables, IsLocal>
-export function array<Item extends Node, Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
+export function array<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
 	item: Item,
 	config?: StaticArrayNodeConfig<Item, IsLocal> | DynamicArrayNodeConfig<Item, Variables, IsLocal>
 ): ArrayNode<Item, Variables, IsLocal> {

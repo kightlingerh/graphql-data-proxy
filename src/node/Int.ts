@@ -1,5 +1,5 @@
-import {Int} from '../model/Guard';
-import * as M from '../model/Model';
+import { Int } from '../model/Guard'
+import * as M from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -11,28 +11,28 @@ import {
 	NodeVariables,
 	StaticNodeConfig,
 	useLocalModel
-} from './shared';
+} from './shared'
 
 export interface IntNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false>
-	extends BaseNode<number,
+	extends BaseNode<
+		number,
 		ModifyOutputIfLocal<IsLocal, number>,
 		Int,
 		number,
 		ModifyOutputIfLocal<IsLocal, number>,
 		Int,
 		Int | undefined,
-		Variables> {
+		Variables
+	> {
 	readonly tag: 'Int'
 	readonly __customCache?: CustomCache<Int, ExtractNodeDefinitionType<Variables>, Int | undefined>
 }
 
 export interface StaticIntNodeConfig<IsLocal extends boolean>
-	extends StaticNodeConfig<Int, Int | undefined, {}, IsLocal> {
-}
+	extends StaticNodeConfig<Int, Int | undefined, {}, IsLocal> {}
 
 export interface DynamicIntNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Int, Int | undefined, {}, IsLocal> {
-}
+	extends DynamicNodeConfig<Variables, Int, Int | undefined, {}, IsLocal> {}
 
 const INT_TAG = 'Int'
 

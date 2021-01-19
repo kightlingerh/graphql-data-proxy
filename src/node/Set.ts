@@ -1,4 +1,4 @@
-import * as M from '../model/Model';
+import * as M from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -9,7 +9,7 @@ import {
 	ExtractVariablesDefinition,
 	getModel,
 	ModifyOutputIfLocal,
-	Node,
+	AnyBaseNode,
 	NodeVariables,
 	StaticNodeConfig,
 	TypeOf,
@@ -18,10 +18,11 @@ import {
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
 	TypeOfStrictOutput
-} from './shared';
+} from './shared'
 
-export interface SetNode<Item extends Node, Variables extends NodeVariables = {}, IsLocal extends boolean = false>
-	extends BaseNode<Array<TypeOfStrictInput<Item>>,
+export interface SetNode<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false>
+	extends BaseNode<
+		Array<TypeOfStrictInput<Item>>,
 		ModifyOutputIfLocal<IsLocal, Array<TypeOfStrictOutput<Item>>>,
 		Set<TypeOf<Item>>,
 		Array<TypeOfPartialInput<Item>>,
@@ -29,25 +30,26 @@ export interface SetNode<Item extends Node, Variables extends NodeVariables = {}
 		Set<TypeOfPartial<Item>>,
 		Set<TypeOfPartial<Item>>,
 		Variables,
-		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>> {
+		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
+	> {
 	readonly tag: 'Set'
 	readonly item: Item
-	readonly __customCache?: CustomCache<Set<TypeOfPartial<Item>>,
+	readonly __customCache?: CustomCache<
+		Set<TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		Set<TypeOfPartial<Item>>>
+		Set<TypeOfPartial<Item>>
+	>
 }
 
-export interface StaticSetNodeConfig<Item extends Node, IsLocal extends boolean>
-	extends StaticNodeConfig<Set<TypeOfPartial<Item>>, Set<TypeOfPartial<Item>>, {}, IsLocal> {
-}
+export interface StaticSetNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
+	extends StaticNodeConfig<Set<TypeOfPartial<Item>>, Set<TypeOfPartial<Item>>, {}, IsLocal> {}
 
-export interface DynamicSetNodeConfig<Item extends Node, Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Set<TypeOfPartial<Item>>, Set<TypeOfPartial<Item>>, {}, IsLocal> {
-}
+export interface DynamicSetNodeConfig<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean>
+	extends DynamicNodeConfig<Variables, Set<TypeOfPartial<Item>>, Set<TypeOfPartial<Item>>, {}, IsLocal> {}
 
 const SET_TAG = 'Set'
 
-function getSetModel<Item extends Node>(item: Item, isLocal: boolean, isStrict: boolean) {
+function getSetModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
 	return getModel(
 		M.fromSet(isStrict ? item.strict : item.partial),
 		isLocal,
@@ -56,15 +58,15 @@ function getSetModel<Item extends Node>(item: Item, isLocal: boolean, isStrict: 
 	)
 }
 
-export function set<Item extends Node, IsLocal extends boolean = false>(
+export function set<Item extends AnyBaseNode, IsLocal extends boolean = false>(
 	item: Item,
 	config?: StaticSetNodeConfig<Item, IsLocal>
 ): SetNode<Item, {}, IsLocal>
-export function set<Item extends Node, Variables extends NodeVariables, IsLocal extends boolean = false>(
+export function set<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean = false>(
 	item: Item,
 	config: DynamicSetNodeConfig<Item, Variables, IsLocal>
 ): SetNode<Item, Variables, IsLocal>
-export function set<Item extends Node, Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
+export function set<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
 	item: Item,
 	config?: StaticSetNodeConfig<Item, IsLocal> | DynamicSetNodeConfig<Item, Variables, IsLocal>
 ): SetNode<Item, Variables, IsLocal> {

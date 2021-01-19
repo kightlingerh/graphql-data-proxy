@@ -1,5 +1,5 @@
-import {Float} from '../model/Guard';
-import * as M from '../model/Model';
+import { Float } from '../model/Guard'
+import * as M from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -11,28 +11,28 @@ import {
 	NodeVariables,
 	StaticNodeConfig,
 	useLocalModel
-} from './shared';
+} from './shared'
 
 export interface FloatNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false>
-	extends BaseNode<number,
+	extends BaseNode<
+		number,
 		ModifyOutputIfLocal<IsLocal, number>,
 		Float,
 		number,
 		ModifyOutputIfLocal<IsLocal, number>,
 		Float,
 		Float | undefined,
-		Variables> {
+		Variables
+	> {
 	readonly tag: 'Float'
 	readonly __customCache?: CustomCache<Float, ExtractNodeDefinitionType<Variables>, Float | undefined>
 }
 
 export interface StaticFloatNodeConfig<IsLocal extends boolean>
-	extends StaticNodeConfig<Float, Float | undefined, {}, IsLocal> {
-}
+	extends StaticNodeConfig<Float, Float | undefined, {}, IsLocal> {}
 
 export interface DynamicFloatNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Float, Float | undefined, {}, IsLocal> {
-}
+	extends DynamicNodeConfig<Variables, Float, Float | undefined, {}, IsLocal> {}
 
 const FLOAT_TAG = 'Float'
 
