@@ -1,1 +1,1 @@
-export * from 'io-ts/Schemable';
+export * from 'io-ts/Schemable'

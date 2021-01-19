@@ -1,16 +1,14 @@
-import {eqStrict} from 'fp-ts/Eq';
-import {NonEmptyArray} from 'fp-ts/lib/NonEmptyArray';
-import {Option} from 'fp-ts/lib/Option';
+import { eqStrict } from 'fp-ts/Eq'
+import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
+import { Option } from 'fp-ts/lib/Option'
 import * as EQ from './Eq'
-import * as EN from './Encoder';
-import * as TD from './TaskDecoder';
-import * as G from './Guard';
+import * as EN from './Encoder'
+import * as TD from './TaskDecoder'
+import * as G from './Guard'
 import { constNull, Lazy } from 'fp-ts/lib/function'
 import { Literal } from 'io-ts/lib/Schemable'
 
-export interface Model<I, O, A> extends TD.TaskDecoder<I, A>, EN.Encoder<O, A>, G.Guard<unknown, A>, EQ.Eq<A> {
-
-}
+export interface Model<I, O, A> extends TD.TaskDecoder<I, A>, EN.Encoder<O, A>, G.Guard<unknown, A>, EQ.Eq<A> {}
 
 export type TypeOf<M> = M extends Model<any, any, infer A> ? A : never
 
@@ -35,7 +33,6 @@ export const int: Model<number, number, G.Int> = {
 	encode: EN.int.encode
 }
 
-
 export const float: Model<number, number, G.Float> = {
 	equals: EQ.float.equals,
 	is: G.float.is,
@@ -50,7 +47,9 @@ export const boolean: Model<boolean, boolean, boolean> = {
 	encode: EN.boolean.encode
 }
 
-export function literal<A extends readonly [Literal, ...Array<Literal>]>(...values: A): Model<unknown, A[number], A[number]> {
+export function literal<A extends readonly [Literal, ...Array<Literal>]>(
+	...values: A
+): Model<unknown, A[number], A[number]> {
 	return {
 		equals: eqStrict.equals,
 		is: G.literal(...values).is,
@@ -59,38 +58,46 @@ export function literal<A extends readonly [Literal, ...Array<Literal>]>(...valu
 	}
 }
 
-export function fromType<P extends Record<string, Model<any, any, any>>>(properties: P): Model<
-	{ [K in keyof P]: TD.InputOf<P[K]> }, { [K in keyof P]: EN.OutputOf<P[K]> }, { [K in keyof P]: TypeOf<P[K]> }
-	> {
+export function fromType<P extends Record<string, Model<any, any, any>>>(
+	properties: P
+): Model<
+	{ [K in keyof P]: TD.InputOf<P[K]> },
+	{ [K in keyof P]: EN.OutputOf<P[K]> },
+	{ [K in keyof P]: TypeOf<P[K]> }
+> {
 	return {
 		equals: EQ.type(properties).equals,
 		is: G.type(properties).is,
 		decode: TD.fromType(properties).decode,
 		encode: EN.type(properties).encode
-	} as any;
+	} as any
 }
 
-export function type<P extends Record<string, Model<any, any, any>>>(properties: P): Model<
-	unknown, { [K in keyof P]: EN.OutputOf<P[K]> }, { [K in keyof P]: TypeOf<P[K]> }
-	> {
-	return fromType(properties) as any;
+export function type<P extends Record<string, Model<any, any, any>>>(
+	properties: P
+): Model<unknown, { [K in keyof P]: EN.OutputOf<P[K]> }, { [K in keyof P]: TypeOf<P[K]> }> {
+	return fromType(properties) as any
 }
 
-export function fromPartial<P extends Record<string, Model<any, any, any>>>(properties: P): Model<
-	Partial<{ [K in keyof P]: TD.InputOf<P[K]> }>, Partial<{ [K in keyof P]: EN.OutputOf<P[K]> }>, Partial<{ [K in keyof P]: TypeOf<P[K]> }>
-	> {
+export function fromPartial<P extends Record<string, Model<any, any, any>>>(
+	properties: P
+): Model<
+	Partial<{ [K in keyof P]: TD.InputOf<P[K]> }>,
+	Partial<{ [K in keyof P]: EN.OutputOf<P[K]> }>,
+	Partial<{ [K in keyof P]: TypeOf<P[K]> }>
+> {
 	return {
 		equals: EQ.partial(properties).equals,
 		is: G.partial(properties).is,
 		decode: TD.fromPartial(properties).decode,
 		encode: EN.partial(properties).encode
-	} as any;
+	} as any
 }
 
-export function partial<P extends Record<string, Model<any, any, any>>>(properties: P): Model<
-	unknown, Partial<{ [K in keyof P]: EN.OutputOf<P[K]> }>, Partial<{ [K in keyof P]: TypeOf<P[K]> }>
-	> {
-	return fromPartial(properties) as any;
+export function partial<P extends Record<string, Model<any, any, any>>>(
+	properties: P
+): Model<unknown, Partial<{ [K in keyof P]: EN.OutputOf<P[K]> }>, Partial<{ [K in keyof P]: TypeOf<P[K]> }>> {
+	return fromPartial(properties) as any
 }
 
 export function fromArray<I, O, A>(item: Model<I, O, A>): Model<Array<I>, Array<O>, Array<A>> {
@@ -103,9 +110,8 @@ export function fromArray<I, O, A>(item: Model<I, O, A>): Model<Array<I>, Array<
 }
 
 export function array<O, A>(item: Model<unknown, O, A>): Model<unknown, Array<O>, Array<A>> {
-	return fromArray(item) as Model<unknown, Array<O>, Array<A>>;
-};
-
+	return fromArray(item) as Model<unknown, Array<O>, Array<A>>
+}
 
 export function fromNonEmptyArray<I, O, A>(item: Model<I, O, A>): Model<Array<I>, Array<O>, NonEmptyArray<A>> {
 	return {
@@ -113,32 +119,35 @@ export function fromNonEmptyArray<I, O, A>(item: Model<I, O, A>): Model<Array<I>
 		is: G.nonEmptyArray(item).is,
 		decode: TD.fromNonEmptyArray(item).decode,
 		encode: EN.nonEmptyArray(item).encode
-	};
+	}
 }
-
 
 export function nonEmptyArray<O, A>(val: Model<unknown, O, A>): Model<unknown, Array<O>, NonEmptyArray<A>> {
-	return fromNonEmptyArray(val) as Model<unknown, Array<O>, NonEmptyArray<A>>;
+	return fromNonEmptyArray(val) as Model<unknown, Array<O>, NonEmptyArray<A>>
 }
 
-export function fromMap<I, IK, IA, O, OK, OA, K, A>(toPairs: (i: I) => Array<[IK, IA]>, fromPairs: (pairs: Array<[OK, OA]>) => O) {
+export function fromMap<I, IK, IA, O, OK, OA, K, A>(
+	toPairs: (i: I) => Array<[IK, IA]>,
+	fromPairs: (pairs: Array<[OK, OA]>) => O
+) {
 	return (key: Model<IK, OK, K>, item: Model<IA, OA, A>): Model<I, O, Map<K, A>> => {
 		return {
 			equals: EQ.map(key, item).equals,
 			is: G.map(key, item).is,
 			decode: TD.fromMap<I, IK, IA, K, A>(toPairs)(key, item).decode,
 			encode: EN.map<O, OK, OA, K, A>(fromPairs)(key, item).encode
-
 		}
 	}
 }
 
-export function map<O, OK, OA, K, A>(toPairs: (i: unknown) => Array<[unknown, unknown]>, fromPairs: (pairs: Array<[OK, OA]>) => O) {
+export function map<O, OK, OA, K, A>(
+	toPairs: (i: unknown) => Array<[unknown, unknown]>,
+	fromPairs: (pairs: Array<[OK, OA]>) => O
+) {
 	return (key: Model<unknown, OK, K>, item: Model<unknown, OA, A>): Model<unknown, O, Map<K, A>> => {
-		return fromMap<unknown, unknown, unknown, O, OK, OA, K, A>(toPairs, fromPairs)(key, item);
+		return fromMap<unknown, unknown, unknown, O, OK, OA, K, A>(toPairs, fromPairs)(key, item)
 	}
 }
-
 
 export function fromSet<I, O, A>(item: Model<I, O, A>): Model<Array<I>, Array<O>, Set<A>> {
 	return {
@@ -150,10 +159,10 @@ export function fromSet<I, O, A>(item: Model<I, O, A>): Model<Array<I>, Array<O>
 }
 
 export function set<O, A>(item: Model<unknown, O, A>): Model<unknown, Array<O>, Set<A>> {
-	return fromSet(item) as any;
+	return fromSet(item) as any
 }
 
-export function fromOption<I, O, A>(item: Model<I, O, A>): Model<I | null, O | null, Option<A>>;
+export function fromOption<I, O, A>(item: Model<I, O, A>): Model<I | null, O | null, Option<A>>
 export function fromOption<I, O, A>(item: Model<I, O, A>, lazy: Lazy<O>): Model<I | null, O, Option<A>>
 export function fromOption<I, O, A>(item: Model<I, O, A>, lazy: Lazy<O | null> = constNull): any {
 	return {
@@ -164,12 +173,11 @@ export function fromOption<I, O, A>(item: Model<I, O, A>, lazy: Lazy<O | null> =
 	}
 }
 
-export function option<O, A>(item: Model<unknown, O, A>): Model<unknown, O | null, Option<A>>;
+export function option<O, A>(item: Model<unknown, O, A>): Model<unknown, O | null, Option<A>>
 export function option<O, A>(item: Model<unknown, O, A>, lazy: Lazy<O>): Model<unknown, O, Option<A>>
 export function option<O, A>(item: Model<unknown, O, A>, lazy: Lazy<O | null> = constNull): any {
 	return fromOption(item, lazy)
 }
-
 
 export const optionString = fromOption(string)
 
@@ -177,29 +185,36 @@ export const optionNumber = fromOption(number)
 
 export const optionBoolean = fromOption(boolean)
 
-export function fromSum<T extends string>(tag: T): (<MS extends Record<string, Model<any, any, any>>>(members: MS) => Model<
-	TD.InputOf<MS[keyof MS]>, EN.OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>
-	>) {
-	const eq = EQ.sum(tag);
-	const guard = G.sum(tag);
-	const decoder = TD.fromSum(tag);
-	const encoder = EN.sum(tag);
-	return members => ({
-		equals: eq(members).equals,
-		is: guard(members).is,
-		decode: decoder(members).decode,
-		encode: encoder(members).encode
-	}) as any
+export function fromSum<T extends string>(
+	tag: T
+): <MS extends Record<string, Model<any, any, any>>>(
+	members: MS
+) => Model<TD.InputOf<MS[keyof MS]>, EN.OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>> {
+	const eq = EQ.sum(tag)
+	const guard = G.sum(tag)
+	const decoder = TD.fromSum(tag)
+	const encoder = EN.sum(tag)
+	return (members) =>
+		({
+			equals: eq(members).equals,
+			is: guard(members).is,
+			decode: decoder(members).decode,
+			encode: encoder(members).encode
+		} as any)
 }
 
-export function sum<T extends string>(tag: T): (<MS extends Record<string, Model<any, any, any>>>(members: MS) => Model<
-	unknown, EN.OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>
-	>) {
-	const s = fromSum(tag);
-	return members => s(members) as any
+export function sum<T extends string>(
+	tag: T
+): <MS extends Record<string, Model<any, any, any>>>(
+	members: MS
+) => Model<unknown, EN.OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>> {
+	const s = fromSum(tag)
+	return (members) => s(members) as any
 }
 
-export function fromTuple<MS extends ReadonlyArray<Model<any, any, any>>>(...members: MS): Model<
+export function fromTuple<MS extends ReadonlyArray<Model<any, any, any>>>(
+	...members: MS
+): Model<
 	{ [K in keyof MS]: TD.InputOf<MS[K]> },
 	{ [K in keyof MS]: EN.OutputOf<MS[K]> },
 	{ [K in keyof MS]: TypeOf<MS[K]> }
@@ -224,8 +239,12 @@ export function lazy<I, O, A>(id: string, model: Lazy<Model<I, O, A>>): Model<I,
 export function useEncoder<I, O, A>(model: Model<I, O, A>) {
 	return <OB>(encoder: EN.Encoder<OB, A>): Model<I, OB, A> => ({
 		...model,
-		encode: encoder.encode,
+		encode: encoder.encode
 	})
+}
+
+export function useIdentityEncoder<I, O, A>(model: Model<I, O, A>): Model<I, A, A> {
+	return useEncoder(model)(EN.id())
 }
 
 export function encodeById<I, O, A extends Record<'id', Literal>>(model: Model<I, O, A>): Model<I, Literal, A> {
@@ -247,4 +266,17 @@ export function eqById<I, O, A extends Record<'id', Literal>>(model: Model<I, O,
 		...model,
 		equals: (x, y) => x.id === y.id
 	}
+}
+
+export function useDecoder<I, O, A>(model: Model<I, O, A>) {
+	return <IB>(decoder: TD.TaskDecoder<IB, A>): Model<IB, O, A> => ({
+		...model,
+		decode: decoder.decode
+	})
+}
+
+export function useIdentityDecoder<I, O, A>(model: Model<I, O, A>): Model<A, O, A> {
+	return useDecoder(model)({
+		decode: TD.success
+	})
 }
