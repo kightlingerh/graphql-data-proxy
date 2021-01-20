@@ -20,7 +20,11 @@ import {
 	TypeOfStrictOutput
 } from './shared'
 
-export interface SetNode<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false>
+export interface SetNode<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false
+>
 	extends BaseNode<
 		Array<TypeOfStrictInput<Item>>,
 		ModifyOutputIfLocal<IsLocal, Array<TypeOfStrictOutput<Item>>>,
@@ -44,8 +48,11 @@ export interface SetNode<Item extends AnyBaseNode, Variables extends NodeVariabl
 export interface StaticSetNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
 	extends StaticNodeConfig<Set<TypeOfPartial<Item>>, Set<TypeOfPartial<Item>>, {}, IsLocal> {}
 
-export interface DynamicSetNodeConfig<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Set<TypeOfPartial<Item>>, Set<TypeOfPartial<Item>>, {}, IsLocal> {}
+export interface DynamicSetNodeConfig<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables,
+	IsLocal extends boolean
+> extends DynamicNodeConfig<Variables, Set<TypeOfPartial<Item>>, Set<TypeOfPartial<Item>>, {}, IsLocal> {}
 
 const SET_TAG = 'Set'
 

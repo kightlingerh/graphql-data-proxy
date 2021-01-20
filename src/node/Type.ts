@@ -30,7 +30,9 @@ import {
 
 export type ExtractTypeName<T> = T extends { readonly __typename: infer A } ? A : never
 
-export type ExtractTypeNodeStrictDataFromMembers<MS extends Record<string, AnyBaseNode>> = { [K in keyof MS]: TypeOf<MS[K]> }
+export type ExtractTypeNodeStrictDataFromMembers<MS extends Record<string, AnyBaseNode>> = {
+	[K in keyof MS]: TypeOf<MS[K]>
+}
 
 export type ExtractTypeNodeStrictInputFromMembers<MS extends Record<string, AnyBaseNode>> = {
 	[K in keyof MS]: TypeOfStrictInput<MS[K]>

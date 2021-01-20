@@ -20,7 +20,11 @@ import {
 	TypeOfStrictOutput
 } from './shared'
 
-export interface ArrayNode<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false>
+export interface ArrayNode<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false
+>
 	extends BaseNode<
 		Array<TypeOfStrictInput<Item>>,
 		ModifyOutputIfLocal<IsLocal, Array<TypeOfStrictOutput<Item>>>,
@@ -44,8 +48,11 @@ export interface ArrayNode<Item extends AnyBaseNode, Variables extends NodeVaria
 export interface StaticArrayNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
 	extends StaticNodeConfig<Array<TypeOfPartial<Item>>, Array<TypeOfPartial<Item>>, {}, IsLocal> {}
 
-export interface DynamicArrayNodeConfig<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Array<TypeOfPartial<Item>>, Array<TypeOfPartial<Item>>, {}, IsLocal> {}
+export interface DynamicArrayNodeConfig<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables,
+	IsLocal extends boolean
+> extends DynamicNodeConfig<Variables, Array<TypeOfPartial<Item>>, Array<TypeOfPartial<Item>>, {}, IsLocal> {}
 
 const ARRAY_TAG = 'Array'
 

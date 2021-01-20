@@ -59,7 +59,7 @@ export interface StaticMapNodeConfig<Key extends AnyBaseNode, Item extends AnyBa
 		{},
 		IsLocal
 	> {
-	readonly name?: string;
+	readonly name?: string
 }
 
 export interface DynamicMapNodeConfig<

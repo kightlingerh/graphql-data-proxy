@@ -31,22 +31,38 @@ export interface BaseNode<
 }
 
 export type TypeOf<T> = T extends { readonly strict: M.Model<any, any, infer A> } ? A : never
+
 export type TypeOfStrictInput<T> = T extends { readonly strict: M.Model<infer I, any, any> } ? I : never
+
 export type TypeOfStrictOutput<T> = T extends { readonly strict: M.Model<any, infer O, any> } ? O : never
+
 export type TypeOfPartial<T> = T extends { readonly partial: M.Model<any, any, infer A> } ? A : never
+
 export type TypeOfPartialInput<T> = T extends { readonly partial: M.Model<infer I, any, any> } ? I : never
+
 export type TypeOfPartialOutput<T> = T extends { readonly partial: M.Model<any, infer O, any> } ? O : never
+
 export type ExtractVariablesDefinition<T> = T extends { readonly variables: Record<string, AnyBaseNode> }
 	? T['variables']
 	: never
-export type ExtractNodeDefinitionType<T> = T extends Record<string, AnyBaseNode> ? { [K in keyof T]: TypeOf<T[K]> } : never
+
+export type ExtractNodeDefinitionType<T> = T extends Record<string, AnyBaseNode>
+	? { [K in keyof T]: TypeOf<T[K]> }
+	: never
+
 export type TypeOfVariables<T> = ExtractNodeDefinitionType<ExtractVariablesDefinition<T>>
+
 export type ExtractSubVariablesDefinition<T> = T extends { readonly __subVariables?: Record<string, AnyBaseNode> }
 	? Exclude<T['__subVariables'], undefined>
 	: never
+
 export type TypeOfSubVariables<T> = ExtractNodeDefinitionType<ExtractSubVariablesDefinition<T>>
+
 export type TypeOfCacheEntry<T> = T extends { readonly __cacheEntry?: infer A } ? Exclude<A, undefined> : never
+
 export type TypeOfMergedVariables<T> = TypeOfSubVariables<T> & TypeOfVariables<T>
+
+export type ExtractMergedVariablesDefinition<T> = ExtractSubVariablesDefinition<T> & ExtractVariablesDefinition<T>
 
 export interface StaticNodeConfig<
 	PartialData,

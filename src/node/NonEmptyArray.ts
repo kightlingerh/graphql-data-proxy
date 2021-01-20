@@ -82,11 +82,19 @@ export function nonEmptyArray<Item extends AnyBaseNode, IsLocal extends boolean 
 	item: Item,
 	config?: StaticNonEmptyArrayNodeConfig<Item, IsLocal>
 ): NonEmptyArrayNode<Item, {}, IsLocal>
-export function nonEmptyArray<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean = false>(
+export function nonEmptyArray<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables,
+	IsLocal extends boolean = false
+>(
 	item: Item,
 	config: DynamicNonEmptyArrayNodeConfig<Item, Variables, IsLocal>
 ): NonEmptyArrayNode<Item, Variables, IsLocal>
-export function nonEmptyArray<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
+export function nonEmptyArray<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false
+>(
 	item: Item,
 	config?: StaticNonEmptyArrayNodeConfig<Item, IsLocal> | DynamicNonEmptyArrayNodeConfig<Item, Variables, IsLocal>
 ): NonEmptyArrayNode<Item, Variables, IsLocal> {

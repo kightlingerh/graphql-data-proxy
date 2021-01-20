@@ -21,7 +21,11 @@ import {
 	TypeOfStrictOutput
 } from './shared'
 
-export interface OptionNode<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false>
+export interface OptionNode<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false
+>
 	extends BaseNode<
 		TypeOfStrictInput<Item> | null | undefined,
 		ModifyOutputIfLocal<IsLocal, TypeOfStrictOutput<Item> | null>,
@@ -45,8 +49,11 @@ export interface OptionNode<Item extends AnyBaseNode, Variables extends NodeVari
 export interface StaticOptionNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
 	extends StaticNodeConfig<Option<TypeOfPartial<Item>>, Option<TypeOfPartial<Item>>, {}, IsLocal> {}
 
-export interface DynamicOptionNodeConfig<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Option<TypeOfPartial<Item>>, Option<TypeOfPartial<Item>>, {}, IsLocal> {}
+export interface DynamicOptionNodeConfig<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables,
+	IsLocal extends boolean
+> extends DynamicNodeConfig<Variables, Option<TypeOfPartial<Item>>, Option<TypeOfPartial<Item>>, {}, IsLocal> {}
 
 const OPTION_TAG = 'Option'
 
