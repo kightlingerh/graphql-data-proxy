@@ -7,7 +7,7 @@ import {
 	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	getModel,
+	useAdjustedModel,
 	hasDecodingTransformations,
 	hasEncodingTransformations,
 	Intersection,
@@ -132,7 +132,7 @@ function getSumMemberModel(
 	useIdEncoder: boolean,
 	useIdDecoder: boolean
 ): M.Model<any, any, any> {
-	return getModel(
+	return useAdjustedModel(
 		M.fromSum('__typename')(getSumMemberModelRecord(members, isStrict)),
 		isLocal,
 		useIdEncoder,

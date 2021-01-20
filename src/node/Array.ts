@@ -7,7 +7,7 @@ import {
 	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	getModel,
+	useAdjustedModel,
 	ModifyOutputIfLocal,
 	AnyBaseNode,
 	NodeVariables,
@@ -57,11 +57,11 @@ export interface DynamicArrayNodeConfig<
 const ARRAY_TAG = 'Array'
 
 function getArrayModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
-	return getModel(
+	return useAdjustedModel(
 		M.fromArray(isStrict ? item.strict : item.partial),
 		isLocal,
-		item.__hasTransformations.encoding,
-		item.__hasTransformations.decoding
+		!item.__hasTransformations.encoding,
+		!item.__hasTransformations.decoding
 	)
 }
 

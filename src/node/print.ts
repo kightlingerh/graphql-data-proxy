@@ -1,6 +1,6 @@
 import { isEmptyObject } from '../shared/index'
 import { MapNode } from './Map'
-import { Node, useMergedVariables } from './Node_'
+import { Node, useMergedVariables } from './Node'
 import { OptionNode } from './Option'
 import { SchemaNode } from './Schema'
 import { NodeVariables } from './shared'
@@ -81,6 +81,7 @@ function printVariableName(mapPrinter: MapPrinter, node: Node, tokens: string[],
 			tokens.push(...mapPrinter.tokenizeMapVariables(node, keyTokens, valueTokens), optionalString)
 			break
 		case 'Option':
+		case 'Nullable':
 			printVariableName(mapPrinter, node.item, tokens, true)
 			break
 		case 'Boolean':
@@ -140,6 +141,7 @@ function printNode(mapPrinter: MapPrinter, node: Node, tokens: string[]) {
 		case 'Option':
 		case 'NonEmptyArray':
 		case 'Array':
+		case 'Nullable':
 			printNode(mapPrinter, node.item, tokens)
 			break
 		case 'Mutation':

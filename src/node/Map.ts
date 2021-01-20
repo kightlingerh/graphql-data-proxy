@@ -17,7 +17,7 @@ import {
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
-	TypeOfStrictOutput
+	TypeOfStrictOutput, HAS_TRANSFORMATIONS
 } from './shared'
 
 export interface MapNode<
@@ -136,10 +136,7 @@ export function map<
 		partial: model(key.partial, item.partial) as any,
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		name: config?.name,
-		__hasTransformations: {
-			encoding: key.__hasTransformations.encoding || item.__hasTransformations.encoding,
-			decoding: key.__hasTransformations.decoding || item.__hasTransformations.decoding
-		},
+		__hasTransformations: HAS_TRANSFORMATIONS,
 		__customCache: config?.useCustomCache,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal

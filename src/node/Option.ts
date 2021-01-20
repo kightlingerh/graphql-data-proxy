@@ -8,7 +8,7 @@ import {
 	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	getModel,
+	useAdjustedModel,
 	ModifyOutputIfLocal,
 	AnyBaseNode,
 	NodeVariables,
@@ -18,7 +18,7 @@ import {
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
-	TypeOfStrictOutput
+	TypeOfStrictOutput, HAS_TRANSFORMATIONS
 } from './shared'
 
 export interface OptionNode<
@@ -58,11 +58,11 @@ export interface DynamicOptionNodeConfig<
 const OPTION_TAG = 'Option'
 
 function getOptionModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
-	return getModel(
+	return useAdjustedModel(
 		M.fromOption(isStrict ? item.strict : item.partial),
 		isLocal,
-		item.__hasTransformations.encoding,
-		item.__hasTransformations.decoding
+		false,
+		false
 	)
 }
 
@@ -84,7 +84,7 @@ export function option<Item extends AnyBaseNode, Variables extends NodeVariables
 		strict: getOptionModel(item, !!config?.isLocal, true),
 		partial: getOptionModel(item, !!config?.isLocal, false),
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: item.__hasTransformations,
+		__hasTransformations: HAS_TRANSFORMATIONS,
 		__customCache: config?.useCustomCache,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal

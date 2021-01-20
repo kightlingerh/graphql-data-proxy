@@ -10,7 +10,7 @@ import {
 	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	getModel,
+	useAdjustedModel,
 	hasDecodingTransformations,
 	hasEncodingTransformations,
 	Intersection,
@@ -138,7 +138,7 @@ function getTypeMemberModel(
 	useIdEncoder: boolean,
 	useIdDecoder: boolean
 ): M.Model<any, any, any> {
-	return getModel(
+	return useAdjustedModel(
 		strict ? M.type(extractMemberStrictModels(members)) : M.type(extractMemberPartialModels(members)),
 		isLocal,
 		useIdEncoder,

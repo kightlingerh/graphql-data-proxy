@@ -6,7 +6,7 @@ import {
 	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	getModel,
+	useAdjustedModel,
 	ModifyOutputIfLocal,
 	AnyBaseNode,
 	NodeVariables,
@@ -76,13 +76,13 @@ export function mutation<
 	return {
 		tag: MUTATION_TAG,
 		result,
-		strict: getModel(
+		strict: useAdjustedModel(
 			result.strict,
 			!!config?.isLocal,
 			result.__hasTransformations.encoding,
 			result.__hasTransformations.decoding
 		),
-		partial: getModel(
+		partial: useAdjustedModel(
 			result.partial,
 			!!config?.isLocal,
 			result.__hasTransformations.encoding,

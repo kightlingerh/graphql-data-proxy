@@ -1,4 +1,4 @@
-import * as N from '../node/index'
+import * as N from '../node';
 
 export function isArrayNode(node: N.Node): node is N.ArrayNode<any> {
 	return node.tag === 'Array'
@@ -8,24 +8,12 @@ export function isOptionNode(node: N.Node): node is N.OptionNode<any> {
 	return node.tag === 'Option'
 }
 
-export function isNoneEmptyArrayNode(node: N.Node): node is N.NonEmptyArrayNode<any> {
+export function isNonEmptyArrayNode(node: N.Node): node is N.NonEmptyArrayNode<any> {
 	return node.tag === 'NonEmptyArray'
 }
 
 export function isMapNode(node: N.Node): node is N.MapNode<any, any, any, any, any, any> {
 	return node.tag === 'Map'
-}
-
-export function isWrappedNode(node: N.Node): node is N.WrappedNode {
-	switch (node.tag) {
-		case 'Option':
-		case 'NonEmptyArray':
-		case 'Map':
-		case 'Array':
-			return true
-		default:
-			return false
-	}
 }
 
 export function isEntityNode(node: N.Node): boolean {
@@ -37,11 +25,11 @@ export function isEntityNode(node: N.Node): boolean {
 		case 'Float':
 			return true
 		default:
-			return !!node?.__cache__?.isEntity
+			return !!node?.__isEntity
 	}
 }
 
-export function isTypeNode(node: N.Node): node is N.TypeNode<any, any, any, any, any, any, any> {
+export function isTypeNode(node: N.Node): node is N.TypeNode<any, any, any, any> {
 	return node.tag === 'Type'
 }
 
@@ -49,6 +37,18 @@ export function isScalarNode(node: N.Node): node is N.ScalarNode<any, any, any, 
 	return node.tag === 'Scalar'
 }
 
-export function isSumNode(node: N.Node): node is N.SumNode<any, any, any, any, any, any> {
+export function isSumNode(node: N.Node): node is N.SumNode<any, any, any> {
 	return node.tag === 'Sum'
+}
+
+export type WrappedNode =
+	| N.ArrayNode<any, any, any>
+	| N.MapNode<any, any, any, any, any, any, any, any>
+	| N.NonEmptyArrayNode<any, any, any>
+	| N.OptionNode<any, any, any>
+	| N.SetNode<any, any, any>
+const WrappedNodeTags = new Set<N.NodeTag>(['Array', 'Map', 'NonEmptyArray', 'Option', 'Set'])
+
+export function isWrappedNode(node: N.Node): node is WrappedNode {
+	return WrappedNodeTags.has(node.tag)
 }

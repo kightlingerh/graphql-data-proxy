@@ -126,6 +126,11 @@ export const NO_TRANSFORMATIONS = {
 	encoding: false
 }
 
+export const HAS_TRANSFORMATIONS = {
+	decoding: true,
+	encoding: true
+}
+
 export function useLocalModel<I, O, A>(model: M.Model<I, O, A>): M.Model<I, undefined, A> {
 	return {
 		...model,
@@ -135,11 +140,13 @@ export function useLocalModel<I, O, A>(model: M.Model<I, O, A>): M.Model<I, unde
 
 export type ModifyOutputIfLocal<IsLocal, Output> = IsLocal extends true ? undefined : Output
 
+export type Modify
+
 export type Values<T> = T[keyof T]
 
 export type Intersection<T> = (T extends unknown ? (x: T) => 0 : never) extends (x: infer R) => 0 ? R : never
 
-export function getModel(
+export function useAdjustedModel(
 	model: M.Model<any, any, any>,
 	isLocal: boolean,
 	useIdEncoder: boolean,

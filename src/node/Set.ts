@@ -7,7 +7,7 @@ import {
 	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	getModel,
+	useAdjustedModel,
 	ModifyOutputIfLocal,
 	AnyBaseNode,
 	NodeVariables,
@@ -17,7 +17,7 @@ import {
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
-	TypeOfStrictOutput
+	TypeOfStrictOutput, HAS_TRANSFORMATIONS
 } from './shared'
 
 export interface SetNode<
@@ -57,7 +57,7 @@ export interface DynamicSetNodeConfig<
 const SET_TAG = 'Set'
 
 function getSetModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
-	return getModel(
+	return useAdjustedModel(
 		M.fromSet(isStrict ? item.strict : item.partial),
 		isLocal,
 		item.__hasTransformations.encoding,
@@ -83,7 +83,7 @@ export function set<Item extends AnyBaseNode, Variables extends NodeVariables = 
 		strict: getSetModel(item, !!config?.isLocal, true),
 		partial: getSetModel(item, !!config?.isLocal, false),
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: item.__hasTransformations,
+		__hasTransformations: HAS_TRANSFORMATIONS,
 		__customCache: config?.useCustomCache,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal

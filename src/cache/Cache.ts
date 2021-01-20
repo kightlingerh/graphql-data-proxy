@@ -1,4 +1,6 @@
-import { computed, Ref, shallowReactive, shallowRef } from 'vue'
+import {IO} from 'fp-ts/IO';
+import {Task} from 'fp-ts/Task';
+import { computed, Ref, shallowReactive, shallowRef, toRef } from 'vue'
 import { isNonEmpty, makeBy } from 'fp-ts/lib/Array'
 import { left, right } from 'fp-ts/lib/Either'
 import { constant, constVoid, pipe } from 'fp-ts/lib/function'
@@ -6,13 +8,14 @@ import { map } from 'fp-ts/lib/Map'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { chain, isNone, isSome, none, Option, Some, some, map as mapO } from 'fp-ts/lib/Option'
 import { Reader } from 'fp-ts/lib/Reader'
-import * as N from '../node/Node'
+import {Path} from '../node';
+import * as N from '../node'
 import {
 	CacheError,
 	CacheResult,
 	CacheWriteResult,
 	cacheWriteResultMonoid,
-	concatEvict,
+	concatEvict, Evict,
 	isEmptyObject,
 	Persist
 } from '../shared'
@@ -24,15 +27,19 @@ export interface CacheDependencies {
 	persist?: Persist
 }
 
+export interface CacheWriteResult extends Task<Evict> {}
+
+export interface Evict extends IO<void> {}
+
 export interface Cache<R> {
 	write(variables: N.TypeOfMergedVariables<R>): Reader<N.TypeOfPartial<R>, CacheWriteResult>
-	read(variables: N.TypeOfMergedVariables<R>): CacheResult<Option<N.TypeOf<R>>>
-	toRefs(variables: N.TypeOfMergedVariables<R>): CacheResult<N.TypeOfRefs<R>>
+	read(variables: N.TypeOfMergedVariables<R>): Task<Option<N.TypeOf<R>>>
+	toEntries(variables: N.TypeOfMergedVariables<R>): CacheResult<N.TypeOfCacheEntry<R>>
 }
 
 export function make(_: CacheDependencies) {
 	return <S extends N.SchemaNode<any, any>>(schema: S) => {
-		const cache: object = Object.create(null)
+		const cache: object = shallowReactive(Object.create(null))
 		return <R extends N.SchemaNode<any, any>>(request: R) => {
 			const errors = validate(schema, request)
 			if (isNonEmpty(errors)) {
@@ -41,10 +48,17 @@ export function make(_: CacheDependencies) {
 				return right<CacheError, Cache<R>>({
 					read: (variables) => read(schema, request, variables, cache),
 					write: (variables) => (data) => write(data, schema, request, variables, cache),
-					toRefs: (variables) => toRefs(schema, request, variables, cache)
+					toEntries: (variables) => toRefs(schema, request, variables, cache)
 				})
 			}
 		}
+	}
+}
+
+class TypeNodeCache<T extends N.TypeNode<any, any, any, any> implements Cache<T> {
+	readonly isDynamic: boolean;
+
+	constructor(readonly node: T) {
 	}
 }
 

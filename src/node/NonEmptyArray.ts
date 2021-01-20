@@ -8,7 +8,7 @@ import {
 	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	getModel,
+	useAdjustedModel,
 	ModifyOutputIfLocal,
 	AnyBaseNode,
 	NodeVariables,
@@ -18,7 +18,7 @@ import {
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
-	TypeOfStrictOutput
+	TypeOfStrictOutput, HAS_TRANSFORMATIONS
 } from './shared'
 
 export interface NonEmptyArrayNode<
@@ -70,11 +70,11 @@ export interface DynamicNonEmptyArrayNodeConfig<
 const NON_EMPTY_ARRAY_TAG = 'NonEmptyArray'
 
 function getNonEmptyArrayModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
-	return getModel(
+	return useAdjustedModel(
 		M.fromNonEmptyArray(isStrict ? item.strict : item.partial),
 		isLocal,
-		item.__hasTransformations.encoding,
-		item.__hasTransformations.decoding
+		false,
+		false
 	)
 }
 
@@ -104,7 +104,7 @@ export function nonEmptyArray<
 		strict: getNonEmptyArrayModel(item, !!config?.isLocal, true),
 		partial: getNonEmptyArrayModel(item, !!config?.isLocal, false),
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: item.__hasTransformations,
+		__hasTransformations: HAS_TRANSFORMATIONS,
 		__customCache: config?.useCustomCache,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal

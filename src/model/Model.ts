@@ -185,6 +185,15 @@ export const optionNumber = fromOption(number)
 
 export const optionBoolean = fromOption(boolean)
 
+export function nullable<I, O, A>(item: Model<I, O, A>): Model<I | null, O | null, A | null> {
+	return {
+		equals: EQ.nullable(item).equals,
+		is: G.nullable(item).is,
+		decode: TD.nullable(item).decode,
+		encode: EN.nullable(item).encode
+	}
+}
+
 export function fromSum<T extends string>(
 	tag: T
 ): <MS extends Record<string, Model<any, any, any>>>(
