@@ -1,5 +1,5 @@
 import { Option } from 'fp-ts/Option'
-import * as M from '../model/Model'
+import { Model } from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -52,7 +52,7 @@ const SCALAR_TAG = 'Scalar'
 
 export function scalar<Name extends string, Input, Output, Data, IsLocal extends boolean = false>(
 	name: Name,
-	model: M.Model<Input, Output, Data>,
+	model: Model<Input, Output, Data>,
 	config?: StaticScalarNodeConfig<Data, IsLocal>
 ): ScalarNode<Name, Input, Output, Data, {}, IsLocal>
 export function scalar<
@@ -64,7 +64,7 @@ export function scalar<
 	IsLocal extends boolean = false
 >(
 	name: Name,
-	model: M.Model<Input, Output, Data>,
+	model: Model<Input, Output, Data>,
 	config: DynamicScalarNodeConfig<Data, V, IsLocal>
 ): ScalarNode<Name, Input, Output, Data, V, IsLocal>
 export function scalar<
@@ -76,7 +76,7 @@ export function scalar<
 	IsLocal extends boolean = false
 >(
 	name: Name,
-	model: M.Model<Input, Output, Data>,
+	model: Model<Input, Output, Data>,
 	config?: StaticScalarNodeConfig<Data, IsLocal> | DynamicScalarNodeConfig<Data, V, IsLocal>
 ): ScalarNode<Name, Input, Output, Data, V, IsLocal> {
 	const m = config?.isLocal ? useLocalModel(model) : (model as any)
@@ -91,7 +91,6 @@ export function scalar<
 			decoding: config?.hasDecodingTransformations ?? true
 		},
 		__customCache: config?.useCustomCache,
-		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}
 }

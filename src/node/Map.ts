@@ -1,5 +1,5 @@
 import { identity } from 'fp-ts/function'
-import * as M from '../model/Model'
+import { fromMap } from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -19,7 +19,8 @@ import {
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
 	HAS_TRANSFORMATIONS,
-	TypeOfCacheEntry
+	TypeOfCacheEntry,
+	ModifyCacheEntryIfEntity
 } from './shared'
 
 export interface MapNode<
@@ -30,7 +31,8 @@ export interface MapNode<
 	Key extends AnyBaseNode,
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >
 	extends BaseNode<
 		StrictInput,
@@ -39,7 +41,7 @@ export interface MapNode<
 		PartialInput,
 		ModifyOutputIfLocal<IsLocal, PartialOutput>,
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		Map<TypeOf<Key>, TypeOfCacheEntry<Item>>,
+		ModifyCacheEntryIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>,
 		Variables,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
 	> {
@@ -48,16 +50,21 @@ export interface MapNode<
 	readonly item: Item
 	readonly name?: string
 	readonly __customCache?: CustomCache<
-		Map<TypeOfPartial<Key>, TypeOfPartial<Item>>,
+		Map<TypeOf<Key>, TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		Map<TypeOf<Key>, TypeOfCacheEntry<Item>>
+		ModifyCacheEntryIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>
 	>
 }
 
-export interface StaticMapNodeConfig<Key extends AnyBaseNode, Item extends AnyBaseNode, IsLocal extends boolean>
+export interface StaticMapNodeConfig<
+	Key extends AnyBaseNode,
+	Item extends AnyBaseNode,
+	IsLocal extends boolean,
+	IsEntity extends boolean
+>
 	extends StaticNodeConfig<
-		Map<TypeOfPartial<Key>, TypeOfPartial<Item>>,
-		Map<TypeOf<Key>, TypeOfCacheEntry<Item>>,
+		Map<TypeOf<Key>, TypeOfPartial<Item>>,
+		ModifyCacheEntryIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>,
 		{},
 		IsLocal
 	> {
@@ -68,12 +75,13 @@ export interface DynamicMapNodeConfig<
 	Key extends AnyBaseNode,
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
-	IsLocal extends boolean
+	IsLocal extends boolean,
+	IsEntity extends boolean
 >
 	extends DynamicNodeConfig<
 		Variables,
-		Map<TypeOfPartial<Key>, TypeOfPartial<Item>>,
-		Map<TypeOf<Key>, TypeOfCacheEntry<Item>>,
+		Map<TypeOf<Key>, TypeOfPartial<Item>>,
+		ModifyCacheEntryIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>,
 		{},
 		IsLocal
 	> {
@@ -89,14 +97,15 @@ export function map<
 	PartialOutput,
 	Key extends AnyBaseNode,
 	Item extends AnyBaseNode,
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	toPairs: (i: PartialInput) => Array<[TypeOfPartialInput<Key>, TypeOfPartialOutput<Item>]>,
 	fromPairs: (pairs: Array<[TypeOfPartialInput<Key>, TypeOfPartialOutput<Item>]>) => PartialOutput,
 	key: Key,
 	item: Item,
-	config?: StaticMapNodeConfig<Key, Item, IsLocal>
-): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, {}, IsLocal>
+	config?: StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
+): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, {}, IsLocal, IsEntity>
 export function map<
 	StrictInput,
 	StrictOutput,
@@ -105,14 +114,15 @@ export function map<
 	Key extends AnyBaseNode,
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	toPairs: (i: PartialInput) => Array<[TypeOfPartialInput<Key>, TypeOfPartialOutput<Item>]>,
 	fromPairs: (pairs: Array<[TypeOfPartialInput<Key>, TypeOfPartialOutput<Item>]>) => PartialOutput,
 	key: Key,
 	item: Item,
-	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal>
-): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, Variables, IsLocal>
+	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
+): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, Variables, IsLocal, IsEntity>
 export function map<
 	StrictInput,
 	StrictOutput,
@@ -121,15 +131,18 @@ export function map<
 	Key extends AnyBaseNode,
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	toPairs: (i: PartialInput) => Array<[TypeOfPartialInput<Key>, TypeOfPartialOutput<Item>]>,
 	fromPairs: (pairs: Array<[TypeOfPartialInput<Key>, TypeOfPartialOutput<Item>]>) => PartialOutput,
 	key: Key,
 	item: Item,
-	config?: StaticMapNodeConfig<Key, Item, IsLocal> | DynamicMapNodeConfig<Key, Item, Variables, IsLocal>
-): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, Variables, IsLocal> {
-	const model = M.fromMap(toPairs, fromPairs)
+	config?:
+		| StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
+		| DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
+): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, Variables, IsLocal, IsEntity> {
+	const model = fromMap(toPairs, fromPairs)
 	return {
 		tag: MAP_TAG,
 		item,
@@ -149,10 +162,15 @@ function toTuplePairs(map: Map<unknown, unknown>): Array<[unknown, unknown]> {
 	return [...map.entries()]
 }
 
-export function tupleMap<Key extends AnyBaseNode, Item extends AnyBaseNode, IsLocal extends boolean = false>(
+export function tupleMap<
+	Key extends AnyBaseNode,
+	Item extends AnyBaseNode,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
 	key: Key,
 	item: Item,
-	config?: StaticMapNodeConfig<Key, Item, IsLocal>
+	config?: StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
 ): MapNode<
 	Array<[TypeOfStrictInput<Key>, TypeOfStrictInput<Item>]>,
 	Array<[TypeOfStrictOutput<Key>, TypeOfStrictOutput<Item>]>,
@@ -167,11 +185,12 @@ export function tupleMap<
 	Key extends AnyBaseNode,
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	key: Key,
 	item: Item,
-	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal>
+	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
 ): MapNode<
 	Array<[TypeOfStrictInput<Key>, TypeOfStrictInput<Item>]>,
 	Array<[TypeOfStrictOutput<Key>, TypeOfStrictOutput<Item>]>,
@@ -186,11 +205,14 @@ export function tupleMap<
 	Key extends AnyBaseNode,
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	key: Key,
 	item: Item,
-	config?: StaticMapNodeConfig<Key, Item, IsLocal> | DynamicMapNodeConfig<Key, Item, Variables, IsLocal>
+	config?:
+		| StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
+		| DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
 ): MapNode<
 	Array<[TypeOfStrictInput<Key>, TypeOfStrictInput<Item>]>,
 	Array<[TypeOfStrictOutput<Key>, TypeOfStrictOutput<Item>]>,
@@ -199,15 +221,21 @@ export function tupleMap<
 	Key,
 	Item,
 	Variables,
-	IsLocal
+	IsLocal,
+	IsEntity
 > {
 	return map(identity as any, toTuplePairs as any, key, item, config as any) as any
 }
 
-export function recordMap<Key extends AnyBaseNode, Item extends AnyBaseNode, IsLocal extends boolean = false>(
+export function recordMap<
+	Key extends AnyBaseNode,
+	Item extends AnyBaseNode,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
 	key: Key,
 	item: Item,
-	config?: StaticMapNodeConfig<Key, Item, IsLocal>
+	config?: StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
 ): MapNode<
 	Record<TypeOfStrictInput<Key>, TypeOfStrictInput<Item>>,
 	Record<TypeOfStrictOutput<Key>, TypeOfStrictOutput<Item>>,
@@ -216,17 +244,19 @@ export function recordMap<Key extends AnyBaseNode, Item extends AnyBaseNode, IsL
 	Key,
 	Item,
 	{},
-	IsLocal
+	IsLocal,
+	IsEntity
 >
 export function recordMap<
 	Key extends AnyBaseNode,
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	key: Key,
 	item: Item,
-	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal>
+	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
 ): MapNode<
 	Record<TypeOfStrictInput<Key>, TypeOfStrictInput<Item>>,
 	Record<TypeOfStrictOutput<Key>, TypeOfStrictOutput<Item>>,
@@ -235,17 +265,21 @@ export function recordMap<
 	Key,
 	Item,
 	Variables,
-	IsLocal
+	IsLocal,
+	IsEntity
 >
 export function recordMap<
 	Key extends AnyBaseNode,
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	key: Key,
 	item: Item,
-	config?: StaticMapNodeConfig<Key, Item, IsLocal> | DynamicMapNodeConfig<Key, Item, Variables, IsLocal>
+	config?:
+		| StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
+		| DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
 ): MapNode<
 	Record<TypeOfStrictInput<Key>, TypeOfStrictInput<Item>>,
 	Record<TypeOfStrictOutput<Key>, TypeOfStrictOutput<Item>>,
@@ -254,7 +288,8 @@ export function recordMap<
 	Key,
 	Item,
 	Variables,
-	IsLocal
+	IsLocal,
+	IsEntity
 > {
 	return map(Object.entries as any, Object.fromEntries as any, key, item, config as any) as any
 }

@@ -1,5 +1,5 @@
 import { Option } from 'fp-ts/Option'
-import * as M from '../model/Model'
+import { boolean as booleanModel } from '../model'
 import {
 	BaseNode,
 	CustomCache,
@@ -46,7 +46,7 @@ export function boolean<V extends NodeVariables, IsLocal extends boolean = false
 export function boolean<V extends NodeVariables = {}, IsLocal extends boolean = false>(
 	config?: StaticBooleanNodeConfig<IsLocal> | DynamicBooleanNodeConfig<V, IsLocal>
 ): BooleanNode<V, IsLocal> {
-	const model = config?.isLocal ? useLocalModel(M.boolean) : (M.boolean as any)
+	const model: any = config?.isLocal ? useLocalModel(booleanModel) : booleanModel
 	return {
 		tag: BOOLEAN_TAG,
 		strict: model,
@@ -54,7 +54,6 @@ export function boolean<V extends NodeVariables = {}, IsLocal extends boolean = 
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: NO_TRANSFORMATIONS,
 		__customCache: config?.useCustomCache,
-		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}
 }

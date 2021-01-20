@@ -1,4 +1,4 @@
-import * as M from '../model/Model'
+import { fromArray } from '../model'
 import {
 	BaseNode,
 	CustomCache,
@@ -18,13 +18,15 @@ import {
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
-	TypeOfCacheEntry
+	TypeOfCacheEntry,
+	ModifyCacheEntryIfEntity
 } from './shared'
 
 export interface ArrayNode<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >
 	extends BaseNode<
 		Array<TypeOfStrictInput<Item>>,
@@ -33,7 +35,7 @@ export interface ArrayNode<
 		Array<TypeOfPartialInput<Item>>,
 		ModifyOutputIfLocal<IsLocal, Array<TypeOfPartialOutput<Item>>>,
 		Array<TypeOfPartial<Item>>,
-		Array<TypeOfCacheEntry<Item>>,
+		ModifyCacheEntryIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
 		Variables,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
 	> {
@@ -42,47 +44,72 @@ export interface ArrayNode<
 	readonly __customCache?: CustomCache<
 		Array<TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		Array<TypeOfCacheEntry<Item>>
+		ModifyCacheEntryIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>
 	>
 }
 
-export interface StaticArrayNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
-	extends StaticNodeConfig<Array<TypeOfPartial<Item>>, Array<TypeOfCacheEntry<Item>>, {}, IsLocal> {}
+export interface StaticArrayNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean, IsEntity extends boolean>
+	extends StaticNodeConfig<
+		Array<TypeOfPartial<Item>>,
+		ModifyCacheEntryIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
+		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
+		IsLocal,
+		IsEntity
+	> {}
 
 export interface DynamicArrayNodeConfig<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
-	IsLocal extends boolean
-> extends DynamicNodeConfig<Variables, Array<TypeOfPartial<Item>>, Array<TypeOfCacheEntry<Item>>, {}, IsLocal> {}
+	IsLocal extends boolean,
+	IsEntity extends boolean
+>
+	extends DynamicNodeConfig<
+		Variables,
+		Array<TypeOfPartial<Item>>,
+		ModifyCacheEntryIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
+		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
+		IsLocal,
+		IsEntity
+	> {}
 
 const ARRAY_TAG = 'Array'
 
-function getArrayModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
+function useArrayModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
 	return useAdjustedModel(
-		M.fromArray(isStrict ? item.strict : item.partial),
+		fromArray(isStrict ? item.strict : item.partial),
 		isLocal,
 		!item.__hasTransformations.encoding,
 		!item.__hasTransformations.decoding
 	)
 }
 
-export function array<Item extends AnyBaseNode, IsLocal extends boolean = false>(
+export function array<Item extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
 	item: Item,
-	config?: StaticArrayNodeConfig<Item, IsLocal>
-): ArrayNode<Item, {}, IsLocal>
-export function array<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean = false>(
+	config?: StaticArrayNodeConfig<Item, IsLocal, IsEntity>
+): ArrayNode<Item, {}, IsLocal, IsEntity>
+export function array<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
 	item: Item,
-	config: DynamicArrayNodeConfig<Item, Variables, IsLocal>
-): ArrayNode<Item, Variables, IsLocal>
-export function array<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
+	config: DynamicArrayNodeConfig<Item, Variables, IsLocal, IsEntity>
+): ArrayNode<Item, Variables, IsLocal, IsEntity>
+export function array<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
 	item: Item,
-	config?: StaticArrayNodeConfig<Item, IsLocal> | DynamicArrayNodeConfig<Item, Variables, IsLocal>
-): ArrayNode<Item, Variables, IsLocal> {
+	config?: StaticArrayNodeConfig<Item, IsLocal, IsEntity> | DynamicArrayNodeConfig<Item, Variables, IsLocal, IsEntity>
+): ArrayNode<Item, Variables, IsLocal, IsEntity> {
 	return {
 		tag: ARRAY_TAG,
 		item,
-		strict: getArrayModel(item, !!config?.isLocal, true),
-		partial: getArrayModel(item, !!config?.isLocal, false),
+		strict: useArrayModel(item, !!config?.isLocal, true),
+		partial: useArrayModel(item, !!config?.isLocal, false),
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: item.__hasTransformations,
 		__customCache: config?.useCustomCache,

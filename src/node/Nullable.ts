@@ -1,4 +1,4 @@
-import * as M from '../model/Model'
+import { nullable as nullableModel } from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -19,13 +19,15 @@ import {
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
 	TypeOfCacheEntry,
-	Ref
+	Ref,
+	ModifyCacheEntryIfEntity
 } from './shared'
 
 export interface NullableNode<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >
 	extends BaseNode<
 		TypeOfStrictInput<Item> | null | undefined,
@@ -34,7 +36,7 @@ export interface NullableNode<
 		TypeOfPartialInput<Item> | null | undefined,
 		ModifyOutputIfLocal<IsLocal, TypeOfPartialOutput<Item> | null>,
 		TypeOfPartial<Item> | null,
-		Ref<TypeOfCacheEntry<Item> | null>,
+		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Item>, Ref<TypeOfCacheEntry<Item> | null>>,
 		Variables,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
 	> {
@@ -43,51 +45,73 @@ export interface NullableNode<
 	readonly __customCache?: CustomCache<
 		TypeOfPartial<Item> | null,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		Ref<TypeOfCacheEntry<Item> | null>
+		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Item>, Ref<TypeOfCacheEntry<Item> | null>>
 	>
 }
 
-export interface StaticNullableNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
-	extends StaticNodeConfig<TypeOfPartial<Item> | null, Ref<TypeOfCacheEntry<Item> | null>, {}, IsLocal> {}
+export interface StaticNullableNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean, IsEntity extends boolean>
+	extends StaticNodeConfig<
+		TypeOfPartial<Item> | null,
+		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Item>, Ref<TypeOfCacheEntry<Item> | null>>,
+		{},
+		IsLocal,
+		IsEntity
+	> {}
 
 export interface DynamicNullableNodeConfig<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
-	IsLocal extends boolean
-> extends DynamicNodeConfig<Variables, TypeOfPartial<Item> | null, Ref<TypeOfCacheEntry<Item> | null>, {}, IsLocal> {}
+	IsLocal extends boolean,
+	IsEntity extends boolean
+>
+	extends DynamicNodeConfig<
+		Variables,
+		TypeOfPartial<Item> | null,
+		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Item>, Ref<TypeOfCacheEntry<Item> | null>>,
+		{},
+		IsLocal
+	> {}
 
 const NULLABLE_TAG = 'Nullable'
 
-function getNullableModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
+function useNullableModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
 	return useAdjustedModel(
-		M.nullable(isStrict ? item.strict : item.partial),
+		nullableModel(isStrict ? item.strict : item.partial),
 		isLocal,
 		!item.__hasTransformations.encoding,
 		!item.__hasTransformations.decoding
 	)
 }
 
-export function nullable<Item extends AnyBaseNode, IsLocal extends boolean = false>(
+export function nullable<Item extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
 	item: Item,
-	config?: StaticNullableNodeConfig<Item, IsLocal>
-): NullableNode<Item, {}, IsLocal>
-export function nullable<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean = false>(
+	config?: StaticNullableNodeConfig<Item, IsLocal, IsEntity>
+): NullableNode<Item, {}, IsLocal, IsEntity>
+export function nullable<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
 	item: Item,
-	config: DynamicNullableNodeConfig<Item, Variables, IsLocal>
-): NullableNode<Item, Variables, IsLocal>
+	config: DynamicNullableNodeConfig<Item, Variables, IsLocal, IsEntity>
+): NullableNode<Item, Variables, IsLocal, IsEntity>
 export function nullable<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	item: Item,
-	config?: StaticNullableNodeConfig<Item, IsLocal> | DynamicNullableNodeConfig<Item, Variables, IsLocal>
-): NullableNode<Item, Variables, IsLocal> {
+	config?:
+		| StaticNullableNodeConfig<Item, IsLocal, IsEntity>
+		| DynamicNullableNodeConfig<Item, Variables, IsLocal, IsEntity>
+): NullableNode<Item, Variables, IsLocal, IsEntity> {
 	return {
 		tag: NULLABLE_TAG,
 		item,
-		strict: getNullableModel(item, !!config?.isLocal, true),
-		partial: getNullableModel(item, !!config?.isLocal, false),
+		strict: useNullableModel(item, !!config?.isLocal, true),
+		partial: useNullableModel(item, !!config?.isLocal, false),
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: item.__hasTransformations,
 		__customCache: config?.useCustomCache,

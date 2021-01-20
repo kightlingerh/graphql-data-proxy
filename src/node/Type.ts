@@ -1,4 +1,4 @@
-import * as M from '../model/Model'
+import { literal, Model, type as typeModel } from '../model/Model'
 import { scalar, ScalarNode } from './Scalar'
 import {
 	BaseNode,
@@ -25,7 +25,8 @@ import {
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
 	Values,
-	CacheNode
+	CacheNode,
+	ModifyCacheEntryIfEntity
 } from './shared'
 
 export type ExtractTypeName<T> = T extends { readonly __typename: infer A } ? A : never
@@ -66,7 +67,8 @@ export interface BaseTypeNode<
 	Typename extends string,
 	MS extends Record<string, AnyBaseNode>,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >
 	extends BaseNode<
 		ExtractTypeNodeStrictInputFromMembers<MS>,
@@ -75,7 +77,11 @@ export interface BaseTypeNode<
 		ExtractTypeNodePartialInputFromMembers<MS>,
 		ModifyOutputIfLocal<IsLocal, ExtractTypeNodePartialOutputFromMembers<MS>>,
 		ExtractTypeNodePartialDataFromMembers<MS>,
-		ExtractTypeNodeCacheEntryFromMembers<MS>,
+		ModifyCacheEntryIfEntity<
+			IsEntity,
+			ExtractTypeNodeStrictDataFromMembers<MS>,
+			ExtractTypeNodeCacheEntryFromMembers<MS>
+		>,
 		Variables,
 		ExtractTypeNodeSubVariablesFromMembers<MS>
 	> {
@@ -85,7 +91,11 @@ export interface BaseTypeNode<
 	readonly __customCache?: CustomCache<
 		ExtractTypeNodePartialDataFromMembers<MS>,
 		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS> & Variables>,
-		ExtractTypeNodeCacheEntryFromMembers<MS>
+		ModifyCacheEntryIfEntity<
+			IsEntity,
+			ExtractTypeNodeStrictDataFromMembers<MS>,
+			ExtractTypeNodeCacheEntryFromMembers<MS>
+		>
 	>
 }
 
@@ -94,19 +104,25 @@ export type TypeNode<
 	MS extends Record<string, AnyBaseNode>,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
-	IncludeTypename extends boolean = false
+	IncludeTypename extends boolean = false,
+	IsEntity extends boolean = false
 > = IncludeTypename extends true
-	? BaseTypeNode<Typename, MS & { __typename: TypenameNode<Typename> }, Variables, IsLocal>
-	: BaseTypeNode<Typename, MS, Variables, IsLocal>
+	? BaseTypeNode<Typename, MS & { __typename: TypenameNode<Typename> }, Variables, IsLocal, IsEntity>
+	: BaseTypeNode<Typename, MS, Variables, IsLocal, IsEntity>
 
 export interface StaticTypeNodeConfig<
 	MS extends Record<string, AnyBaseNode>,
 	IsLocal extends boolean,
-	IncludeTypename extends boolean
+	IncludeTypename extends boolean,
+	IsEntity extends boolean
 >
 	extends StaticNodeConfig<
 		ExtractTypeNodePartialDataFromMembers<MS>,
-		ExtractTypeNodeCacheEntryFromMembers<MS>,
+		ModifyCacheEntryIfEntity<
+			IsEntity,
+			ExtractTypeNodeStrictDataFromMembers<MS>,
+			ExtractTypeNodeCacheEntryFromMembers<MS>
+		>,
 		{},
 		IsLocal
 	> {
@@ -117,12 +133,17 @@ export interface DynamicTypeNodeConfig<
 	MS extends Record<string, AnyBaseNode>,
 	Variables extends NodeVariables,
 	IsLocal extends boolean,
-	IncludeTypename extends boolean
+	IncludeTypename extends boolean,
+	IsEntity extends boolean
 >
 	extends DynamicNodeConfig<
 		Variables,
 		ExtractTypeNodePartialDataFromMembers<MS>,
-		ExtractTypeNodeCacheEntryFromMembers<MS>,
+		ModifyCacheEntryIfEntity<
+			IsEntity,
+			ExtractTypeNodeStrictDataFromMembers<MS>,
+			ExtractTypeNodeCacheEntryFromMembers<MS>
+		>,
 		{},
 		IsLocal
 	> {
@@ -137,9 +158,9 @@ function getTypeMemberModel(
 	isLocal: boolean,
 	useIdEncoder: boolean,
 	useIdDecoder: boolean
-): M.Model<any, any, any> {
+): Model<any, any, any> {
 	return useAdjustedModel(
-		strict ? M.type(extractMemberStrictModels(members)) : M.type(extractMemberPartialModels(members)),
+		strict ? typeModel(extractMemberStrictModels(members)) : typeModel(extractMemberPartialModels(members)),
 		isLocal,
 		useIdEncoder,
 		useIdDecoder
@@ -150,37 +171,40 @@ export function type<
 	Typename extends string,
 	MS extends Record<string, AnyBaseNode>,
 	IsLocal extends boolean = false,
-	IncludeTypename extends boolean = false
+	IncludeTypename extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	__typename: Typename,
 	ms: MS,
-	config?: StaticTypeNodeConfig<MS, IsLocal, IncludeTypename>
-): TypeNode<Typename, MS, {}, IsLocal, IncludeTypename>
+	config?: StaticTypeNodeConfig<MS, IsLocal, IncludeTypename, IsEntity>
+): TypeNode<Typename, MS, {}, IsLocal, IncludeTypename, IsEntity>
 export function type<
 	Typename extends string,
 	MS extends Record<string, AnyBaseNode>,
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
-	IncludeTypename extends boolean = false
+	IncludeTypename extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	__typename: Typename,
 	ms: MS,
-	config: DynamicTypeNodeConfig<MS, Variables, IsLocal, IncludeTypename>
-): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename>
+	config: DynamicTypeNodeConfig<MS, Variables, IsLocal, IncludeTypename, IsEntity>
+): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>
 export function type<
 	Typename extends string,
 	MS extends Record<string, AnyBaseNode>,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
-	IncludeTypename extends boolean = false
+	IncludeTypename extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	__typename: Typename,
 	ms: MS,
 	config?:
-		| StaticTypeNodeConfig<MS, IsLocal, IncludeTypename>
-		| DynamicTypeNodeConfig<MS, Variables, IsLocal, IncludeTypename>
-): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename> {
-	const members = config?.includeTypename ? { ...ms, __typename: scalar(__typename, M.literal(__typename)) } : ms
+		| StaticTypeNodeConfig<MS, IsLocal, IncludeTypename, IsEntity>
+		| DynamicTypeNodeConfig<MS, Variables, IsLocal, IncludeTypename, IsEntity>
+): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity> {
+	const members = config?.includeTypename ? { ...ms, __typename: scalar(__typename, literal(__typename)) } : ms
 	const useIdDecoder = !hasDecodingTransformations(ms)
 	const useIdEncoder = !hasEncodingTransformations(ms)
 	return {

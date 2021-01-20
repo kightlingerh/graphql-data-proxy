@@ -1,5 +1,5 @@
 import { Option } from 'fp-ts/Option'
-import * as M from '../model/Model'
+import { string as stringModel } from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -46,7 +46,7 @@ export function string<V extends NodeVariables, IsLocal extends boolean = false>
 export function string<V extends NodeVariables = {}, IsLocal extends boolean = false>(
 	config?: StaticStringNodeConfig<IsLocal> | DynamicStringNodeConfig<V, IsLocal>
 ): StringNode<V, IsLocal> {
-	const model = config?.isLocal ? useLocalModel(M.string) : (M.string as any)
+	const model = config?.isLocal ? useLocalModel(stringModel) : (stringModel as any)
 	return {
 		tag: STRING_TAG,
 		strict: model,
@@ -54,7 +54,6 @@ export function string<V extends NodeVariables = {}, IsLocal extends boolean = f
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: NO_TRANSFORMATIONS,
 		__customCache: config?.useCustomCache,
-		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}
 }

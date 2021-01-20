@@ -17,13 +17,15 @@ import {
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
-	TypeOfCacheEntry
+	TypeOfCacheEntry,
+	ModifyCacheEntryIfEntity
 } from './shared'
 
 export interface MutationNode<
 	Result extends AnyBaseNode,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >
 	extends BaseNode<
 		TypeOfStrictInput<Result>,
@@ -32,7 +34,7 @@ export interface MutationNode<
 		TypeOfPartialInput<Result>,
 		ModifyOutputIfLocal<IsLocal, TypeOfPartialOutput<Result>>,
 		TypeOfPartial<Result>,
-		TypeOfCacheEntry<Result>,
+		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
 		Variables,
 		ExtractSubVariablesDefinition<Result> & ExtractVariablesDefinition<Result>
 	> {
@@ -43,37 +45,62 @@ export interface MutationNode<
 		ExtractNodeDefinitionType<
 			ExtractSubVariablesDefinition<Result> & ExtractVariablesDefinition<Result> & Variables
 		>,
-		TypeOfCacheEntry<Result>
+		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>
 	>
 }
 
-export interface StaticMutationNodeConfig<Result extends AnyBaseNode, IsLocal extends boolean>
-	extends StaticNodeConfig<TypeOfPartial<Result>, TypeOfCacheEntry<Result>, {}, IsLocal> {}
+export interface StaticMutationNodeConfig<
+	Result extends AnyBaseNode,
+	IsLocal extends boolean,
+	IsEntity extends boolean
+>
+	extends StaticNodeConfig<
+		TypeOfPartial<Result>,
+		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
+		{},
+		IsLocal
+	> {}
 
 export interface DynamicMutationNodeConfig<
 	Result extends AnyBaseNode,
 	Variables extends NodeVariables,
-	IsLocal extends boolean
-> extends DynamicNodeConfig<Variables, TypeOfPartial<Result>, TypeOfCacheEntry<Result>, {}, IsLocal> {}
+	IsLocal extends boolean,
+	IsEntity extends boolean
+>
+	extends DynamicNodeConfig<
+		Variables,
+		TypeOfPartial<Result>,
+		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
+		{},
+		IsLocal
+	> {}
 
 const MUTATION_TAG = 'Mutation'
 
-export function mutation<Result extends AnyBaseNode, IsLocal extends boolean = false>(
+export function mutation<Result extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
 	result: Result,
-	config?: StaticMutationNodeConfig<Result, IsLocal>
-): MutationNode<Result, {}, IsLocal>
-export function mutation<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean = false>(
+	config?: StaticMutationNodeConfig<Result, IsLocal, IsEntity>
+): MutationNode<Result, {}, IsLocal, IsEntity>
+export function mutation<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
 	result: Item,
-	config: DynamicMutationNodeConfig<Item, Variables, IsLocal>
-): MutationNode<Item, Variables, IsLocal>
+	config: DynamicMutationNodeConfig<Item, Variables, IsLocal, IsEntity>
+): MutationNode<Item, Variables, IsLocal, IsEntity>
 export function mutation<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	result: Item,
-	config?: StaticMutationNodeConfig<Item, IsLocal> | DynamicMutationNodeConfig<Item, Variables, IsLocal>
-): MutationNode<Item, Variables, IsLocal> {
+	config?:
+		| StaticMutationNodeConfig<Item, IsLocal, IsEntity>
+		| DynamicMutationNodeConfig<Item, Variables, IsLocal, IsEntity>
+): MutationNode<Item, Variables, IsLocal, IsEntity> {
 	return {
 		tag: MUTATION_TAG,
 		result,

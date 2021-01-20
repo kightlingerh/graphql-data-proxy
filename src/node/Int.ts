@@ -1,6 +1,6 @@
 import { Option } from 'fp-ts/Option'
 import { Int } from '../model/Guard'
-import * as M from '../model/Model'
+import { int as intModel } from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -45,7 +45,7 @@ export function int<V extends NodeVariables, IsLocal extends boolean = false>(
 export function int<V extends NodeVariables = {}, IsLocal extends boolean = false>(
 	config?: StaticIntNodeConfig<IsLocal> | DynamicIntNodeConfig<V, IsLocal>
 ): IntNode<V, IsLocal> {
-	const model = config?.isLocal ? useLocalModel(M.int) : (M.int as any)
+	const model = config?.isLocal ? useLocalModel(intModel) : (intModel as any)
 	return {
 		tag: INT_TAG,
 		strict: model,
@@ -53,7 +53,6 @@ export function int<V extends NodeVariables = {}, IsLocal extends boolean = fals
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: NO_TRANSFORMATIONS,
 		__customCache: config?.useCustomCache,
-		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}
 }

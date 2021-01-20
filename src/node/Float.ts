@@ -1,6 +1,6 @@
 import { Option } from 'fp-ts/Option'
 import { Float } from '../model/Guard'
-import * as M from '../model/Model'
+import { float as floatModel } from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -45,7 +45,7 @@ export function float<V extends NodeVariables, IsLocal extends boolean = false>(
 export function float<V extends NodeVariables = {}, IsLocal extends boolean = false>(
 	config?: StaticFloatNodeConfig<IsLocal> | DynamicFloatNodeConfig<V, IsLocal>
 ): FloatNode<V, IsLocal> {
-	const model = config?.isLocal ? useLocalModel(M.float) : (M.float as any)
+	const model = config?.isLocal ? useLocalModel(floatModel) : (floatModel as any)
 	return {
 		tag: FLOAT_TAG,
 		strict: model,
@@ -53,7 +53,6 @@ export function float<V extends NodeVariables = {}, IsLocal extends boolean = fa
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: NO_TRANSFORMATIONS,
 		__customCache: config?.useCustomCache,
-		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}
 }

@@ -1,5 +1,5 @@
 import { Option } from 'fp-ts/Option'
-import * as M from '../model/Model'
+import { fromSum, Model } from '../model/Model'
 import {
 	BaseNode,
 	CustomCache,
@@ -22,7 +22,8 @@ import {
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
-	Ref
+	Ref,
+	ModifyCacheEntryIfEntity
 } from './shared'
 import { BaseTypeNode, ExtractTypeName, type } from './Type'
 
@@ -65,7 +66,8 @@ export type ExtractSumNodeSubVariablesDefinition<MS extends ReadonlyArray<SumTyp
 export interface SumNode<
 	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >
 	extends BaseNode<
 		ExtractTypeOfSumNodeStrictInput<MS>,
@@ -74,7 +76,7 @@ export interface SumNode<
 		ExtractTypeOfSumNodePartialInput<MS>,
 		ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodePartialOutput<MS>>,
 		ExtractTypeOfPartialSumNode<MS>,
-		ExtractSumNodeCacheEntry<MS>,
+		ModifyCacheEntryIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
 		Variables,
 		ExtractSumNodeSubVariablesDefinition<MS>
 	> {
@@ -84,18 +86,35 @@ export interface SumNode<
 	readonly __customCache?: CustomCache<
 		ExtractTypeOfPartialSumNode<MS>,
 		ExtractNodeDefinitionType<ExtractSumNodeSubVariablesDefinition<MS> & Variables>,
-		ExtractSumNodeCacheEntry<MS>
+		ModifyCacheEntryIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>
 	>
 }
 
-export interface StaticSumNodeConfig<MS extends ReadonlyArray<SumTypeNode>, IsLocal extends boolean>
-	extends StaticNodeConfig<ExtractTypeOfPartialSumNode<MS>, ExtractSumNodeCacheEntry<MS>, {}, IsLocal> {}
+export interface StaticSumNodeConfig<
+	MS extends ReadonlyArray<SumTypeNode>,
+	IsLocal extends boolean,
+	IsEntity extends boolean
+>
+	extends StaticNodeConfig<
+		ExtractTypeOfPartialSumNode<MS>,
+		ModifyCacheEntryIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
+		{},
+		IsLocal
+	> {}
 
 export interface DynamicSumNodeConfig<
 	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables,
-	IsLocal extends boolean
-> extends DynamicNodeConfig<Variables, ExtractTypeOfPartialSumNode<MS>, ExtractSumNodeCacheEntry<MS>, {}, IsLocal> {}
+	IsLocal extends boolean,
+	IsEntity extends boolean
+>
+	extends DynamicNodeConfig<
+		Variables,
+		ExtractTypeOfPartialSumNode<MS>,
+		ModifyCacheEntryIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
+		{},
+		IsLocal
+	> {}
 
 const SUM_TAG = 'Sum'
 
@@ -121,9 +140,9 @@ function getSumMemberModel(
 	isLocal: boolean,
 	useIdEncoder: boolean,
 	useIdDecoder: boolean
-): M.Model<any, any, any> {
+): Model<any, any, any> {
 	return useAdjustedModel(
-		M.fromSum('__typename')(getSumMemberModelRecord(members, isStrict)),
+		fromSum('__typename')(getSumMemberModelRecord(members, isStrict)),
 		isLocal,
 		useIdEncoder,
 		useIdDecoder
@@ -141,21 +160,27 @@ function addTypenameToMembers<MS extends ReadonlyArray<SumTypeNode>>(members: MS
 	)
 }
 
-export function sum<MS extends ReadonlyArray<SumTypeNode>, IsLocal extends boolean = false>(
-	ms: MS,
-	config?: StaticSumNodeConfig<MS, IsLocal>
-): SumNode<MS, {}, IsLocal>
+export function sum<
+	MS extends ReadonlyArray<SumTypeNode>,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(ms: MS, config?: StaticSumNodeConfig<MS, IsLocal, IsEntity>): SumNode<MS, {}, IsLocal, IsEntity>
 
 export function sum<
 	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables,
-	IsLocal extends boolean = false
->(ms: MS, config: DynamicSumNodeConfig<MS, Variables, IsLocal>): SumNode<MS, Variables, IsLocal>
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(ms: MS, config: DynamicSumNodeConfig<MS, Variables, IsLocal, IsEntity>): SumNode<MS, Variables, IsLocal, IsEntity>
 export function sum<
 	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
->(ms: MS, config?: StaticSumNodeConfig<MS, IsLocal> | DynamicSumNodeConfig<MS, Variables, IsLocal>): any {
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
+	ms: MS,
+	config?: StaticSumNodeConfig<MS, IsLocal, IsEntity> | DynamicSumNodeConfig<MS, Variables, IsLocal, IsEntity>
+): any {
 	const newMembers = addTypenameToMembers(ms)
 	const membersRecord = getSumMemberRecord(ms)
 	const useIdDecoder = !hasDecodingTransformations(membersRecord)

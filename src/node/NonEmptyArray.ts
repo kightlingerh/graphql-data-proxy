@@ -22,13 +22,15 @@ import {
 	TypeOfStrictOutput,
 	HAS_TRANSFORMATIONS,
 	Ref,
-	TypeOfCacheEntry
+	TypeOfCacheEntry,
+	ModifyCacheEntryIfEntity
 } from './shared'
 
 export interface NonEmptyArrayNode<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >
 	extends BaseNode<
 		Array<TypeOfStrictInput<Item>>,
@@ -37,7 +39,11 @@ export interface NonEmptyArrayNode<
 		Array<TypeOfPartialInput<Item>>,
 		ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfPartialOutput<Item>>>,
 		NonEmptyArray<TypeOfPartial<Item>>,
-		Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>,
+		ModifyCacheEntryIfEntity<
+			IsEntity,
+			NonEmptyArray<TypeOf<Item>>,
+			Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>
+		>,
 		Variables,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
 	> {
@@ -46,14 +52,26 @@ export interface NonEmptyArrayNode<
 	readonly __customCache?: CustomCache<
 		NonEmptyArray<TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>
+		ModifyCacheEntryIfEntity<
+			IsEntity,
+			NonEmptyArray<TypeOf<Item>>,
+			Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>
+		>
 	>
 }
 
-export interface StaticNonEmptyArrayNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
+export interface StaticNonEmptyArrayNodeConfig<
+	Item extends AnyBaseNode,
+	IsLocal extends boolean,
+	IsEntity extends boolean
+>
 	extends StaticNodeConfig<
 		NonEmptyArray<TypeOfPartial<Item>>,
-		Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>,
+		ModifyCacheEntryIfEntity<
+			IsEntity,
+			NonEmptyArray<TypeOf<Item>>,
+			Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>
+		>,
 		{},
 		IsLocal
 	> {}
@@ -61,12 +79,17 @@ export interface StaticNonEmptyArrayNodeConfig<Item extends AnyBaseNode, IsLocal
 export interface DynamicNonEmptyArrayNodeConfig<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
-	IsLocal extends boolean
+	IsLocal extends boolean,
+	IsEntity extends boolean
 >
 	extends DynamicNodeConfig<
 		Variables,
 		NonEmptyArray<TypeOfPartial<Item>>,
-		Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>,
+		ModifyCacheEntryIfEntity<
+			IsEntity,
+			NonEmptyArray<TypeOf<Item>>,
+			Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>
+		>,
 		{},
 		IsLocal
 	> {}
@@ -77,26 +100,34 @@ function getNonEmptyArrayModel<Item extends AnyBaseNode>(item: Item, isLocal: bo
 	return useAdjustedModel(M.fromNonEmptyArray(isStrict ? item.strict : item.partial), isLocal, false, false)
 }
 
-export function nonEmptyArray<Item extends AnyBaseNode, IsLocal extends boolean = false>(
+export function nonEmptyArray<
+	Item extends AnyBaseNode,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
 	item: Item,
-	config?: StaticNonEmptyArrayNodeConfig<Item, IsLocal>
-): NonEmptyArrayNode<Item, {}, IsLocal>
+	config?: StaticNonEmptyArrayNodeConfig<Item, IsLocal, IsEntity>
+): NonEmptyArrayNode<Item, {}, IsLocal, IsEntity>
 export function nonEmptyArray<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	item: Item,
-	config: DynamicNonEmptyArrayNodeConfig<Item, Variables, IsLocal>
-): NonEmptyArrayNode<Item, Variables, IsLocal>
+	config: DynamicNonEmptyArrayNodeConfig<Item, Variables, IsLocal, IsEntity>
+): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity>
 export function nonEmptyArray<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
 >(
 	item: Item,
-	config?: StaticNonEmptyArrayNodeConfig<Item, IsLocal> | DynamicNonEmptyArrayNodeConfig<Item, Variables, IsLocal>
-): NonEmptyArrayNode<Item, Variables, IsLocal> {
+	config?:
+		| StaticNonEmptyArrayNodeConfig<Item, IsLocal, IsEntity>
+		| DynamicNonEmptyArrayNodeConfig<Item, Variables, IsLocal, IsEntity>
+): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity> {
 	return {
 		tag: NON_EMPTY_ARRAY_TAG,
 		item,
