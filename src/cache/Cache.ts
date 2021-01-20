@@ -1,5 +1,5 @@
-import {IO} from 'fp-ts/IO';
-import {Task} from 'fp-ts/Task';
+import { IO } from 'fp-ts/IO'
+import { Task } from 'fp-ts/Task'
 import { computed, Ref, shallowReactive, shallowRef, toRef } from 'vue'
 import { isNonEmpty, makeBy } from 'fp-ts/lib/Array'
 import { left, right } from 'fp-ts/lib/Either'
@@ -8,14 +8,15 @@ import { map } from 'fp-ts/lib/Map'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { chain, isNone, isSome, none, Option, Some, some, map as mapO } from 'fp-ts/lib/Option'
 import { Reader } from 'fp-ts/lib/Reader'
-import {Path} from '../node';
+import { Path } from '../node'
 import * as N from '../node'
 import {
 	CacheError,
 	CacheResult,
 	CacheWriteResult,
 	cacheWriteResultMonoid,
-	concatEvict, Evict,
+	concatEvict,
+	Evict,
 	isEmptyObject,
 	Persist
 } from '../shared'
@@ -52,13 +53,6 @@ export function make(_: CacheDependencies) {
 				})
 			}
 		}
-	}
-}
-
-class TypeNodeCache<T extends N.TypeNode<any, any, any, any> implements Cache<T> {
-	readonly isDynamic: boolean;
-
-	constructor(readonly node: T) {
 	}
 }
 

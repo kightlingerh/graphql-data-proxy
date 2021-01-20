@@ -1,3 +1,4 @@
+import { Option } from 'fp-ts/Option'
 import { NonEmptyArray } from 'fp-ts/NonEmptyArray'
 import * as M from '../model/Model'
 import {
@@ -18,7 +19,10 @@ import {
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
-	TypeOfStrictOutput, HAS_TRANSFORMATIONS
+	TypeOfStrictOutput,
+	HAS_TRANSFORMATIONS,
+	Ref,
+	TypeOfCacheEntry
 } from './shared'
 
 export interface NonEmptyArrayNode<
@@ -28,28 +32,28 @@ export interface NonEmptyArrayNode<
 >
 	extends BaseNode<
 		Array<TypeOfStrictInput<Item>>,
-		ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfStrictOutput<Item>> | undefined>,
-		NonEmptyArray<TypeOf<Item>> | undefined,
+		ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfStrictOutput<Item>>>,
+		NonEmptyArray<TypeOf<Item>>,
 		Array<TypeOfPartialInput<Item>>,
-		ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfPartialOutput<Item>> | undefined>,
-		NonEmptyArray<TypeOfPartial<Item>> | undefined,
-		NonEmptyArray<TypeOfPartial<Item>> | undefined,
+		ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfPartialOutput<Item>>>,
+		NonEmptyArray<TypeOfPartial<Item>>,
+		Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>,
 		Variables,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
 	> {
 	readonly tag: 'NonEmptyArray'
 	readonly item: Item
 	readonly __customCache?: CustomCache<
-		NonEmptyArray<TypeOfPartial<Item>> | undefined,
+		NonEmptyArray<TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		NonEmptyArray<TypeOfPartial<Item>> | undefined
+		Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>
 	>
 }
 
 export interface StaticNonEmptyArrayNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
 	extends StaticNodeConfig<
-		NonEmptyArray<TypeOfPartial<Item>> | undefined,
-		NonEmptyArray<TypeOfPartial<Item>> | undefined,
+		NonEmptyArray<TypeOfPartial<Item>>,
+		Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>,
 		{},
 		IsLocal
 	> {}
@@ -61,8 +65,8 @@ export interface DynamicNonEmptyArrayNodeConfig<
 >
 	extends DynamicNodeConfig<
 		Variables,
-		NonEmptyArray<TypeOfPartial<Item>> | undefined,
-		NonEmptyArray<TypeOfPartial<Item>> | undefined,
+		NonEmptyArray<TypeOfPartial<Item>>,
+		Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>,
 		{},
 		IsLocal
 	> {}
@@ -70,12 +74,7 @@ export interface DynamicNonEmptyArrayNodeConfig<
 const NON_EMPTY_ARRAY_TAG = 'NonEmptyArray'
 
 function getNonEmptyArrayModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
-	return useAdjustedModel(
-		M.fromNonEmptyArray(isStrict ? item.strict : item.partial),
-		isLocal,
-		false,
-		false
-	)
+	return useAdjustedModel(M.fromNonEmptyArray(isStrict ? item.strict : item.partial), isLocal, false, false)
 }
 
 export function nonEmptyArray<Item extends AnyBaseNode, IsLocal extends boolean = false>(

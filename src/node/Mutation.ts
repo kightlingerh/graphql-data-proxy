@@ -16,7 +16,8 @@ import {
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
-	TypeOfStrictOutput
+	TypeOfStrictOutput,
+	TypeOfCacheEntry
 } from './shared'
 
 export interface MutationNode<
@@ -31,7 +32,7 @@ export interface MutationNode<
 		TypeOfPartialInput<Result>,
 		ModifyOutputIfLocal<IsLocal, TypeOfPartialOutput<Result>>,
 		TypeOfPartial<Result>,
-		TypeOfPartial<Result>,
+		TypeOfCacheEntry<Result>,
 		Variables,
 		ExtractSubVariablesDefinition<Result> & ExtractVariablesDefinition<Result>
 	> {
@@ -42,18 +43,18 @@ export interface MutationNode<
 		ExtractNodeDefinitionType<
 			ExtractSubVariablesDefinition<Result> & ExtractVariablesDefinition<Result> & Variables
 		>,
-		TypeOfPartial<Result> | undefined
+		TypeOfCacheEntry<Result>
 	>
 }
 
 export interface StaticMutationNodeConfig<Result extends AnyBaseNode, IsLocal extends boolean>
-	extends StaticNodeConfig<TypeOfPartial<Result>, TypeOfPartial<Result> | undefined, {}, IsLocal> {}
+	extends StaticNodeConfig<TypeOfPartial<Result>, TypeOfCacheEntry<Result>, {}, IsLocal> {}
 
 export interface DynamicMutationNodeConfig<
 	Result extends AnyBaseNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean
-> extends DynamicNodeConfig<Variables, TypeOfPartial<Result>, TypeOfPartial<Result> | undefined, {}, IsLocal> {}
+> extends DynamicNodeConfig<Variables, TypeOfPartial<Result>, TypeOfCacheEntry<Result>, {}, IsLocal> {}
 
 const MUTATION_TAG = 'Mutation'
 

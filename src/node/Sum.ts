@@ -1,3 +1,4 @@
+import { Option } from 'fp-ts/Option'
 import * as M from '../model/Model'
 import {
 	BaseNode,
@@ -20,7 +21,8 @@ import {
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
-	TypeOfStrictOutput
+	TypeOfStrictOutput,
+	Ref
 } from './shared'
 import { BaseTypeNode, ExtractTypeName, type } from './Type'
 
@@ -50,9 +52,9 @@ type ExtractTypeOfSumNodePartialOutput<MS extends ReadonlyArray<SumTypeNode>> = 
 	[K in keyof MS]: TypeOfPartialOutput<MS[K]> & { __typename?: ExtractTypeName<MS[K]> }
 }[number]
 
-export type ExtractSumNodeCacheEntry<MS extends ReadonlyArray<SumTypeNode>> =
-	| { [K in keyof MS]: TypeOfCacheEntry<MS[K]> & { __typename: ExtractTypeName<MS[K]> } }[number]
-	| undefined
+export type ExtractSumNodeCacheEntry<MS extends ReadonlyArray<SumTypeNode>> = {
+	[K in keyof MS]: Ref<Option<[ExtractTypeName<MS[K]>, TypeOfCacheEntry<MS[K]>]>>
+}[number]
 
 export type ExtractSumNodeSubVariablesDefinition<MS extends ReadonlyArray<SumTypeNode>> = {} & Intersection<
 	{
@@ -82,30 +84,18 @@ export interface SumNode<
 	readonly __customCache?: CustomCache<
 		ExtractTypeOfPartialSumNode<MS>,
 		ExtractNodeDefinitionType<ExtractSumNodeSubVariablesDefinition<MS> & Variables>,
-		ExtractTypeOfSumNodePartialInput<MS> | undefined
+		ExtractSumNodeCacheEntry<MS>
 	>
 }
 
 export interface StaticSumNodeConfig<MS extends ReadonlyArray<SumTypeNode>, IsLocal extends boolean>
-	extends StaticNodeConfig<
-		ExtractTypeOfPartialSumNode<MS>,
-		ExtractTypeOfSumNodePartialInput<MS> | undefined,
-		{},
-		IsLocal
-	> {}
+	extends StaticNodeConfig<ExtractTypeOfPartialSumNode<MS>, ExtractSumNodeCacheEntry<MS>, {}, IsLocal> {}
 
 export interface DynamicSumNodeConfig<
 	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables,
 	IsLocal extends boolean
->
-	extends DynamicNodeConfig<
-		Variables,
-		ExtractTypeOfPartialSumNode<MS>,
-		ExtractTypeOfSumNodePartialInput<MS> | undefined,
-		{},
-		IsLocal
-	> {}
+> extends DynamicNodeConfig<Variables, ExtractTypeOfPartialSumNode<MS>, ExtractSumNodeCacheEntry<MS>, {}, IsLocal> {}
 
 const SUM_TAG = 'Sum'
 

@@ -17,7 +17,9 @@ import {
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
-	TypeOfStrictOutput
+	TypeOfStrictOutput,
+	TypeOfCacheEntry,
+	Ref
 } from './shared'
 
 export interface NullableNode<
@@ -32,7 +34,7 @@ export interface NullableNode<
 		TypeOfPartialInput<Item> | null | undefined,
 		ModifyOutputIfLocal<IsLocal, TypeOfPartialOutput<Item> | null>,
 		TypeOfPartial<Item> | null,
-		TypeOfPartial<Item> | null,
+		Ref<TypeOfCacheEntry<Item> | null>,
 		Variables,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
 	> {
@@ -41,18 +43,18 @@ export interface NullableNode<
 	readonly __customCache?: CustomCache<
 		TypeOfPartial<Item> | null,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		TypeOfPartial<Item> | null
+		Ref<TypeOfCacheEntry<Item> | null>
 	>
 }
 
 export interface StaticNullableNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
-	extends StaticNodeConfig<TypeOfPartial<Item> | null, TypeOfPartial<Item> | null, {}, IsLocal> {}
+	extends StaticNodeConfig<TypeOfPartial<Item> | null, Ref<TypeOfCacheEntry<Item> | null>, {}, IsLocal> {}
 
 export interface DynamicNullableNodeConfig<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean
-> extends DynamicNodeConfig<Variables, TypeOfPartial<Item> | null, TypeOfPartial<Item> | null, {}, IsLocal> {}
+> extends DynamicNodeConfig<Variables, TypeOfPartial<Item> | null, Ref<TypeOfCacheEntry<Item> | null>, {}, IsLocal> {}
 
 const NULLABLE_TAG = 'Nullable'
 
@@ -73,7 +75,11 @@ export function nullable<Item extends AnyBaseNode, Variables extends NodeVariabl
 	item: Item,
 	config: DynamicNullableNodeConfig<Item, Variables, IsLocal>
 ): NullableNode<Item, Variables, IsLocal>
-export function nullable<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
+export function nullable<
+	Item extends AnyBaseNode,
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false
+>(
 	item: Item,
 	config?: StaticNullableNodeConfig<Item, IsLocal> | DynamicNullableNodeConfig<Item, Variables, IsLocal>
 ): NullableNode<Item, Variables, IsLocal> {

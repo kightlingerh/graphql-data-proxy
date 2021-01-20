@@ -18,7 +18,10 @@ import {
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
-	TypeOfStrictOutput, HAS_TRANSFORMATIONS
+	TypeOfStrictOutput,
+	HAS_TRANSFORMATIONS,
+	TypeOfCacheEntry,
+	Ref
 } from './shared'
 
 export interface OptionNode<
@@ -33,7 +36,7 @@ export interface OptionNode<
 		TypeOfPartialInput<Item> | null | undefined,
 		ModifyOutputIfLocal<IsLocal, TypeOfPartialOutput<Item> | null>,
 		Option<TypeOfPartial<Item>>,
-		Option<TypeOfPartial<Item>>,
+		Ref<Option<TypeOfCacheEntry<Item>>>,
 		Variables,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
 	> {
@@ -42,28 +45,23 @@ export interface OptionNode<
 	readonly __customCache?: CustomCache<
 		Option<TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		Option<TypeOfPartial<Item>>
+		Ref<Option<TypeOfCacheEntry<Item>>>
 	>
 }
 
 export interface StaticOptionNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
-	extends StaticNodeConfig<Option<TypeOfPartial<Item>>, Option<TypeOfPartial<Item>>, {}, IsLocal> {}
+	extends StaticNodeConfig<Option<TypeOfPartial<Item>>, Ref<Option<TypeOfCacheEntry<Item>>>, {}, IsLocal> {}
 
 export interface DynamicOptionNodeConfig<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean
-> extends DynamicNodeConfig<Variables, Option<TypeOfPartial<Item>>, Option<TypeOfPartial<Item>>, {}, IsLocal> {}
+> extends DynamicNodeConfig<Variables, Option<TypeOfPartial<Item>>, Ref<Option<TypeOfCacheEntry<Item>>>, {}, IsLocal> {}
 
 const OPTION_TAG = 'Option'
 
 function getOptionModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
-	return useAdjustedModel(
-		M.fromOption(isStrict ? item.strict : item.partial),
-		isLocal,
-		false,
-		false
-	)
+	return useAdjustedModel(M.fromOption(isStrict ? item.strict : item.partial), isLocal, false, false)
 }
 
 export function option<Item extends AnyBaseNode, IsLocal extends boolean = false>(

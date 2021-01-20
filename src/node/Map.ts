@@ -17,7 +17,9 @@ import {
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
-	TypeOfStrictOutput, HAS_TRANSFORMATIONS
+	TypeOfStrictOutput,
+	HAS_TRANSFORMATIONS,
+	TypeOfCacheEntry
 } from './shared'
 
 export interface MapNode<
@@ -36,8 +38,8 @@ export interface MapNode<
 		Map<TypeOf<Key>, TypeOf<Item>>,
 		PartialInput,
 		ModifyOutputIfLocal<IsLocal, PartialOutput>,
-		Map<TypeOfPartial<Key>, TypeOfPartial<Item>>,
-		Map<TypeOfPartial<Key>, TypeOfPartial<Item>>,
+		Map<TypeOf<Key>, TypeOfPartial<Item>>,
+		Map<TypeOf<Key>, TypeOfCacheEntry<Item>>,
 		Variables,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
 	> {
@@ -48,14 +50,14 @@ export interface MapNode<
 	readonly __customCache?: CustomCache<
 		Map<TypeOfPartial<Key>, TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		Map<TypeOfPartial<Key>, TypeOfPartial<Item>>
+		Map<TypeOf<Key>, TypeOfCacheEntry<Item>>
 	>
 }
 
 export interface StaticMapNodeConfig<Key extends AnyBaseNode, Item extends AnyBaseNode, IsLocal extends boolean>
 	extends StaticNodeConfig<
 		Map<TypeOfPartial<Key>, TypeOfPartial<Item>>,
-		Map<TypeOfPartial<Key>, TypeOfPartial<Item>>,
+		Map<TypeOf<Key>, TypeOfCacheEntry<Item>>,
 		{},
 		IsLocal
 	> {
@@ -71,7 +73,7 @@ export interface DynamicMapNodeConfig<
 	extends DynamicNodeConfig<
 		Variables,
 		Map<TypeOfPartial<Key>, TypeOfPartial<Item>>,
-		Map<TypeOfPartial<Key>, TypeOfPartial<Item>>,
+		Map<TypeOf<Key>, TypeOfCacheEntry<Item>>,
 		{},
 		IsLocal
 	> {

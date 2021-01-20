@@ -17,7 +17,8 @@ import {
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
-	TypeOfStrictOutput
+	TypeOfStrictOutput,
+	TypeOfCacheEntry
 } from './shared'
 
 export interface ArrayNode<
@@ -32,7 +33,7 @@ export interface ArrayNode<
 		Array<TypeOfPartialInput<Item>>,
 		ModifyOutputIfLocal<IsLocal, Array<TypeOfPartialOutput<Item>>>,
 		Array<TypeOfPartial<Item>>,
-		Array<TypeOfPartial<Item>>,
+		Array<TypeOfCacheEntry<Item>>,
 		Variables,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
 	> {
@@ -41,18 +42,18 @@ export interface ArrayNode<
 	readonly __customCache?: CustomCache<
 		Array<TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		Array<TypeOfPartial<Item>>
+		Array<TypeOfCacheEntry<Item>>
 	>
 }
 
 export interface StaticArrayNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
-	extends StaticNodeConfig<Array<TypeOfPartial<Item>>, Array<TypeOfPartial<Item>>, {}, IsLocal> {}
+	extends StaticNodeConfig<Array<TypeOfPartial<Item>>, Array<TypeOfCacheEntry<Item>>, {}, IsLocal> {}
 
 export interface DynamicArrayNodeConfig<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean
-> extends DynamicNodeConfig<Variables, Array<TypeOfPartial<Item>>, Array<TypeOfPartial<Item>>, {}, IsLocal> {}
+> extends DynamicNodeConfig<Variables, Array<TypeOfPartial<Item>>, Array<TypeOfCacheEntry<Item>>, {}, IsLocal> {}
 
 const ARRAY_TAG = 'Array'
 

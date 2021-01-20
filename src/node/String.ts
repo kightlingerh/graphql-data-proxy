@@ -1,3 +1,4 @@
+import { Option } from 'fp-ts/Option'
 import * as M from '../model/Model'
 import {
 	BaseNode,
@@ -8,6 +9,7 @@ import {
 	ModifyOutputIfLocal,
 	NO_TRANSFORMATIONS,
 	NodeVariables,
+	Ref,
 	StaticNodeConfig,
 	useLocalModel
 } from './shared'
@@ -22,18 +24,18 @@ export interface StringNode<Variables extends NodeVariables = {}, IsLocal extend
 		string,
 		ModifyOutputIfLocal<IsLocal, string>,
 		string,
-		string | undefined,
+		Ref<Option<string>>,
 		Variables
 	> {
 	readonly tag: 'String'
-	readonly __customCache?: CustomCache<string, ExtractNodeDefinitionType<Variables>, string | undefined>
+	readonly __customCache?: CustomCache<string, ExtractNodeDefinitionType<Variables>, Ref<Option<string>>>
 }
 
 export interface StaticStringNodeConfig<IsLocal extends boolean>
-	extends StaticNodeConfig<string, string | undefined, {}, IsLocal> {}
+	extends StaticNodeConfig<string, Ref<Option<string>>, {}, IsLocal> {}
 
 export interface DynamicStringNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, string, string | undefined, {}, IsLocal> {}
+	extends DynamicNodeConfig<Variables, string, Ref<Option<string>>, {}, IsLocal> {}
 
 export function string<IsLocal extends boolean = false>(
 	config?: StaticStringNodeConfig<IsLocal>

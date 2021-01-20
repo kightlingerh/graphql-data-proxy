@@ -19,13 +19,13 @@ import {
 	NodeVariables,
 	StaticNodeConfig,
 	TypeOf,
-	TypeOfCacheEntry,
 	TypeOfPartial,
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
-	Values
+	Values,
+	CacheNode
 } from './shared'
 
 export type ExtractTypeName<T> = T extends { readonly __typename: infer A } ? A : never
@@ -50,7 +50,7 @@ export type ExtractTypeNodePartialOutputFromMembers<MS extends Record<string, An
 	[K in keyof MS]?: TypeOfPartialOutput<MS[K]>
 }
 export type ExtractTypeNodeCacheEntryFromMembers<MS extends Record<string, AnyBaseNode>> = {
-	[K in keyof MS]: TypeOfCacheEntry<MS[K]>
+	[K in keyof MS]: CacheNode<MS[K]>
 }
 export type ExtractTypeNodeSubVariablesFromMembers<MS extends Record<string, AnyBaseNode>> = {} & Intersection<
 	Values<
@@ -85,7 +85,7 @@ export interface BaseTypeNode<
 	readonly __customCache?: CustomCache<
 		ExtractTypeNodePartialDataFromMembers<MS>,
 		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS> & Variables>,
-		ExtractTypeNodePartialDataFromMembers<MS> | undefined
+		ExtractTypeNodeCacheEntryFromMembers<MS>
 	>
 }
 

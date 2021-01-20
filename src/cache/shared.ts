@@ -1,4 +1,4 @@
-import * as N from '../node';
+import * as N from '../node'
 
 export function isArrayNode(node: N.Node): node is N.ArrayNode<any> {
 	return node.tag === 'Array'

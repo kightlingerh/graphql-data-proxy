@@ -2,7 +2,7 @@ import { isNonEmpty } from 'fp-ts/lib/Array'
 import { make, Tree } from 'fp-ts/Tree'
 import * as N from '../node'
 import { showNode, showTypeNode } from '../node/show'
-import {isMapNode, isScalarNode, isSumNode, isTypeNode, isWrappedNode, WrappedNode} from './shared'
+import { isMapNode, isScalarNode, isSumNode, isTypeNode, isWrappedNode, WrappedNode } from './shared'
 
 const VALIDATIONS: WeakMap<N.SchemaNode<any, any>, WeakMap<N.SchemaNode<any, any>, Array<Tree<string>>>> = new WeakMap()
 

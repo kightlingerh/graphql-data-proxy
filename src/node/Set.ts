@@ -17,7 +17,9 @@ import {
 	TypeOfPartialInput,
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
-	TypeOfStrictOutput, HAS_TRANSFORMATIONS
+	TypeOfStrictOutput,
+	HAS_TRANSFORMATIONS,
+	TypeOfCacheEntry
 } from './shared'
 
 export interface SetNode<
@@ -32,7 +34,7 @@ export interface SetNode<
 		Array<TypeOfPartialInput<Item>>,
 		ModifyOutputIfLocal<IsLocal, Array<TypeOfPartialOutput<Item>>>,
 		Set<TypeOfPartial<Item>>,
-		Set<TypeOfPartial<Item>>,
+		Set<TypeOfCacheEntry<Item>>,
 		Variables,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
 	> {
@@ -41,18 +43,18 @@ export interface SetNode<
 	readonly __customCache?: CustomCache<
 		Set<TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		Set<TypeOfPartial<Item>>
+		Set<TypeOfCacheEntry<Item>>
 	>
 }
 
 export interface StaticSetNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean>
-	extends StaticNodeConfig<Set<TypeOfPartial<Item>>, Set<TypeOfPartial<Item>>, {}, IsLocal> {}
+	extends StaticNodeConfig<Set<TypeOfPartial<Item>>, Set<TypeOfCacheEntry<Item>>, {}, IsLocal> {}
 
 export interface DynamicSetNodeConfig<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean
-> extends DynamicNodeConfig<Variables, Set<TypeOfPartial<Item>>, Set<TypeOfPartial<Item>>, {}, IsLocal> {}
+> extends DynamicNodeConfig<Variables, Set<TypeOfPartial<Item>>, Set<TypeOfCacheEntry<Item>>, {}, IsLocal> {}
 
 const SET_TAG = 'Set'
 

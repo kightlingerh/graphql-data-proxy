@@ -1,3 +1,4 @@
+import { Option } from 'fp-ts/Option'
 import * as M from '../model/Model'
 import {
 	BaseNode,
@@ -7,6 +8,7 @@ import {
 	ExtractNodeDefinitionType,
 	ModifyOutputIfLocal,
 	NodeVariables,
+	Ref,
 	StaticNodeConfig,
 	useLocalModel
 } from './shared'
@@ -26,22 +28,22 @@ export interface ScalarNode<
 		Input,
 		ModifyOutputIfLocal<IsLocal, Output>,
 		Data,
-		Data | undefined,
+		Ref<Option<Data>>,
 		Variables
 	> {
 	readonly tag: 'Scalar'
 	readonly name: Name
-	readonly __customCache?: CustomCache<Data, ExtractNodeDefinitionType<Variables>, Data | undefined>
+	readonly __customCache?: CustomCache<Data, ExtractNodeDefinitionType<Variables>, Ref<Option<Data>>>
 }
 
 export interface StaticScalarNodeConfig<Data, IsLocal extends boolean>
-	extends StaticNodeConfig<Data, Data | undefined, {}, IsLocal> {
+	extends StaticNodeConfig<Data, Ref<Option<Data>>, {}, IsLocal> {
 	hasEncodingTransformations?: boolean
 	hasDecodingTransformations?: boolean
 }
 
 export interface DynamicScalarNodeConfig<Data, Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Data, Data | undefined, {}, IsLocal> {
+	extends DynamicNodeConfig<Variables, Data, Ref<Option<Data>>, {}, IsLocal> {
 	hasEncodingTransformations?: boolean
 	hasDecodingTransformations?: boolean
 }

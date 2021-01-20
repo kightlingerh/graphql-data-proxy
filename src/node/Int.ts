@@ -1,3 +1,4 @@
+import { Option } from 'fp-ts/Option'
 import { Int } from '../model/Guard'
 import * as M from '../model/Model'
 import {
@@ -9,6 +10,7 @@ import {
 	ModifyOutputIfLocal,
 	NO_TRANSFORMATIONS,
 	NodeVariables,
+	Ref,
 	StaticNodeConfig,
 	useLocalModel
 } from './shared'
@@ -21,18 +23,18 @@ export interface IntNode<Variables extends NodeVariables = {}, IsLocal extends b
 		number,
 		ModifyOutputIfLocal<IsLocal, number>,
 		Int,
-		Int | undefined,
+		Ref<Option<Int>>,
 		Variables
 	> {
 	readonly tag: 'Int'
-	readonly __customCache?: CustomCache<Int, ExtractNodeDefinitionType<Variables>, Int | undefined>
+	readonly __customCache?: CustomCache<Int, ExtractNodeDefinitionType<Variables>, Ref<Option<Int>>>
 }
 
 export interface StaticIntNodeConfig<IsLocal extends boolean>
-	extends StaticNodeConfig<Int, Int | undefined, {}, IsLocal> {}
+	extends StaticNodeConfig<Int, Ref<Option<Int>>, {}, IsLocal> {}
 
 export interface DynamicIntNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Int, Int | undefined, {}, IsLocal> {}
+	extends DynamicNodeConfig<Variables, Int, Ref<Option<Int>>, {}, IsLocal> {}
 
 const INT_TAG = 'Int'
 

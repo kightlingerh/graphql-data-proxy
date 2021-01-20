@@ -1,7 +1,11 @@
 import { constUndefined } from 'fp-ts/function'
+import { Option } from 'fp-ts/Option'
+import { Ref as R } from 'vue'
 import * as M from '../model/Model'
 
 export type AnyBaseNode = BaseNode<any, any, any, any, any, any, any, any, any>
+
+export type Ref<T> = R<T>
 
 export interface BaseNode<
 	StrictInput,
@@ -45,6 +49,14 @@ export type TypeOfPartialOutput<T> = T extends { readonly partial: M.Model<any, 
 export type ExtractVariablesDefinition<T> = T extends { readonly variables: Record<string, AnyBaseNode> }
 	? T['variables']
 	: never
+
+type IsNonEmptyObject<T> = keyof T extends never ? true : false
+
+export type EncodedVariables = string
+
+export type CacheNode<T> = IsNonEmptyObject<ExtractVariablesDefinition<T>> extends true
+	? Map<EncodedVariables, TypeOfCacheEntry<T>>
+	: TypeOfCacheEntry<T>
 
 export type ExtractNodeDefinitionType<T> = T extends Record<string, AnyBaseNode>
 	? { [K in keyof T]: TypeOf<T[K]> }
@@ -140,7 +152,9 @@ export function useLocalModel<I, O, A>(model: M.Model<I, O, A>): M.Model<I, unde
 
 export type ModifyOutputIfLocal<IsLocal, Output> = IsLocal extends true ? undefined : Output
 
-export type Modify
+export type ModifyCacheEntryIfEntity<IsEntity, Data, CacheEntry> = IsEntity extends true
+	? Ref<Option<Data>>
+	: CacheEntry
 
 export type Values<T> = T[keyof T]
 

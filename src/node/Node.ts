@@ -7,7 +7,7 @@ import { IntNode, int, staticInt } from './Int'
 import { MapNode, map, recordMap, tupleMap } from './Map'
 import { MutationNode, mutation } from './Mutation'
 import { NonEmptyArrayNode, nonEmptyArray } from './NonEmptyArray'
-import {NullableNode, nullable} from './Nullable';
+import { NullableNode, nullable } from './Nullable'
 import { OptionNode, option } from './Option'
 import { ScalarNode, scalar } from './Scalar'
 import { SchemaNode, schema } from './Schema'

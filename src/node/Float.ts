@@ -1,3 +1,4 @@
+import { Option } from 'fp-ts/Option'
 import { Float } from '../model/Guard'
 import * as M from '../model/Model'
 import {
@@ -9,6 +10,7 @@ import {
 	ModifyOutputIfLocal,
 	NO_TRANSFORMATIONS,
 	NodeVariables,
+	Ref,
 	StaticNodeConfig,
 	useLocalModel
 } from './shared'
@@ -21,18 +23,18 @@ export interface FloatNode<Variables extends NodeVariables = {}, IsLocal extends
 		number,
 		ModifyOutputIfLocal<IsLocal, number>,
 		Float,
-		Float | undefined,
+		Ref<Option<Float>>,
 		Variables
 	> {
 	readonly tag: 'Float'
-	readonly __customCache?: CustomCache<Float, ExtractNodeDefinitionType<Variables>, Float | undefined>
+	readonly __customCache?: CustomCache<Float, ExtractNodeDefinitionType<Variables>, Ref<Option<Float>>>
 }
 
 export interface StaticFloatNodeConfig<IsLocal extends boolean>
-	extends StaticNodeConfig<Float, Float | undefined, {}, IsLocal> {}
+	extends StaticNodeConfig<Float, Ref<Option<Float>>, {}, IsLocal> {}
 
 export interface DynamicFloatNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Float, Float | undefined, {}, IsLocal> {}
+	extends DynamicNodeConfig<Variables, Float, Ref<Option<Float>>, {}, IsLocal> {}
 
 const FLOAT_TAG = 'Float'
 
