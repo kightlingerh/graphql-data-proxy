@@ -47,25 +47,14 @@ export interface NonEmptyArrayNode<
 	readonly item: Item
 }
 
-export interface StaticNonEmptyArrayNodeConfig<
-	IsLocal extends boolean,
-	IsEntity extends boolean
->
-	extends StaticNodeConfig<
-		IsLocal,
-		IsEntity
-	> {}
+export interface StaticNonEmptyArrayNodeConfig<IsLocal extends boolean, IsEntity extends boolean>
+	extends StaticNodeConfig<IsLocal, IsEntity> {}
 
 export interface DynamicNonEmptyArrayNodeConfig<
 	Variables extends NodeVariables,
 	IsLocal extends boolean,
 	IsEntity extends boolean
->
-	extends DynamicNodeConfig<
-		Variables,
-		IsLocal,
-		IsEntity
-	> {}
+> extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {}
 
 const NON_EMPTY_ARRAY_TAG = 'NonEmptyArray'
 
@@ -77,10 +66,7 @@ export function nonEmptyArray<
 	Item extends AnyBaseNode,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(
-	item: Item,
-	config?: StaticNonEmptyArrayNodeConfig<IsLocal, IsEntity>
-): NonEmptyArrayNode<Item, {}, IsLocal, IsEntity>
+>(item: Item, config?: StaticNonEmptyArrayNodeConfig<IsLocal, IsEntity>): NonEmptyArrayNode<Item, {}, IsLocal, IsEntity>
 export function nonEmptyArray<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,

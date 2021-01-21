@@ -89,25 +89,14 @@ export interface SumNode<
 	readonly membersRecord: Record<ExtractTypeName<{ [K in keyof MS]: MS[K] }[number]>, MS[number]>
 }
 
-export interface StaticSumNodeConfig<
-	IsLocal extends boolean,
-	IsEntity extends boolean
->
-	extends StaticNodeConfig<
-		IsLocal,
-		IsEntity
-	> {}
+export interface StaticSumNodeConfig<IsLocal extends boolean, IsEntity extends boolean>
+	extends StaticNodeConfig<IsLocal, IsEntity> {}
 
 export interface DynamicSumNodeConfig<
 	Variables extends NodeVariables,
 	IsLocal extends boolean,
 	IsEntity extends boolean
->
-	extends DynamicNodeConfig<
-		Variables,
-		IsLocal,
-		IsEntity
-	> {}
+> extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {}
 
 const SUM_TAG = 'Sum'
 
@@ -170,10 +159,7 @@ export function sum<
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(
-	ms: MS,
-	config?: StaticSumNodeConfig<IsLocal, IsEntity> | DynamicSumNodeConfig<Variables, IsLocal, IsEntity>
-): any {
+>(ms: MS, config?: StaticSumNodeConfig<IsLocal, IsEntity> | DynamicSumNodeConfig<Variables, IsLocal, IsEntity>): any {
 	const newMembers = addTypenameToMembers(ms)
 	const membersRecord = useSumMemberRecord(ms)
 	const useIdDecoder = !hasDecodingTransformations(membersRecord)

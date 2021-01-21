@@ -42,25 +42,14 @@ export interface MutationNode<
 	readonly result: Result
 }
 
-export interface StaticMutationNodeConfig<
-	IsLocal extends boolean,
-	IsEntity extends boolean
->
-	extends StaticNodeConfig<
-		IsLocal,
-		IsEntity
-	> {}
+export interface StaticMutationNodeConfig<IsLocal extends boolean, IsEntity extends boolean>
+	extends StaticNodeConfig<IsLocal, IsEntity> {}
 
 export interface DynamicMutationNodeConfig<
 	Variables extends NodeVariables,
 	IsLocal extends boolean,
 	IsEntity extends boolean
->
-	extends DynamicNodeConfig<
-		Variables,
-		IsLocal,
-		IsEntity
-	> {}
+> extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {}
 
 const MUTATION_TAG = 'Mutation'
 
@@ -84,9 +73,7 @@ export function mutation<
 	IsEntity extends boolean = false
 >(
 	result: Item,
-	config?:
-		| StaticMutationNodeConfig<IsLocal, IsEntity>
-		| DynamicMutationNodeConfig<Variables, IsLocal, IsEntity>
+	config?: StaticMutationNodeConfig<IsLocal, IsEntity> | DynamicMutationNodeConfig<Variables, IsLocal, IsEntity>
 ): MutationNode<Item, Variables, IsLocal, IsEntity> {
 	return {
 		tag: MUTATION_TAG,

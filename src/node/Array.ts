@@ -44,23 +44,13 @@ export interface ArrayNode<
 }
 
 export interface StaticArrayNodeConfig<IsLocal extends boolean, IsEntity extends boolean>
-	extends StaticNodeConfig<
-		IsLocal,
-		IsEntity
-	> {
-}
+	extends StaticNodeConfig<IsLocal, IsEntity> {}
 
 export interface DynamicArrayNodeConfig<
 	Variables extends NodeVariables,
 	IsLocal extends boolean,
 	IsEntity extends boolean
->
-	extends DynamicNodeConfig<
-		Variables,
-		IsLocal,
-		IsEntity
-	> {
-}
+> extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {}
 
 const ARRAY_TAG = 'Array'
 

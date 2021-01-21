@@ -47,21 +47,13 @@ export interface OptionNode<
 }
 
 export interface StaticOptionNodeConfig<IsLocal extends boolean, IsEntity extends boolean>
-	extends StaticNodeConfig<
-		IsLocal,
-		IsEntity
-	> {}
+	extends StaticNodeConfig<IsLocal, IsEntity> {}
 
 export interface DynamicOptionNodeConfig<
 	Variables extends NodeVariables,
 	IsLocal extends boolean,
 	IsEntity extends boolean
->
-	extends DynamicNodeConfig<
-		Variables,
-		IsLocal,
-		IsEntity
-	> {}
+> extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {}
 
 const OPTION_TAG = 'Option'
 
@@ -86,9 +78,7 @@ export function option<
 	IsEntity extends boolean = false
 >(
 	item: Item,
-	config?:
-		| StaticOptionNodeConfig<IsLocal, IsEntity>
-		| DynamicOptionNodeConfig<Variables, IsLocal, IsEntity>
+	config?: StaticOptionNodeConfig<IsLocal, IsEntity> | DynamicOptionNodeConfig<Variables, IsLocal, IsEntity>
 ): OptionNode<Item, Variables, IsLocal, IsEntity> {
 	return {
 		tag: OPTION_TAG,

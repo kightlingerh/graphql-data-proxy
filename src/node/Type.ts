@@ -2,7 +2,6 @@ import { literal, Model, type as typeModel } from '../model/Model'
 import { scalar, ScalarNode } from './Scalar'
 import {
 	BaseNode,
-	CustomCache,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	extractPartialModels,
@@ -27,7 +26,8 @@ import {
 	Values,
 	CacheNode,
 	ModifyIfEntity,
-	TypeOfRefs
+	TypeOfRefs,
+	DynamicCustomCache
 } from './shared'
 
 export type ExtractTypeName<T> = T extends { readonly __typename: infer A } ? A : never
@@ -91,7 +91,7 @@ export interface BaseTypeNode<
 	readonly __typename: Typename
 	readonly tag: 'Type'
 	readonly members: MS
-	readonly __customCache?: CustomCache<
+	readonly __customCache?: DynamicCustomCache<
 		ExtractTypeNodePartialDataFromMembers<MS>,
 		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS> & Variables>,
 		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>
@@ -114,17 +114,13 @@ export interface StaticTypeNodeConfig<
 	IsLocal extends boolean,
 	IncludeTypename extends boolean,
 	IsEntity extends boolean
->
-	extends StaticNodeConfig<
-		IsLocal,
-		IsEntity
-	> {
+> extends StaticNodeConfig<IsLocal, IsEntity> {
 	includeTypename?: IncludeTypename
-	useCustomCache?: CustomCache<
+	useCustomCache?: DynamicCustomCache<
 		ExtractTypeNodePartialDataFromMembers<MS>,
 		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS>>,
 		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>
-		>
+	>
 }
 
 export interface DynamicTypeNodeConfig<
@@ -133,18 +129,13 @@ export interface DynamicTypeNodeConfig<
 	IsLocal extends boolean,
 	IncludeTypename extends boolean,
 	IsEntity extends boolean
->
-	extends DynamicNodeConfig<
-		Variables,
-		IsLocal,
-		IsEntity
-	> {
+> extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {
 	includeTypename?: IncludeTypename
-	useCustomCache?: CustomCache<
+	useCustomCache?: DynamicCustomCache<
 		ExtractTypeNodePartialDataFromMembers<MS>,
 		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS>>,
 		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>
-		>
+	>
 }
 
 export const TYPE_TAG = 'Type'

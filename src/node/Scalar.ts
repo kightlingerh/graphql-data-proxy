@@ -33,8 +33,7 @@ export interface ScalarNode<
 	readonly name: Name
 }
 
-export interface StaticScalarNodeConfig<IsLocal extends boolean>
-	extends StaticNodeConfig<IsLocal> {
+export interface StaticScalarNodeConfig<IsLocal extends boolean> extends StaticNodeConfig<IsLocal> {
 	hasEncodingTransformations?: boolean
 	hasDecodingTransformations?: boolean
 }

@@ -2,10 +2,8 @@ import { identity } from 'fp-ts/function'
 import { fromMap } from '../model'
 import {
 	BaseNode,
-	CustomCache,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
-	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	ModifyOutputIfLocal,
@@ -21,7 +19,8 @@ import {
 	HAS_TRANSFORMATIONS,
 	TypeOfCacheEntry,
 	ModifyIfEntity,
-	TypeOfRefs
+	TypeOfRefs,
+	StaticCustomCache
 } from './shared'
 
 export interface MapNode<
@@ -51,9 +50,7 @@ export interface MapNode<
 	readonly key: Key
 	readonly item: Item
 	readonly name?: string
-	readonly __customCache?: CustomCache<
-		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
+	readonly __customCache?: StaticCustomCache<
 		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>
 	>
 }
@@ -63,18 +60,11 @@ export interface StaticMapNodeConfig<
 	Item extends AnyBaseNode,
 	IsLocal extends boolean,
 	IsEntity extends boolean
->
-	extends StaticNodeConfig<
-		IsLocal,
-		IsEntity
-	> {
+> extends StaticNodeConfig<IsLocal, IsEntity> {
 	readonly name?: string
-	readonly useCustomCache?: CustomCache<
-		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>>,
+	readonly useCustomCache?: StaticCustomCache<
 		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>
-		>
-
+	>
 }
 
 export interface DynamicMapNodeConfig<
@@ -83,18 +73,11 @@ export interface DynamicMapNodeConfig<
 	Variables extends NodeVariables,
 	IsLocal extends boolean,
 	IsEntity extends boolean
->
-	extends DynamicNodeConfig<
-		Variables,
-		IsLocal,
-		IsEntity
-	> {
+> extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {
 	readonly name?: string
-	readonly useCustomCache?: CustomCache<
-		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
+	readonly useCustomCache?: StaticCustomCache<
 		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>
-		>
+	>
 }
 
 const MAP_TAG = 'Map'
