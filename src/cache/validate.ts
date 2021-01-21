@@ -26,6 +26,9 @@ export function validate(schema: N.SchemaNode<any, any>, request: N.SchemaNode<a
 
 function validateNode(x: N.Node, y: N.Node): Array<Tree<string>> {
 	const variableErrors = validateVariablesDefinition(x.variables, y.variables)
+	if (y.tag === 'Mutation') {
+		return [...variableErrors, make(`cannot include mutations in a cache request`)]
+	}
 	if (isWrappedNode(x) && isWrappedNode(y)) {
 		return [...variableErrors, ...validateWrappedNode(x, y)]
 	} else if (isTypeNode(x) && isTypeNode(y)) {

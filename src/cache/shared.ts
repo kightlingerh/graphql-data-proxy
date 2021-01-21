@@ -20,19 +20,6 @@ export function isMapNode(node: N.Node): node is N.MapNode<any, any, any, any, a
 	return node.tag === 'Map'
 }
 
-export function isEntityNode(node: N.Node): boolean {
-	switch (node.tag) {
-		case 'Int':
-		case 'Boolean':
-		case 'String':
-		case 'Scalar':
-		case 'Float':
-			return true
-		default:
-			return !!node?.__isEntity
-	}
-}
-
 export function isTypeNode(node: N.Node): node is N.TypeNode<any, any, any, any> {
 	return node.tag === 'Type'
 }
@@ -57,11 +44,36 @@ export function isPrimitiveNode(node: N.Node): node is PrimitiveNode {
 	return PrimitiveTags.has(node.tag)
 }
 
+export function isEntityNode(node: N.Node): boolean {
+	switch (node.tag) {
+		case 'Int':
+		case 'Boolean':
+		case 'String':
+		case 'Scalar':
+		case 'Float':
+			return true
+		default:
+			return !!node?.__isEntity
+	}
+}
+
+export function isNonPrimitiveEntityNode(node: N.Node): boolean {
+	return !PrimitiveTags.has(node.tag) && !!node?.__isEntity
+}
+
 export type WrappedNode =
 	| N.ArrayNode<any, any, any>
 	| N.MapNode<any, any, any, any, any, any, any, any>
 	| N.NonEmptyArrayNode<any, any, any>
 	| N.OptionNode<any, any, any>
+
+export type CacheGraphqlNode =
+	| PrimitiveNode
+	| WrappedNode
+	| N.TypeNode<any, any, any, any>
+	| N.SumNode<any, any, any, any>
+	| N.SchemaNode<any, any>
+	| N.ScalarNode<any, any, any, any, any, any>
 
 const WrappedNodeTags = new Set<N.NodeTag>(['Array', 'Map', 'NonEmptyArray', 'Option'])
 

@@ -103,7 +103,7 @@ describe('reactivity', () => {
 			Person1Final
 		)
 	}),
-		it('toEntries should return reactive objects', () => {
+		it('useEntries should return reactive objects', () => {
 			const cache = make({})(PersonNode)(PersonNode)
 			assert.deepStrictEqual(isRight(cache), true)
 
