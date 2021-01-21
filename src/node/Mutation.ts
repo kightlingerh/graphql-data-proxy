@@ -1,9 +1,7 @@
 import {
 	BaseNode,
-	CustomCache,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
-	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	useAdjustedModel,
@@ -42,46 +40,33 @@ export interface MutationNode<
 	> {
 	readonly tag: 'Mutation'
 	readonly result: Result
-	readonly __customCache?: CustomCache<
-		TypeOfPartial<Result>,
-		ExtractNodeDefinitionType<
-			ExtractSubVariablesDefinition<Result> & ExtractVariablesDefinition<Result> & Variables
-		>,
-		ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>
-	>
 }
 
 export interface StaticMutationNodeConfig<
-	Result extends AnyBaseNode,
 	IsLocal extends boolean,
 	IsEntity extends boolean
 >
 	extends StaticNodeConfig<
-		TypeOfPartial<Result>,
-		ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
-		{},
-		IsLocal
+		IsLocal,
+		IsEntity
 	> {}
 
 export interface DynamicMutationNodeConfig<
-	Result extends AnyBaseNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean,
 	IsEntity extends boolean
 >
 	extends DynamicNodeConfig<
 		Variables,
-		TypeOfPartial<Result>,
-		ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
-		{},
-		IsLocal
+		IsLocal,
+		IsEntity
 	> {}
 
 const MUTATION_TAG = 'Mutation'
 
 export function mutation<Result extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
 	result: Result,
-	config?: StaticMutationNodeConfig<Result, IsLocal, IsEntity>
+	config?: StaticMutationNodeConfig<IsLocal, IsEntity>
 ): MutationNode<Result, {}, IsLocal, IsEntity>
 export function mutation<
 	Item extends AnyBaseNode,
@@ -90,7 +75,7 @@ export function mutation<
 	IsEntity extends boolean = false
 >(
 	result: Item,
-	config: DynamicMutationNodeConfig<Item, Variables, IsLocal, IsEntity>
+	config: DynamicMutationNodeConfig<Variables, IsLocal, IsEntity>
 ): MutationNode<Item, Variables, IsLocal, IsEntity>
 export function mutation<
 	Item extends AnyBaseNode,
@@ -100,8 +85,8 @@ export function mutation<
 >(
 	result: Item,
 	config?:
-		| StaticMutationNodeConfig<Item, IsLocal, IsEntity>
-		| DynamicMutationNodeConfig<Item, Variables, IsLocal, IsEntity>
+		| StaticMutationNodeConfig<IsLocal, IsEntity>
+		| DynamicMutationNodeConfig<Variables, IsLocal, IsEntity>
 ): MutationNode<Item, Variables, IsLocal, IsEntity> {
 	return {
 		tag: MUTATION_TAG,
@@ -120,7 +105,6 @@ export function mutation<
 		),
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: result.__hasTransformations,
-		__customCache: config?.useCustomCache,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}

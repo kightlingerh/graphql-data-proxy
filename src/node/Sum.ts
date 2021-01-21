@@ -2,10 +2,8 @@ import { Option } from 'fp-ts/Option'
 import { fromSum, Model } from '../model/Model'
 import {
 	BaseNode,
-	CustomCache,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
-	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	useAdjustedModel,
@@ -28,7 +26,7 @@ import {
 } from './shared'
 import { BaseTypeNode, ExtractTypeName, type } from './Type'
 
-type SumTypeNode = BaseTypeNode<any, any, any, any>
+type SumTypeNode = BaseTypeNode<any, any, any, any, any>
 
 type ExtractTypeOfSumNodeStrictInput<MS extends ReadonlyArray<SumTypeNode>> = {
 	[K in keyof MS]: TypeOfStrictInput<MS[K]> & { __typename: ExtractTypeName<MS[K]> }
@@ -89,37 +87,26 @@ export interface SumNode<
 	readonly tag: 'Sum'
 	readonly members: MS
 	readonly membersRecord: Record<ExtractTypeName<{ [K in keyof MS]: MS[K] }[number]>, MS[number]>
-	readonly __customCache?: CustomCache<
-		ExtractTypeOfPartialSumNode<MS>,
-		ExtractNodeDefinitionType<ExtractSumNodeSubVariablesDefinition<MS> & Variables>,
-		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>
-	>
 }
 
 export interface StaticSumNodeConfig<
-	MS extends ReadonlyArray<SumTypeNode>,
 	IsLocal extends boolean,
 	IsEntity extends boolean
 >
 	extends StaticNodeConfig<
-		ExtractTypeOfPartialSumNode<MS>,
-		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
-		{},
-		IsLocal
+		IsLocal,
+		IsEntity
 	> {}
 
 export interface DynamicSumNodeConfig<
-	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables,
 	IsLocal extends boolean,
 	IsEntity extends boolean
 >
 	extends DynamicNodeConfig<
 		Variables,
-		ExtractTypeOfPartialSumNode<MS>,
-		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
-		{},
-		IsLocal
+		IsLocal,
+		IsEntity
 	> {}
 
 const SUM_TAG = 'Sum'
@@ -170,14 +157,14 @@ export function sum<
 	MS extends ReadonlyArray<SumTypeNode>,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(ms: MS, config?: StaticSumNodeConfig<MS, IsLocal, IsEntity>): SumNode<MS, {}, IsLocal, IsEntity>
+>(ms: MS, config?: StaticSumNodeConfig<IsLocal, IsEntity>): SumNode<MS, {}, IsLocal, IsEntity>
 
 export function sum<
 	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(ms: MS, config: DynamicSumNodeConfig<MS, Variables, IsLocal, IsEntity>): SumNode<MS, Variables, IsLocal, IsEntity>
+>(ms: MS, config: DynamicSumNodeConfig<Variables, IsLocal, IsEntity>): SumNode<MS, Variables, IsLocal, IsEntity>
 export function sum<
 	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables = {},
@@ -185,7 +172,7 @@ export function sum<
 	IsEntity extends boolean = false
 >(
 	ms: MS,
-	config?: StaticSumNodeConfig<MS, IsLocal, IsEntity> | DynamicSumNodeConfig<MS, Variables, IsLocal, IsEntity>
+	config?: StaticSumNodeConfig<IsLocal, IsEntity> | DynamicSumNodeConfig<Variables, IsLocal, IsEntity>
 ): any {
 	const newMembers = addTypenameToMembers(ms)
 	const membersRecord = useSumMemberRecord(ms)
@@ -202,7 +189,6 @@ export function sum<
 			encoding: !useIdEncoder,
 			decoding: !useIdDecoder
 		},
-		__customCache: config?.useCustomCache,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}

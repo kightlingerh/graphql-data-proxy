@@ -3,10 +3,8 @@ import { Int } from '../model/Guard'
 import { int as intModel } from '../model/Model'
 import {
 	BaseNode,
-	CustomCache,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
-	ExtractNodeDefinitionType,
 	ModifyOutputIfLocal,
 	NO_TRANSFORMATIONS,
 	NodeVariables,
@@ -27,7 +25,6 @@ export interface IntNode<Variables extends NodeVariables = {}, IsLocal extends b
 		Variables
 	> {
 	readonly tag: 'Int'
-	readonly __customCache?: CustomCache<Int, ExtractNodeDefinitionType<Variables>, Ref<Option<Int>>>
 }
 
 export interface StaticIntNodeConfig<IsLocal extends boolean>
@@ -52,7 +49,6 @@ export function int<V extends NodeVariables = {}, IsLocal extends boolean = fals
 		partial: model,
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: NO_TRANSFORMATIONS,
-		__customCache: config?.useCustomCache,
 		__isLocal: config?.isLocal
 	}
 }

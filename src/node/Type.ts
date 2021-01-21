@@ -116,12 +116,15 @@ export interface StaticTypeNodeConfig<
 	IsEntity extends boolean
 >
 	extends StaticNodeConfig<
-		ExtractTypeNodePartialDataFromMembers<MS>,
-		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>,
-		{},
-		IsLocal
+		IsLocal,
+		IsEntity
 	> {
 	includeTypename?: IncludeTypename
+	useCustomCache?: CustomCache<
+		ExtractTypeNodePartialDataFromMembers<MS>,
+		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS>>,
+		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>
+		>
 }
 
 export interface DynamicTypeNodeConfig<
@@ -133,12 +136,15 @@ export interface DynamicTypeNodeConfig<
 >
 	extends DynamicNodeConfig<
 		Variables,
-		ExtractTypeNodePartialDataFromMembers<MS>,
-		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>,
-		{},
-		IsLocal
+		IsLocal,
+		IsEntity
 	> {
 	includeTypename?: IncludeTypename
+	useCustomCache?: CustomCache<
+		ExtractTypeNodePartialDataFromMembers<MS>,
+		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS>>,
+		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>
+		>
 }
 
 export const TYPE_TAG = 'Type'

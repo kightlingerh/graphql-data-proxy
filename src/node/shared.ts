@@ -85,26 +85,19 @@ export type ModifyOutputIfLocal<IsLocal, Output> = IsLocal extends true ? undefi
 export type ModifyIfEntity<IsEntity, Data, CacheEntry> = IsEntity extends true ? Ref<Option<Data>> : CacheEntry
 
 export interface StaticNodeConfig<
-	PartialData,
-	CacheEntry,
-	MergedVariables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 > {
 	readonly variables?: Record<string, AnyBaseNode>
 	readonly isLocal?: IsLocal
 	readonly isEntity?: IsEntity
-	readonly useCustomCache?: CustomCache<PartialData, ExtractNodeDefinitionType<MergedVariables>, CacheEntry>
 }
 
 export interface DynamicNodeConfig<
 	Variables extends NodeVariables,
-	PartialData,
-	CacheEntry,
-	SubVariables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
-> extends StaticNodeConfig<PartialData, CacheEntry, SubVariables & Variables, IsLocal, IsEntity> {
+> extends StaticNodeConfig<IsLocal, IsEntity> {
 	readonly variables: Variables
 }
 
@@ -112,14 +105,18 @@ export type NodeVariables = Record<string, AnyBaseNode>
 
 export type Path = Array<string | number>
 
-export interface CustomCache<PartialData, Variables, CacheEntry> {
-	<V extends Record<string, unknown> = Record<string, unknown>>(
-		path: Path,
-		cacheEntry: CacheEntry,
-		variables?: Variables & V,
-		data?: PartialData
-	): Option<CacheEntry>
+export interface StaticCustomCache<CacheEntry> {
+	tag: 'Static',
+	entry: CacheEntry
+};
+
+export interface DynamicCustomCache<PartialData, Variables, CacheEntry> {
+	tag: 'Dynamic'
+	toId: <V extends Record<string, unknown> = Record<string, unknown>>(path: Path, variables?: Variables & V, data?: PartialData) => unknown
+	nodes?: Map<unknown, CacheEntry>;
 }
+
+export type CustomCache<PartialData, Variables, CacheEntry> = StaticCustomCache<CacheEntry> | DynamicCustomCache<PartialData, Variables, CacheEntry>
 
 export const EMPTY_VARIABLES: any = {}
 

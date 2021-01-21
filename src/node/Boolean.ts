@@ -2,10 +2,8 @@ import { Option } from 'fp-ts/Option'
 import { boolean as booleanModel } from '../model'
 import {
 	BaseNode,
-	CustomCache,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
-	ExtractNodeDefinitionType,
 	ModifyOutputIfLocal,
 	NO_TRANSFORMATIONS,
 	NodeVariables,
@@ -26,7 +24,6 @@ export interface BooleanNode<Variables extends NodeVariables = {}, IsLocal exten
 		Variables
 	> {
 	readonly tag: 'Boolean'
-	readonly __customCache?: CustomCache<boolean, ExtractNodeDefinitionType<Variables>, Ref<Option<boolean>>>
 }
 
 export interface StaticBooleanNodeConfig<IsLocal extends boolean>
@@ -53,7 +50,6 @@ export function boolean<V extends NodeVariables = {}, IsLocal extends boolean = 
 		partial: model,
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: NO_TRANSFORMATIONS,
-		__customCache: config?.useCustomCache,
 		__isLocal: config?.isLocal
 	}
 }

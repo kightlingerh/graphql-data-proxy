@@ -3,10 +3,8 @@ import { NonEmptyArray } from 'fp-ts/NonEmptyArray'
 import * as M from '../model/Model'
 import {
 	BaseNode,
-	CustomCache,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
-	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	useAdjustedModel,
@@ -47,37 +45,26 @@ export interface NonEmptyArrayNode<
 	> {
 	readonly tag: 'NonEmptyArray'
 	readonly item: Item
-	readonly __customCache?: CustomCache<
-		NonEmptyArray<TypeOfPartial<Item>>,
-		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>>
-	>
 }
 
 export interface StaticNonEmptyArrayNodeConfig<
-	Item extends AnyBaseNode,
 	IsLocal extends boolean,
 	IsEntity extends boolean
 >
 	extends StaticNodeConfig<
-		NonEmptyArray<TypeOfPartial<Item>>,
-		ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>>,
-		{},
-		IsLocal
+		IsLocal,
+		IsEntity
 	> {}
 
 export interface DynamicNonEmptyArrayNodeConfig<
-	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean,
 	IsEntity extends boolean
 >
 	extends DynamicNodeConfig<
 		Variables,
-		NonEmptyArray<TypeOfPartial<Item>>,
-		ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>>,
-		{},
-		IsLocal
+		IsLocal,
+		IsEntity
 	> {}
 
 const NON_EMPTY_ARRAY_TAG = 'NonEmptyArray'
@@ -92,7 +79,7 @@ export function nonEmptyArray<
 	IsEntity extends boolean = false
 >(
 	item: Item,
-	config?: StaticNonEmptyArrayNodeConfig<Item, IsLocal, IsEntity>
+	config?: StaticNonEmptyArrayNodeConfig<IsLocal, IsEntity>
 ): NonEmptyArrayNode<Item, {}, IsLocal, IsEntity>
 export function nonEmptyArray<
 	Item extends AnyBaseNode,
@@ -101,7 +88,7 @@ export function nonEmptyArray<
 	IsEntity extends boolean = false
 >(
 	item: Item,
-	config: DynamicNonEmptyArrayNodeConfig<Item, Variables, IsLocal, IsEntity>
+	config: DynamicNonEmptyArrayNodeConfig<Variables, IsLocal, IsEntity>
 ): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity>
 export function nonEmptyArray<
 	Item extends AnyBaseNode,
@@ -111,8 +98,8 @@ export function nonEmptyArray<
 >(
 	item: Item,
 	config?:
-		| StaticNonEmptyArrayNodeConfig<Item, IsLocal, IsEntity>
-		| DynamicNonEmptyArrayNodeConfig<Item, Variables, IsLocal, IsEntity>
+		| StaticNonEmptyArrayNodeConfig<IsLocal, IsEntity>
+		| DynamicNonEmptyArrayNodeConfig<Variables, IsLocal, IsEntity>
 ): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity> {
 	return {
 		tag: NON_EMPTY_ARRAY_TAG,
@@ -121,7 +108,6 @@ export function nonEmptyArray<
 		partial: getNonEmptyArrayModel(item, !!config?.isLocal, false),
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: HAS_TRANSFORMATIONS,
-		__customCache: config?.useCustomCache,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}

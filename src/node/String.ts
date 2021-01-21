@@ -2,10 +2,8 @@ import { Option } from 'fp-ts/Option'
 import { string as stringModel } from '../model/Model'
 import {
 	BaseNode,
-	CustomCache,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
-	ExtractNodeDefinitionType,
 	ModifyOutputIfLocal,
 	NO_TRANSFORMATIONS,
 	NodeVariables,
@@ -28,14 +26,13 @@ export interface StringNode<Variables extends NodeVariables = {}, IsLocal extend
 		Variables
 	> {
 	readonly tag: 'String'
-	readonly __customCache?: CustomCache<string, ExtractNodeDefinitionType<Variables>, Ref<Option<string>>>
 }
 
 export interface StaticStringNodeConfig<IsLocal extends boolean>
-	extends StaticNodeConfig<string, Ref<Option<string>>, {}, IsLocal> {}
+	extends StaticNodeConfig<IsLocal> {}
 
 export interface DynamicStringNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, string, Ref<Option<string>>, {}, IsLocal> {}
+	extends DynamicNodeConfig<Variables, IsLocal> {}
 
 export function string<IsLocal extends boolean = false>(
 	config?: StaticStringNodeConfig<IsLocal>
@@ -53,7 +50,6 @@ export function string<V extends NodeVariables = {}, IsLocal extends boolean = f
 		partial: model,
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: NO_TRANSFORMATIONS,
-		__customCache: config?.useCustomCache,
 		__isLocal: config?.isLocal
 	}
 }

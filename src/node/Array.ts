@@ -1,10 +1,8 @@
 import { fromArray } from '../model'
 import {
 	BaseNode,
-	CustomCache,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
-	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	useAdjustedModel,
@@ -43,36 +41,26 @@ export interface ArrayNode<
 	> {
 	readonly tag: 'Array'
 	readonly item: Item
-	readonly __customCache?: CustomCache<
-		Array<TypeOfPartial<Item>>,
-		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>
-	>
 }
 
-export interface StaticArrayNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean, IsEntity extends boolean>
+export interface StaticArrayNodeConfig<IsLocal extends boolean, IsEntity extends boolean>
 	extends StaticNodeConfig<
-		Array<TypeOfPartial<Item>>,
-		ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
-		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
 		IsLocal,
 		IsEntity
-	> {}
+	> {
+}
 
 export interface DynamicArrayNodeConfig<
-	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean,
 	IsEntity extends boolean
 >
 	extends DynamicNodeConfig<
 		Variables,
-		Array<TypeOfPartial<Item>>,
-		ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
-		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
 		IsLocal,
 		IsEntity
-	> {}
+	> {
+}
 
 const ARRAY_TAG = 'Array'
 
@@ -87,7 +75,7 @@ function useArrayModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, i
 
 export function array<Item extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
 	item: Item,
-	config?: StaticArrayNodeConfig<Item, IsLocal, IsEntity>
+	config?: StaticArrayNodeConfig<IsLocal, IsEntity>
 ): ArrayNode<Item, {}, IsLocal, IsEntity>
 export function array<
 	Item extends AnyBaseNode,
@@ -96,7 +84,7 @@ export function array<
 	IsEntity extends boolean = false
 >(
 	item: Item,
-	config: DynamicArrayNodeConfig<Item, Variables, IsLocal, IsEntity>
+	config: DynamicArrayNodeConfig<Variables, IsLocal, IsEntity>
 ): ArrayNode<Item, Variables, IsLocal, IsEntity>
 export function array<
 	Item extends AnyBaseNode,
@@ -105,7 +93,7 @@ export function array<
 	IsEntity extends boolean = false
 >(
 	item: Item,
-	config?: StaticArrayNodeConfig<Item, IsLocal, IsEntity> | DynamicArrayNodeConfig<Item, Variables, IsLocal, IsEntity>
+	config?: StaticArrayNodeConfig<IsLocal, IsEntity> | DynamicArrayNodeConfig<Variables, IsLocal, IsEntity>
 ): ArrayNode<Item, Variables, IsLocal, IsEntity> {
 	return {
 		tag: ARRAY_TAG,
@@ -114,7 +102,6 @@ export function array<
 		partial: useArrayModel(item, !!config?.isLocal, false),
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: item.__hasTransformations,
-		__customCache: config?.useCustomCache,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}

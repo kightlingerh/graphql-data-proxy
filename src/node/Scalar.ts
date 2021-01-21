@@ -2,10 +2,8 @@ import { Option } from 'fp-ts/Option'
 import { Model } from '../model/Model'
 import {
 	BaseNode,
-	CustomCache,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
-	ExtractNodeDefinitionType,
 	ModifyOutputIfLocal,
 	NodeVariables,
 	Ref,
@@ -33,17 +31,16 @@ export interface ScalarNode<
 	> {
 	readonly tag: 'Scalar'
 	readonly name: Name
-	readonly __customCache?: CustomCache<Data, ExtractNodeDefinitionType<Variables>, Ref<Option<Data>>>
 }
 
-export interface StaticScalarNodeConfig<Data, IsLocal extends boolean>
-	extends StaticNodeConfig<Data, Ref<Option<Data>>, {}, IsLocal> {
+export interface StaticScalarNodeConfig<IsLocal extends boolean>
+	extends StaticNodeConfig<IsLocal> {
 	hasEncodingTransformations?: boolean
 	hasDecodingTransformations?: boolean
 }
 
-export interface DynamicScalarNodeConfig<Data, Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Data, Ref<Option<Data>>, {}, IsLocal> {
+export interface DynamicScalarNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
+	extends DynamicNodeConfig<Variables, IsLocal> {
 	hasEncodingTransformations?: boolean
 	hasDecodingTransformations?: boolean
 }
@@ -53,7 +50,7 @@ const SCALAR_TAG = 'Scalar'
 export function scalar<Name extends string, Input, Output, Data, IsLocal extends boolean = false>(
 	name: Name,
 	model: Model<Input, Output, Data>,
-	config?: StaticScalarNodeConfig<Data, IsLocal>
+	config?: StaticScalarNodeConfig<IsLocal>
 ): ScalarNode<Name, Input, Output, Data, {}, IsLocal>
 export function scalar<
 	Name extends string,
@@ -65,7 +62,7 @@ export function scalar<
 >(
 	name: Name,
 	model: Model<Input, Output, Data>,
-	config: DynamicScalarNodeConfig<Data, V, IsLocal>
+	config: DynamicScalarNodeConfig<V, IsLocal>
 ): ScalarNode<Name, Input, Output, Data, V, IsLocal>
 export function scalar<
 	Name extends string,
@@ -77,7 +74,7 @@ export function scalar<
 >(
 	name: Name,
 	model: Model<Input, Output, Data>,
-	config?: StaticScalarNodeConfig<Data, IsLocal> | DynamicScalarNodeConfig<Data, V, IsLocal>
+	config?: StaticScalarNodeConfig<IsLocal> | DynamicScalarNodeConfig<V, IsLocal>
 ): ScalarNode<Name, Input, Output, Data, V, IsLocal> {
 	const m = config?.isLocal ? useLocalModel(model) : (model as any)
 	return {
@@ -90,7 +87,6 @@ export function scalar<
 			encoding: config?.hasEncodingTransformations ?? true,
 			decoding: config?.hasDecodingTransformations ?? true
 		},
-		__customCache: config?.useCustomCache,
 		__isLocal: config?.isLocal
 	}
 }

@@ -1,5 +1,5 @@
 import { identity } from 'fp-ts/function'
-import { fromMap } from '../model/Model'
+import { fromMap } from '../model'
 import {
 	BaseNode,
 	CustomCache,
@@ -65,12 +65,16 @@ export interface StaticMapNodeConfig<
 	IsEntity extends boolean
 >
 	extends StaticNodeConfig<
-		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>,
-		{},
-		IsLocal
+		IsLocal,
+		IsEntity
 	> {
 	readonly name?: string
+	readonly useCustomCache?: CustomCache<
+		Map<TypeOf<Key>, TypeOfPartial<Item>>,
+		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>>,
+		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>
+		>
+
 }
 
 export interface DynamicMapNodeConfig<
@@ -82,12 +86,15 @@ export interface DynamicMapNodeConfig<
 >
 	extends DynamicNodeConfig<
 		Variables,
-		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>,
-		{},
-		IsLocal
+		IsLocal,
+		IsEntity
 	> {
 	readonly name?: string
+	readonly useCustomCache?: CustomCache<
+		Map<TypeOf<Key>, TypeOfPartial<Item>>,
+		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
+		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>
+		>
 }
 
 const MAP_TAG = 'Map'

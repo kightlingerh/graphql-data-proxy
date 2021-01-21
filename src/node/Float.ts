@@ -3,10 +3,8 @@ import { Float } from '../model/Guard'
 import { float as floatModel } from '../model/Model'
 import {
 	BaseNode,
-	CustomCache,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
-	ExtractNodeDefinitionType,
 	ModifyOutputIfLocal,
 	NO_TRANSFORMATIONS,
 	NodeVariables,
@@ -27,7 +25,6 @@ export interface FloatNode<Variables extends NodeVariables = {}, IsLocal extends
 		Variables
 	> {
 	readonly tag: 'Float'
-	readonly __customCache?: CustomCache<Float, ExtractNodeDefinitionType<Variables>, Ref<Option<Float>>>
 }
 
 export interface StaticFloatNodeConfig<IsLocal extends boolean>
@@ -52,7 +49,6 @@ export function float<V extends NodeVariables = {}, IsLocal extends boolean = fa
 		partial: model,
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: NO_TRANSFORMATIONS,
-		__customCache: config?.useCustomCache,
 		__isLocal: config?.isLocal
 	}
 }
