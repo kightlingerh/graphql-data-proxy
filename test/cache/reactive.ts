@@ -137,7 +137,7 @@ describe('reactivity', () => {
 
 			assert.deepStrictEqual(parents.value, Person1Final.personalInfo.parents)
 		}),
-		it('should delete null map entries', () => {
+		it('should delete null map entry', () => {
 			const cache = make({})(SchemaNode)(SchemaNode)
 			assert.deepStrictEqual(isRight(cache), true)
 

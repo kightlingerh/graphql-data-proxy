@@ -5,8 +5,8 @@ import {
 	CustomCache,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
-	extractMemberPartialModels,
-	extractMemberStrictModels,
+	extractPartialModels,
+	extractStrictModels,
 	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
@@ -151,7 +151,7 @@ function getTypeMemberModel(
 	useIdDecoder: boolean
 ): Model<any, any, any> {
 	return useAdjustedModel(
-		strict ? typeModel(extractMemberStrictModels(members)) : typeModel(extractMemberPartialModels(members)),
+		strict ? typeModel(extractStrictModels(members)) : typeModel(extractPartialModels(members)),
 		isLocal,
 		useIdEncoder,
 		useIdDecoder

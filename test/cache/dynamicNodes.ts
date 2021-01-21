@@ -44,7 +44,7 @@ const Date1Variables = { date: '11/17/1991' }
 const Date2Variables = { date: '11/18/1991' }
 
 describe('dynamic nodes', () => {
-	it('nodes with different variables should point to different entries', () => {
+	it('nodes with different variables should point to different entry', () => {
 		const cache = make({})(PersonNode)(PersonNode)
 		assert.deepStrictEqual(isRight(cache), true)
 

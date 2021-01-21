@@ -115,16 +115,17 @@ export type Path = Array<string | number>
 export interface CustomCache<PartialData, Variables, CacheEntry> {
 	<V extends Record<string, unknown> = Record<string, unknown>>(
 		path: Path,
-		variables: Variables & V,
+		cacheEntry: CacheEntry,
+		variables?: Variables & V,
 		data?: PartialData
-	): CacheEntry | undefined | null
+	): Option<CacheEntry>
 }
 
 export const EMPTY_VARIABLES: any = {}
 
 export const EMPTY_VARIABLES_MODEL = M.type({})
 
-export function extractMemberStrictModels<MS extends Record<string, AnyBaseNode>>(
+export function extractStrictModels<MS extends Record<string, AnyBaseNode>>(
 	members: MS
 ): { [K in keyof MS]: MS[K]['strict'] } {
 	const x: any = Object.create(null)
@@ -134,7 +135,7 @@ export function extractMemberStrictModels<MS extends Record<string, AnyBaseNode>
 	return x
 }
 
-export function extractMemberPartialModels<MS extends Record<string, AnyBaseNode>>(
+export function extractPartialModels<MS extends Record<string, AnyBaseNode>>(
 	members: MS
 ): { [K in keyof MS]: MS[K]['partial'] } {
 	const x: any = Object.create(null)
