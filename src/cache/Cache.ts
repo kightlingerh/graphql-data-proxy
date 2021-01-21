@@ -1,14 +1,17 @@
 import { IO } from 'fp-ts/IO'
 import { Task } from 'fp-ts/Task'
+import { rightIO, chain as chainTE, apFirst } from 'fp-ts/TaskEither'
+import { drawForest } from 'fp-ts/Tree'
+import { draw } from 'io-ts/Decoder'
 import { computed, Ref, shallowReactive, shallowRef, toRef } from 'vue'
 import { isNonEmpty, makeBy } from 'fp-ts/lib/Array'
-import { left, right } from 'fp-ts/lib/Either'
+import { isLeft, left, right } from 'fp-ts/lib/Either'
 import { constant, constVoid, pipe } from 'fp-ts/lib/function'
 import { map } from 'fp-ts/lib/Map'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { chain, isNone, isSome, none, Option, Some, some, map as mapO } from 'fp-ts/lib/Option'
 import { Reader } from 'fp-ts/lib/Reader'
-import { Path } from '../node'
+import { Path, TypeOfCacheEntry } from '../node'
 import * as N from '../node'
 import {
 	CacheError,
@@ -20,7 +23,7 @@ import {
 	isEmptyObject,
 	Persist
 } from '../shared'
-import { isEntityNode } from './shared'
+import { isEntityNode, PrimitiveNode } from './shared'
 import { validate } from './validate'
 
 export interface CacheDependencies {

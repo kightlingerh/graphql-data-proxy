@@ -38,7 +38,7 @@ export interface OptionNode<
 		TypeOfPartialInput<Item> | null | undefined,
 		ModifyOutputIfLocal<IsLocal, TypeOfPartialOutput<Item> | null>,
 		Option<TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Item>, Ref<Option<TypeOfCacheEntry<Item>>>>,
+		ModifyCacheEntryIfEntity<IsEntity, Option<TypeOf<Item>>, Ref<Option<TypeOfCacheEntry<Item>>>>,
 		Variables,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
 	> {

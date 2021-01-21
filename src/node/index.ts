@@ -1,6 +1,7 @@
 export * from './Array'
 export * from './Boolean'
 export * from './Float'
+export * from './Int'
 export * from './Map'
 export * from './Mutation'
 export * from './Node'

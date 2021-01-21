@@ -41,6 +41,18 @@ export function isSumNode(node: N.Node): node is N.SumNode<any, any, any> {
 	return node.tag === 'Sum'
 }
 
+export type PrimitiveNode =
+	| N.BooleanNode<any, any>
+	| N.FloatNode<any, any>
+	| N.IntNode<any, any>
+	| N.StringNode<any, any>
+
+const PrimitiveTags = new Set<N.NodeTag>(['Boolean', 'Float', 'Int', 'String'])
+
+export function isPrimitiveNode(node: N.Node): node is PrimitiveNode {
+	return PrimitiveTags.has(node.tag)
+}
+
 export type WrappedNode =
 	| N.ArrayNode<any, any, any>
 	| N.MapNode<any, any, any, any, any, any, any, any>
@@ -52,3 +64,16 @@ const WrappedNodeTags = new Set<N.NodeTag>(['Array', 'Map', 'NonEmptyArray', 'Op
 export function isWrappedNode(node: N.Node): node is WrappedNode {
 	return WrappedNodeTags.has(node.tag)
 }
+
+export function traverseMapWithKey<K, A, B>(f: (key: K, value: A) => B) {
+	return (map: Map<K, A>): Map<K, B> => {
+		const newMap = new Map()
+		for (const [key, value] of map.entries()) {
+			newMap.set(key, f(key, value))
+		}
+		return newMap
+	}
+}
+
+export const traverseMap: <A, B>(f: (value: A) => B) => (map: Map<unknown, A>) => Map<unknown, B> = (f) =>
+	traverseMapWithKey((_, a) => f(a))
