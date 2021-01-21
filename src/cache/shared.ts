@@ -1,5 +1,9 @@
 import * as N from '../node'
 
+export function isMap(val: unknown): val is Map<any, any> {
+	return Object.prototype.toString.call(val) === '[object Map]'
+}
+
 export function isArrayNode(node: N.Node): node is N.ArrayNode<any> {
 	return node.tag === 'Array'
 }
@@ -58,8 +62,8 @@ export type WrappedNode =
 	| N.MapNode<any, any, any, any, any, any, any, any>
 	| N.NonEmptyArrayNode<any, any, any>
 	| N.OptionNode<any, any, any>
-	| N.SetNode<any, any, any>
-const WrappedNodeTags = new Set<N.NodeTag>(['Array', 'Map', 'NonEmptyArray', 'Option', 'Set'])
+
+const WrappedNodeTags = new Set<N.NodeTag>(['Array', 'Map', 'NonEmptyArray', 'Option'])
 
 export function isWrappedNode(node: N.Node): node is WrappedNode {
 	return WrappedNodeTags.has(node.tag)

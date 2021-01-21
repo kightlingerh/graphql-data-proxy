@@ -20,7 +20,8 @@ import {
 	TypeOfStrictOutput,
 	HAS_TRANSFORMATIONS,
 	TypeOfCacheEntry,
-	ModifyCacheEntryIfEntity
+	ModifyIfEntity,
+	TypeOfRefs
 } from './shared'
 
 export interface MapNode<
@@ -41,9 +42,10 @@ export interface MapNode<
 		PartialInput,
 		ModifyOutputIfLocal<IsLocal, PartialOutput>,
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>,
+		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>,
 		Variables,
-		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
+		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
+		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfRefs<Item>>>
 	> {
 	readonly tag: 'Map'
 	readonly key: Key
@@ -52,7 +54,7 @@ export interface MapNode<
 	readonly __customCache?: CustomCache<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		ModifyCacheEntryIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>
+		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>
 	>
 }
 
@@ -64,7 +66,7 @@ export interface StaticMapNodeConfig<
 >
 	extends StaticNodeConfig<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>,
+		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>,
 		{},
 		IsLocal
 	> {
@@ -81,7 +83,7 @@ export interface DynamicMapNodeConfig<
 	extends DynamicNodeConfig<
 		Variables,
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>,
+		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>,
 		{},
 		IsLocal
 	> {

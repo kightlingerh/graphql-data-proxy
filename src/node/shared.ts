@@ -16,7 +16,8 @@ export interface BaseNode<
 	PartialData,
 	CacheEntry,
 	Variables extends NodeVariables = {},
-	SubVariables extends NodeVariables = {}
+	SubVariables extends NodeVariables = {},
+	Refs = CacheEntry
 > {
 	readonly tag: string
 	readonly strict: M.Model<StrictInput, StrictOutput, StrictData>
@@ -28,6 +29,7 @@ export interface BaseNode<
 		readonly decoding: boolean
 		readonly encoding: boolean
 	}
+	readonly __refs?: Refs
 	readonly __subVariables?: SubVariables
 	readonly __isLocal?: boolean
 	readonly __isEntity?: boolean
@@ -70,11 +72,17 @@ export type ExtractSubVariablesDefinition<T> = T extends { readonly __subVariabl
 
 export type TypeOfSubVariables<T> = ExtractNodeDefinitionType<ExtractSubVariablesDefinition<T>>
 
+export type TypeOfRefs<T> = T extends { readonly __refs?: infer A } ? Exclude<A, undefined> : never
+
 export type TypeOfCacheEntry<T> = T extends { readonly __cacheEntry?: infer A } ? Exclude<A, undefined> : never
 
 export type TypeOfMergedVariables<T> = TypeOfSubVariables<T> & TypeOfVariables<T>
 
 export type ExtractMergedVariablesDefinition<T> = ExtractSubVariablesDefinition<T> & ExtractVariablesDefinition<T>
+
+export type ModifyOutputIfLocal<IsLocal, Output> = IsLocal extends true ? undefined : Output
+
+export type ModifyIfEntity<IsEntity, Data, CacheEntry> = IsEntity extends true ? Ref<Option<Data>> : CacheEntry
 
 export interface StaticNodeConfig<
 	PartialData,
@@ -152,12 +160,6 @@ export function useLocalModel<I, O, A>(model: M.Model<I, O, A>): M.Model<I, unde
 		encode: constUndefined
 	}
 }
-
-export type ModifyOutputIfLocal<IsLocal, Output> = IsLocal extends true ? undefined : Output
-
-export type ModifyCacheEntryIfEntity<IsEntity, Data, CacheEntry> = IsEntity extends true
-	? Ref<Option<Data>>
-	: CacheEntry
 
 export type Values<T> = T[keyof T]
 

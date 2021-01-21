@@ -23,7 +23,8 @@ import {
 	HAS_TRANSFORMATIONS,
 	Ref,
 	TypeOfCacheEntry,
-	ModifyCacheEntryIfEntity
+	ModifyIfEntity,
+	TypeOfRefs
 } from './shared'
 
 export interface NonEmptyArrayNode<
@@ -39,24 +40,17 @@ export interface NonEmptyArrayNode<
 		Array<TypeOfPartialInput<Item>>,
 		ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfPartialOutput<Item>>>,
 		NonEmptyArray<TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<
-			IsEntity,
-			NonEmptyArray<TypeOf<Item>>,
-			Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>
-		>,
+		ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>>,
 		Variables,
-		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
+		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
+		ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfRefs<Item>>>>>
 	> {
 	readonly tag: 'NonEmptyArray'
 	readonly item: Item
 	readonly __customCache?: CustomCache<
 		NonEmptyArray<TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		ModifyCacheEntryIfEntity<
-			IsEntity,
-			NonEmptyArray<TypeOf<Item>>,
-			Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>
-		>
+		ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>>
 	>
 }
 
@@ -67,11 +61,7 @@ export interface StaticNonEmptyArrayNodeConfig<
 >
 	extends StaticNodeConfig<
 		NonEmptyArray<TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<
-			IsEntity,
-			NonEmptyArray<TypeOf<Item>>,
-			Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>
-		>,
+		ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>>,
 		{},
 		IsLocal
 	> {}
@@ -85,11 +75,7 @@ export interface DynamicNonEmptyArrayNodeConfig<
 	extends DynamicNodeConfig<
 		Variables,
 		NonEmptyArray<TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<
-			IsEntity,
-			NonEmptyArray<TypeOf<Item>>,
-			Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>
-		>,
+		ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>>,
 		{},
 		IsLocal
 	> {}

@@ -7,11 +7,9 @@ import { IntNode, int, staticInt } from './Int'
 import { MapNode, map, recordMap, tupleMap } from './Map'
 import { MutationNode, mutation } from './Mutation'
 import { NonEmptyArrayNode, nonEmptyArray } from './NonEmptyArray'
-import { NullableNode, nullable } from './Nullable'
 import { OptionNode, option } from './Option'
 import { ScalarNode, scalar } from './Scalar'
 import { SchemaNode, schema } from './Schema'
-import { SetNode, set } from './Set'
 import {
 	ExtractMergedVariablesDefinition,
 	NodeVariables,
@@ -31,11 +29,9 @@ export type Node =
 	| MapNode<any, any, any, any, any, any, any, any>
 	| MutationNode<any, any, any>
 	| NonEmptyArrayNode<any, any, any>
-	| NullableNode<any, any, any>
 	| OptionNode<any, any, any>
 	| ScalarNode<any, any, any, any, any, any>
 	| SchemaNode<any, any>
-	| SetNode<any, any, any>
 	| StringNode<any, any>
 	| SumNode<any, any, any>
 	| TypeNode<any, any, any, any>
@@ -55,11 +51,9 @@ export const node = {
 	tupleMap,
 	mutation,
 	nonEmptyArray,
-	nullable,
 	option,
 	scalar,
 	schema,
-	set,
 	string,
 	staticString,
 	sum,
@@ -78,10 +72,8 @@ function mergeVariables(node: Node, variables: Record<string, Node>[]) {
 			break
 		case 'Array':
 		case 'NonEmptyArray':
-		case 'Set':
 		case 'Option':
 		case 'Map':
-		case 'Nullable':
 			mergeVariables(node.item, variables)
 			break
 		case 'Mutation':

@@ -18,7 +18,8 @@ import {
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
 	TypeOfCacheEntry,
-	ModifyCacheEntryIfEntity
+	ModifyIfEntity,
+	TypeOfRefs
 } from './shared'
 
 export interface MutationNode<
@@ -34,9 +35,10 @@ export interface MutationNode<
 		TypeOfPartialInput<Result>,
 		ModifyOutputIfLocal<IsLocal, TypeOfPartialOutput<Result>>,
 		TypeOfPartial<Result>,
-		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
+		ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
 		Variables,
-		ExtractSubVariablesDefinition<Result> & ExtractVariablesDefinition<Result>
+		ExtractSubVariablesDefinition<Result> & ExtractVariablesDefinition<Result>,
+		ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfRefs<Result>>
 	> {
 	readonly tag: 'Mutation'
 	readonly result: Result
@@ -45,7 +47,7 @@ export interface MutationNode<
 		ExtractNodeDefinitionType<
 			ExtractSubVariablesDefinition<Result> & ExtractVariablesDefinition<Result> & Variables
 		>,
-		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>
+		ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>
 	>
 }
 
@@ -56,7 +58,7 @@ export interface StaticMutationNodeConfig<
 >
 	extends StaticNodeConfig<
 		TypeOfPartial<Result>,
-		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
+		ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
 		{},
 		IsLocal
 	> {}
@@ -70,7 +72,7 @@ export interface DynamicMutationNodeConfig<
 	extends DynamicNodeConfig<
 		Variables,
 		TypeOfPartial<Result>,
-		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
+		ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
 		{},
 		IsLocal
 	> {}

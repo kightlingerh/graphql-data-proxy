@@ -23,7 +23,8 @@ import {
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
 	Ref,
-	ModifyCacheEntryIfEntity
+	ModifyIfEntity,
+	TypeOfRefs
 } from './shared'
 import { BaseTypeNode, ExtractTypeName, type } from './Type'
 
@@ -63,6 +64,10 @@ export type ExtractSumNodeSubVariablesDefinition<MS extends ReadonlyArray<SumTyp
 	}[number]
 >
 
+export type ExtractSumNodeRefs<MS extends ReadonlyArray<SumTypeNode>> = {
+	[K in keyof MS]: Ref<Option<TypeOfRefs<MS>>>
+}[number]
+
 export interface SumNode<
 	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables = {},
@@ -76,9 +81,10 @@ export interface SumNode<
 		ExtractTypeOfSumNodePartialInput<MS>,
 		ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodePartialOutput<MS>>,
 		ExtractTypeOfPartialSumNode<MS>,
-		ModifyCacheEntryIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
+		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
 		Variables,
-		ExtractSumNodeSubVariablesDefinition<MS>
+		ExtractSumNodeSubVariablesDefinition<MS>,
+		ExtractSumNodeRefs<MS>
 	> {
 	readonly tag: 'Sum'
 	readonly members: MS
@@ -86,7 +92,7 @@ export interface SumNode<
 	readonly __customCache?: CustomCache<
 		ExtractTypeOfPartialSumNode<MS>,
 		ExtractNodeDefinitionType<ExtractSumNodeSubVariablesDefinition<MS> & Variables>,
-		ModifyCacheEntryIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>
+		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>
 	>
 }
 
@@ -97,7 +103,7 @@ export interface StaticSumNodeConfig<
 >
 	extends StaticNodeConfig<
 		ExtractTypeOfPartialSumNode<MS>,
-		ModifyCacheEntryIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
+		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
 		{},
 		IsLocal
 	> {}
@@ -111,14 +117,14 @@ export interface DynamicSumNodeConfig<
 	extends DynamicNodeConfig<
 		Variables,
 		ExtractTypeOfPartialSumNode<MS>,
-		ModifyCacheEntryIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
+		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
 		{},
 		IsLocal
 	> {}
 
 const SUM_TAG = 'Sum'
 
-function getSumMemberModelRecord(members: ReadonlyArray<SumTypeNode>, isStrict: boolean) {
+function useSumMemberModelRecord(members: ReadonlyArray<SumTypeNode>, isStrict: boolean) {
 	const x: any = Object.create(null)
 	members.forEach((member) => {
 		x[member.__typename] = isStrict ? member.strict : member.partial
@@ -126,7 +132,7 @@ function getSumMemberModelRecord(members: ReadonlyArray<SumTypeNode>, isStrict: 
 	return x
 }
 
-function getSumMemberRecord(members: ReadonlyArray<SumTypeNode>) {
+function useSumMemberRecord(members: ReadonlyArray<SumTypeNode>) {
 	const x: any = Object.create(null)
 	members.forEach((member) => {
 		x[member.__typename] = member
@@ -134,7 +140,7 @@ function getSumMemberRecord(members: ReadonlyArray<SumTypeNode>) {
 	return x
 }
 
-function getSumMemberModel(
+function useSumMemberModel(
 	isStrict: boolean,
 	members: ReadonlyArray<SumTypeNode>,
 	isLocal: boolean,
@@ -142,7 +148,7 @@ function getSumMemberModel(
 	useIdDecoder: boolean
 ): Model<any, any, any> {
 	return useAdjustedModel(
-		fromSum('__typename')(getSumMemberModelRecord(members, isStrict)),
+		fromSum('__typename')(useSumMemberModelRecord(members, isStrict)),
 		isLocal,
 		useIdEncoder,
 		useIdDecoder
@@ -182,15 +188,15 @@ export function sum<
 	config?: StaticSumNodeConfig<MS, IsLocal, IsEntity> | DynamicSumNodeConfig<MS, Variables, IsLocal, IsEntity>
 ): any {
 	const newMembers = addTypenameToMembers(ms)
-	const membersRecord = getSumMemberRecord(ms)
+	const membersRecord = useSumMemberRecord(ms)
 	const useIdDecoder = !hasDecodingTransformations(membersRecord)
 	const useIdEncoder = !hasEncodingTransformations(membersRecord)
 	return {
 		tag: SUM_TAG,
 		members: newMembers,
 		membersRecord,
-		strict: getSumMemberModel(true, newMembers, !!config?.isLocal, useIdEncoder, useIdDecoder),
-		partial: getSumMemberModel(false, newMembers, !!config?.isLocal, useIdEncoder, useIdDecoder),
+		strict: useSumMemberModel(true, newMembers, !!config?.isLocal, useIdEncoder, useIdDecoder),
+		partial: useSumMemberModel(false, newMembers, !!config?.isLocal, useIdEncoder, useIdDecoder),
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: {
 			encoding: !useIdEncoder,

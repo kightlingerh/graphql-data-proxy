@@ -26,7 +26,8 @@ import {
 	TypeOfStrictOutput,
 	Values,
 	CacheNode,
-	ModifyCacheEntryIfEntity
+	ModifyIfEntity,
+	TypeOfRefs
 } from './shared'
 
 export type ExtractTypeName<T> = T extends { readonly __typename: infer A } ? A : never
@@ -53,6 +54,11 @@ export type ExtractTypeNodePartialOutputFromMembers<MS extends Record<string, An
 export type ExtractTypeNodeCacheEntryFromMembers<MS extends Record<string, AnyBaseNode>> = {
 	[K in keyof MS]: CacheNode<MS[K]>
 }
+
+export type ExtractTypeNodeRefsFromMembers<MS extends Record<string, AnyBaseNode>> = {
+	[K in keyof MS]: TypeOfRefs<MS[K]>
+}
+
 export type ExtractTypeNodeSubVariablesFromMembers<MS extends Record<string, AnyBaseNode>> = {} & Intersection<
 	Values<
 		{
@@ -77,13 +83,10 @@ export interface BaseTypeNode<
 		ExtractTypeNodePartialInputFromMembers<MS>,
 		ModifyOutputIfLocal<IsLocal, ExtractTypeNodePartialOutputFromMembers<MS>>,
 		ExtractTypeNodePartialDataFromMembers<MS>,
-		ModifyCacheEntryIfEntity<
-			IsEntity,
-			ExtractTypeNodeStrictDataFromMembers<MS>,
-			ExtractTypeNodeCacheEntryFromMembers<MS>
-		>,
+		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>,
 		Variables,
-		ExtractTypeNodeSubVariablesFromMembers<MS>
+		ExtractTypeNodeSubVariablesFromMembers<MS>,
+		ExtractTypeNodeRefsFromMembers<MS>
 	> {
 	readonly __typename: Typename
 	readonly tag: 'Type'
@@ -91,11 +94,7 @@ export interface BaseTypeNode<
 	readonly __customCache?: CustomCache<
 		ExtractTypeNodePartialDataFromMembers<MS>,
 		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS> & Variables>,
-		ModifyCacheEntryIfEntity<
-			IsEntity,
-			ExtractTypeNodeStrictDataFromMembers<MS>,
-			ExtractTypeNodeCacheEntryFromMembers<MS>
-		>
+		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>
 	>
 }
 
@@ -118,11 +117,7 @@ export interface StaticTypeNodeConfig<
 >
 	extends StaticNodeConfig<
 		ExtractTypeNodePartialDataFromMembers<MS>,
-		ModifyCacheEntryIfEntity<
-			IsEntity,
-			ExtractTypeNodeStrictDataFromMembers<MS>,
-			ExtractTypeNodeCacheEntryFromMembers<MS>
-		>,
+		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>,
 		{},
 		IsLocal
 	> {
@@ -139,11 +134,7 @@ export interface DynamicTypeNodeConfig<
 	extends DynamicNodeConfig<
 		Variables,
 		ExtractTypeNodePartialDataFromMembers<MS>,
-		ModifyCacheEntryIfEntity<
-			IsEntity,
-			ExtractTypeNodeStrictDataFromMembers<MS>,
-			ExtractTypeNodeCacheEntryFromMembers<MS>
-		>,
+		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>,
 		{},
 		IsLocal
 	> {

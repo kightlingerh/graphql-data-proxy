@@ -22,7 +22,8 @@ import {
 	HAS_TRANSFORMATIONS,
 	TypeOfCacheEntry,
 	Ref,
-	ModifyCacheEntryIfEntity
+	ModifyIfEntity,
+	TypeOfRefs
 } from './shared'
 
 export interface OptionNode<
@@ -38,23 +39,24 @@ export interface OptionNode<
 		TypeOfPartialInput<Item> | null | undefined,
 		ModifyOutputIfLocal<IsLocal, TypeOfPartialOutput<Item> | null>,
 		Option<TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<IsEntity, Option<TypeOf<Item>>, Ref<Option<TypeOfCacheEntry<Item>>>>,
+		ModifyIfEntity<IsEntity, Option<TypeOf<Item>>, Ref<Option<TypeOfCacheEntry<Item>>>>,
 		Variables,
-		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
+		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
+		ModifyIfEntity<IsEntity, Option<TypeOf<Item>>, Ref<Option<TypeOfRefs<Item>>>>
 	> {
 	readonly tag: 'Option'
 	readonly item: Item
 	readonly __customCache?: CustomCache<
 		Option<TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Item>, Ref<Option<TypeOfCacheEntry<Item>>>>
+		ModifyIfEntity<IsEntity, TypeOf<Item>, Ref<Option<TypeOfCacheEntry<Item>>>>
 	>
 }
 
 export interface StaticOptionNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean, IsEntity extends boolean>
 	extends StaticNodeConfig<
 		Option<TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Item>, Ref<Option<TypeOfCacheEntry<Item>>>>,
+		ModifyIfEntity<IsEntity, TypeOf<Item>, Ref<Option<TypeOfCacheEntry<Item>>>>,
 		{},
 		IsLocal
 	> {}
@@ -68,7 +70,7 @@ export interface DynamicOptionNodeConfig<
 	extends DynamicNodeConfig<
 		Variables,
 		Option<TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<IsEntity, TypeOf<Item>, Ref<Option<TypeOfCacheEntry<Item>>>>,
+		ModifyIfEntity<IsEntity, TypeOf<Item>, Ref<Option<TypeOfCacheEntry<Item>>>>,
 		{},
 		IsLocal
 	> {}

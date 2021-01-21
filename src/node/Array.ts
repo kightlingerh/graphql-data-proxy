@@ -19,7 +19,8 @@ import {
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
 	TypeOfCacheEntry,
-	ModifyCacheEntryIfEntity
+	ModifyIfEntity,
+	TypeOfRefs
 } from './shared'
 
 export interface ArrayNode<
@@ -35,23 +36,24 @@ export interface ArrayNode<
 		Array<TypeOfPartialInput<Item>>,
 		ModifyOutputIfLocal<IsLocal, Array<TypeOfPartialOutput<Item>>>,
 		Array<TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
+		ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
 		Variables,
-		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>
+		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
+		ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfRefs<Item>>>
 	> {
 	readonly tag: 'Array'
 	readonly item: Item
 	readonly __customCache?: CustomCache<
 		Array<TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		ModifyCacheEntryIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>
+		ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>
 	>
 }
 
 export interface StaticArrayNodeConfig<Item extends AnyBaseNode, IsLocal extends boolean, IsEntity extends boolean>
 	extends StaticNodeConfig<
 		Array<TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
+		ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
 		IsLocal,
 		IsEntity
@@ -66,7 +68,7 @@ export interface DynamicArrayNodeConfig<
 	extends DynamicNodeConfig<
 		Variables,
 		Array<TypeOfPartial<Item>>,
-		ModifyCacheEntryIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
+		ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
 		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
 		IsLocal,
 		IsEntity

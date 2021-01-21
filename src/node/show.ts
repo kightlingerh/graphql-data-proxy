@@ -14,12 +14,8 @@ export const showNode: Show<Node> = {
 				return `Option<${showNode.show(node.item)}>`
 			case 'Array':
 				return `Array<${showNode.show(node.item)}>`
-			case 'Set':
-				return `Set<${showNode.show(node.item)}>`
 			case 'NonEmptyArray':
 				return `NonEmptyArray<${showNode.show(node.item)}>`
-			case 'Nullable':
-				return `${showNode.show(node.item)} | null`
 			case 'Sum':
 				return showSumNode.show(node)
 			case 'Type':
