@@ -1,4 +1,3 @@
-import { identity } from 'fp-ts/function'
 import { fromMap } from '../model'
 import {
 	BaseNode,
@@ -12,10 +11,6 @@ import {
 	StaticNodeConfig,
 	TypeOf,
 	TypeOfPartial,
-	TypeOfPartialInput,
-	TypeOfPartialOutput,
-	TypeOfStrictInput,
-	TypeOfStrictOutput,
 	HAS_TRANSFORMATIONS,
 	TypeOfCacheEntry,
 	ModifyIfEntity,
@@ -92,8 +87,6 @@ export function map<
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >(
-	toPairs: (i: PartialInput) => Array<[TypeOfPartialInput<Key>, TypeOfPartialOutput<Item>]>,
-	fromPairs: (pairs: Array<[TypeOfPartialInput<Key>, TypeOfPartialOutput<Item>]>) => PartialOutput,
 	key: Key,
 	item: Item,
 	config?: StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
@@ -109,8 +102,6 @@ export function map<
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >(
-	toPairs: (i: PartialInput) => Array<[TypeOfPartialInput<Key>, TypeOfPartialOutput<Item>]>,
-	fromPairs: (pairs: Array<[TypeOfPartialInput<Key>, TypeOfPartialOutput<Item>]>) => PartialOutput,
 	key: Key,
 	item: Item,
 	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
@@ -126,21 +117,18 @@ export function map<
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >(
-	toPairs: (i: PartialInput) => Array<[TypeOfPartialInput<Key>, TypeOfPartialOutput<Item>]>,
-	fromPairs: (pairs: Array<[TypeOfPartialInput<Key>, TypeOfPartialOutput<Item>]>) => PartialOutput,
 	key: Key,
 	item: Item,
 	config?:
 		| StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
 		| DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
 ): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, Variables, IsLocal, IsEntity> {
-	const model = fromMap(toPairs, fromPairs)
 	return {
 		tag: MAP_TAG,
 		item,
 		key,
-		strict: model(key.strict, item.strict) as any,
-		partial: model(key.partial, item.partial) as any,
+		strict: fromMap(key.strict as any, item.strict) as any,
+		partial: fromMap(key.partial as any, item.partial) as any,
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		name: config?.name,
 		__hasTransformations: HAS_TRANSFORMATIONS,
@@ -148,140 +136,4 @@ export function map<
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}
-}
-
-function toTuplePairs(map: Map<unknown, unknown>): Array<[unknown, unknown]> {
-	return [...map.entries()]
-}
-
-export function tupleMap<
-	Key extends AnyBaseNode,
-	Item extends AnyBaseNode,
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(
-	key: Key,
-	item: Item,
-	config?: StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
-): MapNode<
-	Array<[TypeOfStrictInput<Key>, TypeOfStrictInput<Item>]>,
-	Array<[TypeOfStrictOutput<Key>, TypeOfStrictOutput<Item>]>,
-	Array<[TypeOfPartialInput<Key>, TypeOfPartialInput<Item>]>,
-	Array<[TypeOfPartialOutput<Key>, TypeOfPartialOutput<Item>]>,
-	Key,
-	Item,
-	{},
-	IsLocal
->
-export function tupleMap<
-	Key extends AnyBaseNode,
-	Item extends AnyBaseNode,
-	Variables extends NodeVariables,
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(
-	key: Key,
-	item: Item,
-	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
-): MapNode<
-	Array<[TypeOfStrictInput<Key>, TypeOfStrictInput<Item>]>,
-	Array<[TypeOfStrictOutput<Key>, TypeOfStrictOutput<Item>]>,
-	Array<[TypeOfPartialInput<Key>, TypeOfPartialInput<Item>]>,
-	Array<[TypeOfPartialOutput<Key>, TypeOfPartialOutput<Item>]>,
-	Key,
-	Item,
-	Variables,
-	IsLocal
->
-export function tupleMap<
-	Key extends AnyBaseNode,
-	Item extends AnyBaseNode,
-	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(
-	key: Key,
-	item: Item,
-	config?:
-		| StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
-		| DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
-): MapNode<
-	Array<[TypeOfStrictInput<Key>, TypeOfStrictInput<Item>]>,
-	Array<[TypeOfStrictOutput<Key>, TypeOfStrictOutput<Item>]>,
-	Array<[TypeOfPartialInput<Key>, TypeOfPartialInput<Item>]>,
-	Array<[TypeOfPartialOutput<Key>, TypeOfPartialOutput<Item>]>,
-	Key,
-	Item,
-	Variables,
-	IsLocal,
-	IsEntity
-> {
-	return map(identity as any, toTuplePairs as any, key, item, config as any) as any
-}
-
-export function recordMap<
-	Key extends AnyBaseNode,
-	Item extends AnyBaseNode,
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(
-	key: Key,
-	item: Item,
-	config?: StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
-): MapNode<
-	Record<TypeOfStrictInput<Key>, TypeOfStrictInput<Item>>,
-	Record<TypeOfStrictOutput<Key>, TypeOfStrictOutput<Item>>,
-	Record<TypeOfPartialInput<Key>, TypeOfPartialInput<Item>>,
-	Record<TypeOfPartialOutput<Key>, TypeOfPartialOutput<Item>>,
-	Key,
-	Item,
-	{},
-	IsLocal,
-	IsEntity
->
-export function recordMap<
-	Key extends AnyBaseNode,
-	Item extends AnyBaseNode,
-	Variables extends NodeVariables,
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(
-	key: Key,
-	item: Item,
-	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
-): MapNode<
-	Record<TypeOfStrictInput<Key>, TypeOfStrictInput<Item>>,
-	Record<TypeOfStrictOutput<Key>, TypeOfStrictOutput<Item>>,
-	Record<TypeOfPartialInput<Key>, TypeOfPartialInput<Item>>,
-	Record<TypeOfPartialOutput<Key>, TypeOfPartialOutput<Item>>,
-	Key,
-	Item,
-	Variables,
-	IsLocal,
-	IsEntity
->
-export function recordMap<
-	Key extends AnyBaseNode,
-	Item extends AnyBaseNode,
-	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(
-	key: Key,
-	item: Item,
-	config?:
-		| StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
-		| DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
-): MapNode<
-	Record<TypeOfStrictInput<Key>, TypeOfStrictInput<Item>>,
-	Record<TypeOfStrictOutput<Key>, TypeOfStrictOutput<Item>>,
-	Record<TypeOfPartialInput<Key>, TypeOfPartialInput<Item>>,
-	Record<TypeOfPartialOutput<Key>, TypeOfPartialOutput<Item>>,
-	Key,
-	Item,
-	Variables,
-	IsLocal,
-	IsEntity
-> {
-	return map(Object.entries as any, Object.fromEntries as any, key, item, config as any) as any
 }

@@ -1,12 +1,12 @@
 import { eqStrict } from 'fp-ts/Eq'
-import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
-import { Option } from 'fp-ts/lib/Option'
+import { NonEmptyArray } from 'fp-ts/NonEmptyArray'
+import { Option } from 'fp-ts/Option'
 import * as EQ from './Eq'
 import * as EN from './Encoder'
 import * as TD from './TaskDecoder'
 import * as G from './Guard'
-import { constNull, Lazy } from 'fp-ts/lib/function'
-import { Literal } from 'io-ts/lib/Schemable'
+import { constNull, Lazy } from 'fp-ts/function'
+import { Literal } from './Schemable'
 
 export interface Model<I, O, A> extends TD.TaskDecoder<I, A>, EN.Encoder<O, A>, G.Guard<unknown, A>, EQ.Eq<A> {}
 
@@ -126,27 +126,23 @@ export function nonEmptyArray<O, A>(val: Model<unknown, O, A>): Model<unknown, A
 	return fromNonEmptyArray(val) as Model<unknown, Array<O>, NonEmptyArray<A>>
 }
 
-export function fromMap<I, IK, IA, O, OK, OA, K, A>(
-	toPairs: (i: I) => Array<[IK, IA]>,
-	fromPairs: (pairs: Array<[OK, OA]>) => O
-) {
-	return (key: Model<IK, OK, K>, item: Model<IA, OA, A>): Model<I, O, Map<K, A>> => {
-		return {
-			equals: EQ.map(key, item).equals,
-			is: G.map(key, item).is,
-			decode: TD.fromMap<I, IK, IA, K, A>(toPairs)(key, item).decode,
-			encode: EN.map<O, OK, OA, K, A>(fromPairs)(key, item).encode
-		}
+export function fromMap<IK extends string | number, IA, O, OK, OA, K, A>(
+	key: Model<IK, OK, K>,
+	item: Model<IA, OA, A>
+): Model<Record<IK, IA>, O, Map<K, A>> {
+	return {
+		equals: EQ.map(key, item).equals,
+		is: G.map(key, item).is,
+		decode: TD.fromMap<IK, IA, K, A>(key, item).decode,
+		encode: EN.map<O, OK, OA, K, A>(Object.fromEntries)(key, item).encode
 	}
 }
 
 export function map<O, OK, OA, K, A>(
-	toPairs: (i: unknown) => Array<[unknown, unknown]>,
-	fromPairs: (pairs: Array<[OK, OA]>) => O
-) {
-	return (key: Model<unknown, OK, K>, item: Model<unknown, OA, A>): Model<unknown, O, Map<K, A>> => {
-		return fromMap<unknown, unknown, unknown, O, OK, OA, K, A>(toPairs, fromPairs)(key, item)
-	}
+	key: Model<unknown, OK, K>,
+	item: Model<unknown, OA, A>
+): Model<Record<string | number, unknown>, O, Map<K, A>> {
+	return fromMap<string | number, unknown, O, OK, OA, K, A>(key, item)
 }
 
 export function fromSet<I, O, A>(item: Model<I, O, A>): Model<Array<I>, Array<O>, Set<A>> {

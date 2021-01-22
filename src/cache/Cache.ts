@@ -1,6 +1,6 @@
 import { isNonEmpty, snoc } from 'fp-ts/Array'
 import { left, right } from 'fp-ts/Either'
-import { absurd, constant, Endomorphism, pipe } from 'fp-ts/function'
+import { absurd, constant, constVoid, Endomorphism, pipe } from 'fp-ts/function'
 import { IO, map as mapIO, of, sequenceArray as sequenceArrayIO, traverseArray as traverseArrayIO } from 'fp-ts/IO'
 import { fromArray, NonEmptyArray } from 'fp-ts/NonEmptyArray'
 import { chain, fold, isNone, isSome, map as mapO, none, Option, sequenceArray, some } from 'fp-ts/Option'
@@ -470,6 +470,18 @@ class MapCacheNode extends CacheNode {
 		return (key: unknown, data: unknown): CacheWriteResult => {
 			return async () => {
 				const [node, isNew] = this.useCacheNode(key, variables, data)
+				if (data === null || data === undefined) {
+					if (isNew) {
+						// there is already no data at this key, so nothing to evict
+						return constVoid
+					}
+					this.entry.delete(key)
+					return () => {
+						if (!this.entry.has(key)) {
+							this.entry.set(key, node)
+						}
+					}
+				}
 				if (isNew) {
 					await node.write(variables, data)()
 					return () => {

@@ -4,10 +4,11 @@ import { Refinement } from 'fp-ts/function'
 import { isNonEmpty } from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
-import { fromNullable, Option } from 'fp-ts/lib/Option'
+import { fromNullable, Option } from 'fp-ts/Option'
 import * as TE from 'fp-ts/TaskEither'
 import * as TD from 'io-ts/TaskDecoder'
 export * from 'io-ts/TaskDecoder'
+import * as DE from './DecodeError'
 import { Literal } from './Schemable'
 import * as G from './Guard'
 import * as D from './Decoder'
@@ -129,21 +130,60 @@ export const fromEither = <IL, IR, L, R>(
 
 export const either = <L, R>(l: TaskDecoder<unknown, L>, r: TaskDecoder<unknown, R>) => fromEither(l, r)
 
-const toMap = <K, A>(pairs: Array<[K, A]>) => new Map(pairs)
+const mergeErrors = DE.getSemigroup<string>().concat
 
-export const fromMap = <I, IK, IA, K, A>(toPairs: (i: I) => Array<[IK, IA]>) => {
-	return (k: TaskDecoder<IK, K>, a: TaskDecoder<IA, A>): TaskDecoder<I, Map<K, A>> => {
-		const d = fromArray(fromTuple(k, a))
-		return {
-			decode: (i) => pipe(toPairs(i), d.decode, TE.map(toMap))
+export const fromMap = <IK extends string | number, IA, K, A>(
+	k: TaskDecoder<IK, K>,
+	a: TaskDecoder<IA, A>
+): TaskDecoder<Record<IK, IA>, Map<K, A>> => {
+	return {
+		decode: (i) => {
+			return async () => {
+				const record = await UnknownRecord.decode(i)()
+				if (E.isLeft(record)) {
+					return record
+				}
+				let iterations = 0
+				const pairs: Promise<[E.Either<DecodeError, K>, E.Either<DecodeError, A>]>[] = []
+				for (const [key, value] of Object.entries(record.right as Record<IK, IA>)) {
+					pairs.push(Promise.all([k.decode(key as IK)(), a.decode(value as IA)()]))
+					if (iterations % 100 === 0) {
+						await Promise.all(pairs.slice(iterations - 100, iterations))
+					}
+				}
+				const awaitedPairs = await Promise.all(pairs)
+				const extractedPairs: [K, A][] = []
+				let error: D.DecodeError | null = null
+				for (let i = 0; i < awaitedPairs.length; i++) {
+					const [key, value] = awaitedPairs[i]
+					if (__DEV__ || !__DISABLE_VALIDATION__) {
+						if (E.isLeft(key)) {
+							error = error ? mergeErrors(error, key.left) : key.left
+						}
+						if (E.isLeft(value)) {
+							error = error ? mergeErrors(error, value.left) : value.left
+						}
+					}
+					if (E.isRight(key) && E.isRight(value)) {
+						extractedPairs.push([key.right, value.right])
+					}
+					if (i % 100 === 0) {
+						await Promise.resolve()
+					}
+				}
+				if (error) {
+					return E.left(error)
+				}
+				return E.right(new Map(extractedPairs))
+			}
 		}
 	}
 }
 
-export const map = (toPairs: (i: unknown) => Array<[unknown, unknown]>) => <K, A>(
+export const map = <K, A>(
 	k: TaskDecoder<unknown, K>,
 	a: TaskDecoder<unknown, A>
-) => fromMap(toPairs)(k, a)
+): TaskDecoder<Record<string | number, unknown>, Map<K, A>> => pipe(UnknownRecord, TD.compose(fromMap(k, a)))
 
 const toSet = <T>(values: Array<T>) => new Set(values)
 
