@@ -26,11 +26,10 @@ export interface BooleanNode<Variables extends NodeVariables = {}, IsLocal exten
 	readonly tag: 'Boolean'
 }
 
-export interface StaticBooleanNodeConfig<IsLocal extends boolean>
-	extends StaticNodeConfig<boolean, Ref<Option<boolean>>, {}, IsLocal> {}
+export interface StaticBooleanNodeConfig<IsLocal extends boolean> extends StaticNodeConfig<IsLocal> {}
 
 export interface DynamicBooleanNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, boolean, Ref<Option<boolean>>, {}, IsLocal> {}
+	extends DynamicNodeConfig<Variables, IsLocal> {}
 
 const BOOLEAN_TAG = 'Boolean'
 

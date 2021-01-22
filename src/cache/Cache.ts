@@ -1,18 +1,34 @@
-import { IO, of, map as mapIO, traverseArray as traverseArrayIO, sequenceArray as sequenceArrayIO } from 'fp-ts/IO'
-import { fromIO, map as mapT, Task, chain as chainT } from 'fp-ts/Task'
-import { computed, shallowReactive, shallowRef } from 'vue'
 import { isNonEmpty, snoc } from 'fp-ts/Array'
 import { left, right } from 'fp-ts/Either'
-import { absurd, constant, pipe } from 'fp-ts/function'
-import { fromArray } from 'fp-ts/NonEmptyArray'
-import { chain, isNone, none, Option, some, sequenceArray, isSome, map as mapO, fold } from 'fp-ts/Option'
+import { absurd, constant, Endomorphism, pipe } from 'fp-ts/function'
+import { IO, map as mapIO, of, sequenceArray as sequenceArrayIO, traverseArray as traverseArrayIO } from 'fp-ts/IO'
+import { fromArray, NonEmptyArray } from 'fp-ts/NonEmptyArray'
+import { chain, fold, isNone, isSome, map as mapO, none, Option, sequenceArray, some } from 'fp-ts/Option'
 import { Reader } from 'fp-ts/Reader'
+import { chain as chainT, fromIO, map as mapT, Task } from 'fp-ts/Task'
+import { TaskEither } from 'fp-ts/TaskEither'
+import { Tree } from 'fp-ts/Tree'
+import { computed, shallowReactive, shallowRef } from 'vue'
 import { Model } from '../model'
-import { Ref } from '../node'
 import * as N from '../node'
-import { CacheError, CacheResult, isEmptyObject, Persist } from '../shared'
+import { Ref } from '../node'
+import { isEmptyObject } from '../shared'
 import { CacheGraphqlNode, isNonPrimitiveEntityNode, PrimitiveNode, traverseMap } from './shared'
 import { validate } from './validate'
+
+export interface CacheResult<T> extends IO<T> {}
+
+export interface CacheError extends NonEmptyArray<Tree<string>> {}
+
+export interface Persist {
+	store(key: string, value: unknown): TaskEither<CacheError, void>
+
+	restore<T>(key: string): TaskEither<CacheError, T>
+
+	delete(key: string): TaskEither<CacheError, void>
+
+	update<T>(key: string, f: Endomorphism<T>): TaskEither<CacheError, void>
+}
 
 export interface CacheDependencies {
 	id?: string
@@ -276,7 +292,7 @@ class SumCacheNode extends CacheNode {
 
 class TypeCacheNode extends CacheNode {
 	readonly entry: Ref<Record<string, CacheNode | Map<string, CacheNode>>>
-	readonly models: Record<string, Model<any, any, any>> = Object.create(null)
+	readonly models: Record<string, Model<any, any, any>> = {}
 	constructor(
 		readonly schemaNode: N.TypeNode<any, any, any, any, any>,
 		readonly path: N.Path,
@@ -292,7 +308,7 @@ class TypeCacheNode extends CacheNode {
 		}
 	}
 	private buildEntry(variables?: Record<string, unknown>, data?: Record<string, unknown>) {
-		const newEntry = Object.create(null)
+		const newEntry: any = {}
 		for (const key in this.schemaNode.members) {
 			const member: N.Node = this.schemaNode.members[key]
 			const hasVariables = !isEmptyObject(member.variables)
@@ -362,7 +378,7 @@ class TypeCacheNode extends CacheNode {
 	}
 	read(requestNode: N.TypeNode<any, any, any, any>, variables: Record<string, unknown>) {
 		return () => {
-			const result = Object.create(null)
+			const result: any = {}
 			const entry = this.useEntry(variables)
 			for (const key in requestNode.members) {
 				const r = this.useCacheNode(entry, key, variables).read(requestNode.members[key], variables)()
@@ -376,7 +392,7 @@ class TypeCacheNode extends CacheNode {
 	}
 	useEntries(requestNode: N.TypeNode<any, any, any, any>, variables: Record<string, unknown>) {
 		return () => {
-			const requestEntries = Object.create(null)
+			const requestEntries: any = {}
 			const entry = this.useEntry(variables)
 			for (const key in requestNode.members) {
 				requestEntries[key] = this.useCacheNode(entry, key, variables).toEntries(

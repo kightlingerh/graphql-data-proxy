@@ -27,11 +27,10 @@ export interface IntNode<Variables extends NodeVariables = {}, IsLocal extends b
 	readonly tag: 'Int'
 }
 
-export interface StaticIntNodeConfig<IsLocal extends boolean>
-	extends StaticNodeConfig<Int, Ref<Option<Int>>, {}, IsLocal> {}
+export interface StaticIntNodeConfig<IsLocal extends boolean> extends StaticNodeConfig<IsLocal> {}
 
 export interface DynamicIntNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Int, Ref<Option<Int>>, {}, IsLocal> {}
+	extends DynamicNodeConfig<Variables, IsLocal> {}
 
 const INT_TAG = 'Int'
 

@@ -5,21 +5,13 @@ import { None, Option, Some } from 'fp-ts/lib/Option'
 import * as G from 'io-ts/Guard'
 export * from 'io-ts/Guard'
 
-export interface IntBrand {
-	readonly Int: unique symbol
-}
-
-export type Int = number & IntBrand
+export type Int = number
 
 export const int: G.Guard<unknown, Int> = {
 	is: (u): u is Int => G.number.is(u) && Number.isInteger(u)
 }
 
-export interface FloatBrand {
-	readonly Float: unique symbol
-}
-
-export type Float = number & FloatBrand
+export type Float = number
 
 export const float: G.Guard<unknown, Float> = {
 	is: (u): u is Float => G.number.is(u) && !Number.isInteger(u)

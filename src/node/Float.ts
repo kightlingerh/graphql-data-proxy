@@ -27,11 +27,10 @@ export interface FloatNode<Variables extends NodeVariables = {}, IsLocal extends
 	readonly tag: 'Float'
 }
 
-export interface StaticFloatNodeConfig<IsLocal extends boolean>
-	extends StaticNodeConfig<Float, Ref<Option<Float>>, {}, IsLocal> {}
+export interface StaticFloatNodeConfig<IsLocal extends boolean> extends StaticNodeConfig<IsLocal> {}
 
 export interface DynamicFloatNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, Float, Ref<Option<Float>>, {}, IsLocal> {}
+	extends DynamicNodeConfig<Variables, IsLocal> {}
 
 const FLOAT_TAG = 'Float'
 

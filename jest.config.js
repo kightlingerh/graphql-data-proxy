@@ -12,7 +12,7 @@ module.exports = {
     // transform: {
     //     '^.+\\.tsx?$': 'ts-jest'
     // },
-    testRegex: 'test',
+    testRegex: '__tests__',
     moduleFileExtensions: ['ts', 'js'],
     // coverageThreshold: {
     //     global: {

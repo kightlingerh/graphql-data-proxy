@@ -1,7 +1,7 @@
 {
   "name": "graphql-data-proxy",
   "version": "0.0.0",
-  "description": "Graphql Client",
+  "description": "code first graphql client",
   "files": [
     "lib",
     "es5"
@@ -27,9 +27,11 @@
   },
   "devDependencies": {
     "@types/jest": "^26.0.4",
+    "dtslint": "github:gcanti/dtslint",
+    "fast-check": "^2.11.0",
     "fp-ts": "^2.9.3",
     "io-ts": "^2.2.13",
-    "jest": "^26.1.0",
+    "jest": "^26.6.3",
     "prettier": "^2.0.5",
     "rimraf": "^3.0.2",
     "ts-jest": "^26.1.3",

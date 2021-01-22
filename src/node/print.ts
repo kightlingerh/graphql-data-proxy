@@ -81,7 +81,6 @@ function printVariableName(mapPrinter: MapPrinter, node: Node, tokens: string[],
 			tokens.push(...mapPrinter.tokenizeMapVariables(node, keyTokens, valueTokens), optionalString)
 			break
 		case 'Option':
-		case 'Nullable':
 			printVariableName(mapPrinter, node.item, tokens, true)
 			break
 		case 'Boolean':
@@ -141,7 +140,6 @@ function printNode(mapPrinter: MapPrinter, node: Node, tokens: string[]) {
 		case 'Option':
 		case 'NonEmptyArray':
 		case 'Array':
-		case 'Nullable':
 			printNode(mapPrinter, node.item, tokens)
 			break
 		case 'Mutation':
