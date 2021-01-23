@@ -63,7 +63,7 @@ export type ExtractSumNodeSubVariablesDefinition<MS extends ReadonlyArray<SumTyp
 >
 
 export type ExtractSumNodeRefs<MS extends ReadonlyArray<SumTypeNode>> = {
-	[K in keyof MS]: Ref<Option<TypeOfRefs<MS>>>
+	[K in keyof MS]: Ref<Option<TypeOfRefs<MS[K]>>>
 }[number]
 
 export interface SumNode<

@@ -182,11 +182,9 @@ function useNewCacheNode(
 	path: N.Path,
 	uniqueNodes: Map<unknown, CacheNode>,
 	persist?: Persist,
-	variables?: Record<string, unknown>,
-	data?: unknown
 ) {
 	if (!!node.__isEntity) {
-		return new PrimitiveCacheNode(node as PrimitiveNode, path, persist, data)
+		return new PrimitiveCacheNode(node as PrimitiveNode, path, persist)
 	}
 	switch (node.tag) {
 		case 'Map':
@@ -202,9 +200,7 @@ function useNewCacheNode(
 				node,
 				path,
 				uniqueNodes,
-				persist,
-				variables,
-				data as Record<string, unknown> | undefined
+				persist
 			)
 		case 'Type':
 			return new TypeCacheNode(
@@ -212,11 +208,9 @@ function useNewCacheNode(
 				path,
 				uniqueNodes,
 				persist,
-				variables,
-				data as Record<string, unknown> | undefined
 			)
 		default:
-			return new PrimitiveCacheNode(node as PrimitiveNode, path, persist, data)
+			return new PrimitiveCacheNode(node as PrimitiveNode, path, persist)
 	}
 }
 
@@ -226,24 +220,9 @@ class SumCacheNode extends CacheNode {
 		readonly schemaNode: N.SumNode<any, any, any>,
 		readonly path: N.Path,
 		readonly uniqueNodes: Map<unknown, CacheNode>,
-		readonly persist?: Persist,
-		readonly variables?: Record<string, unknown>,
-		readonly data?: Record<string, unknown>
+		readonly persist?: Persist
 	) {
 		super(schemaNode, path, persist)
-		if (data && variables && typeof data.__typename === 'string') {
-			this.entry.value = some([
-				data.__typename,
-				useNewCacheNode(
-					(schemaNode.membersRecord as any)[data.__typename],
-					path,
-					uniqueNodes,
-					persist,
-					variables,
-					data
-				) as CacheNode
-			])
-		}
 	}
 
 	read(requestNode: N.SumNode<any, any, any, any>, variables: Record<string, unknown>) {
@@ -256,36 +235,61 @@ class SumCacheNode extends CacheNode {
 				: none
 		}
 	}
-	useEntries(requestNode: N.TypeNode<any, any, any, any>, variables: Record<string, unknown>) {
+	useEntries(requestNode: N.SumNode<any, any, any, any>, variables: Record<string, unknown>) {
 		return () => {
 			return computed(() =>
-				isSome(this.entry.value) ? this.entry.value.value[1].toEntries(requestNode, variables)() : none
+				isSome(this.entry.value) ? some(this.entry.value.value[1].toEntries((requestNode.membersRecord as any)[this.entry.value.value[0]], variables)()) : none
 			)
 		}
 	}
 	write(variables: Record<string, unknown>, data: Record<string, unknown>) {
 		return async () => {
-			// check if current value needs to be overwritten
-			if (isNone(this.entry.value) || (data.__typename && this.entry.value.value[0] !== data.__typename)) {
+			if (isNone(this.entry.value) && data.__typename) {
 				const __typename = data.__typename as string
+				const newNode = new TypeCacheNode(
+					(this.schemaNode.membersRecord as any)[__typename],
+					this.path,
+					this.uniqueNodes,
+					this.persist
+				)
+
 				this.entry.value = some([
 					__typename as string,
-					useNewCacheNode(
-						(this.schemaNode.membersRecord as any)[__typename],
-						this.path,
-						this.uniqueNodes,
-						this.persist,
-						variables,
-						data
-					) as CacheNode
+					newNode
 				])
+				await newNode.write(variables, data)()
+				return () => {
+					if (isSome(this.entry.value) && this.entry.value.value[0] === __typename && this.entry.value.value[1] === newNode) {
+						this.entry.value = none;
+					}
+				}
 			}
-			const __typename = data.__typename || (this.entry as any).value.value[0]
-			if (!!__typename && isSome(this.entry.value)) {
-				return this.entry.value.value[1].write(variables, data)
-			} else {
-				return absurd as IO<void>
+			// check if current value needs to be overwritten
+			if (isSome(this.entry.value) && (data.__typename && this.entry.value.value[0] !== data.__typename)) {
+				const __typename = data.__typename as string
+				const currentEntry = this.entry.value;
+				const newNode = new TypeCacheNode(
+					(this.schemaNode.membersRecord as any)[__typename],
+					this.path,
+					this.uniqueNodes,
+					this.persist
+				)
+
+				this.entry.value = some([
+					__typename as string,
+					newNode
+				])
+				await newNode.write(variables, data)()
+				return () => {
+					if (isSome(this.entry.value) && this.entry.value.value[0] === __typename && this.entry.value.value[1] === newNode) {
+						this.entry.value = currentEntry;
+					}
+				}
 			}
+			if (isSome(this.entry.value) && (data.__typename === undefined || data.__typename === this.entry.value.value[0])) {
+				return this.entry.value.value[1].write(variables, data)()
+			}
+			return absurd as IO<void>
 		}
 	}
 }
@@ -297,17 +301,12 @@ class TypeCacheNode extends CacheNode {
 		readonly schemaNode: N.TypeNode<any, any, any, any, any>,
 		readonly path: N.Path,
 		readonly uniqueNodes: Map<unknown, any>,
-		readonly persist?: Persist,
-		readonly variables?: Record<string, unknown>,
-		readonly data?: Record<string, unknown>
+		readonly persist?: Persist
 	) {
 		super(schemaNode, path, persist)
-		this.entry = shallowRef(this.buildEntry(variables, data))
-		if (schemaNode.__customCache) {
-			this.useEntry(variables, data)
-		}
+		this.entry = shallowRef(this.buildEntry())
 	}
-	private buildEntry(variables?: Record<string, unknown>, data?: Record<string, unknown>) {
+	private buildEntry() {
 		const newEntry: any = {}
 		for (const key in this.schemaNode.members) {
 			const member: N.Node = this.schemaNode.members[key]
@@ -318,9 +317,7 @@ class TypeCacheNode extends CacheNode {
 						member as CacheGraphqlNode,
 						snoc(this.path, key),
 						this.uniqueNodes,
-						this.persist,
-						variables,
-						data
+						this.persist
 				  )
 			if (hasVariables) {
 				this.models[key] = N.useVariablesModel(member.variables)
@@ -353,8 +350,7 @@ class TypeCacheNode extends CacheNode {
 	private useCacheNode(
 		entry: Record<string, CacheNode | Map<string, CacheNode>>,
 		key: string,
-		variables: Record<string, unknown>,
-		data?: Record<string, unknown>
+		variables: Record<string, unknown>
 	): CacheNode {
 		if (this.models.hasOwnProperty(key)) {
 			const encodedVariables = JSON.stringify(this.models[key].encode(variables))
@@ -366,9 +362,7 @@ class TypeCacheNode extends CacheNode {
 					this.schemaNode.members[key],
 					snoc(this.path, key),
 					this.uniqueNodes,
-					this.persist,
-					variables,
-					data
+					this.persist
 				) as CacheNode
 				;(entry[key] as Map<string, CacheNode>).set(key, n)
 				return n
@@ -383,7 +377,7 @@ class TypeCacheNode extends CacheNode {
 			for (const key in requestNode.members) {
 				const r = this.useCacheNode(entry, key, variables).read(requestNode.members[key], variables)()
 				if (isNone(r)) {
-					return r
+					return none
 				}
 				result[key] = r.value
 			}
@@ -395,7 +389,8 @@ class TypeCacheNode extends CacheNode {
 			const requestEntries: any = {}
 			const entry = this.useEntry(variables)
 			for (const key in requestNode.members) {
-				requestEntries[key] = this.useCacheNode(entry, key, variables).toEntries(
+				const node = this.useCacheNode(entry, key, variables);
+				requestEntries[key] = node.toEntries(
 					requestNode.members[key],
 					variables
 				)()
@@ -408,7 +403,7 @@ class TypeCacheNode extends CacheNode {
 			const evictions: Promise<Evict>[] = []
 			const entry = this.useEntry(variables, data)
 			for (const key in data) {
-				evictions.push(this.useCacheNode(entry, key, variables, data).write(variables, data[key])())
+				evictions.push(this.useCacheNode(entry, key, variables).write(variables, data[key])())
 			}
 			return sequenceArrayIO(await Promise.all(evictions))
 		}
@@ -450,7 +445,7 @@ class MapCacheNode extends CacheNode {
 	useEntries(requestNode: N.MapNode<any, any, any, any, any, any, any, any>, variables: Record<string, unknown>) {
 		return () => traverseMap(this.useEntry(requestNode.item, variables))(this.entry)
 	}
-	private useCacheNode(key: unknown, variables?: Record<string, unknown>, data?: unknown): [CacheNode, boolean] {
+	private useCacheNode(key: unknown): [CacheNode, boolean] {
 		const keyEntry = this.entry.get(key)
 		if (keyEntry) {
 			return [keyEntry, false]
@@ -460,8 +455,6 @@ class MapCacheNode extends CacheNode {
 			snoc(this.path, key as string | number),
 			this.uniqueNodes,
 			this.persist,
-			variables,
-			data
 		) as CacheNode
 		this.entry.set(key, newEntry)
 		return [newEntry as CacheNode, true]
@@ -469,7 +462,7 @@ class MapCacheNode extends CacheNode {
 	private useWriteToNode(variables: Record<string, unknown>) {
 		return (key: unknown, data: unknown): CacheWriteResult => {
 			return async () => {
-				const [node, isNew] = this.useCacheNode(key, variables, data)
+				const [node, isNew] = this.useCacheNode(key)
 				if (data === null || data === undefined) {
 					if (isNew) {
 						// there is already no data at this key, so nothing to evict
@@ -532,7 +525,7 @@ class ArrayCacheNode extends CacheNode {
 	useEntries(requestNode: N.ArrayNode<any, any, any>, variables: Record<string, unknown>) {
 		return () => this.entry.map((n) => n.toEntries(requestNode.item, variables)())
 	}
-	private useCacheNode(index: number, variables?: Record<string, unknown>, data?: unknown): [CacheNode, boolean] {
+	private useCacheNode(index: number): [CacheNode, boolean] {
 		let isNew = false
 		let indexEntry = this.entry[index]
 		if (!indexEntry) {
@@ -540,9 +533,7 @@ class ArrayCacheNode extends CacheNode {
 				this.schemaNode.item,
 				snoc(this.path, index),
 				this.uniqueNodes,
-				this.persist,
-				variables,
-				data
+				this.persist
 			) as CacheNode
 			this.entry[index] = indexEntry
 			isNew = true
@@ -561,7 +552,7 @@ class ArrayCacheNode extends CacheNode {
 						}
 					}
 				}
-				const [node, isNew] = this.useCacheNode(index, variables, data)
+				const [node, isNew] = this.useCacheNode(index)
 				if (isNew) {
 					await node.write(variables, data)()
 					return () => {
@@ -646,9 +637,7 @@ class OptionCacheNode extends CacheNode {
 						this.schemaNode.item,
 						snoc(this.path, 'value'),
 						this.uniqueNodes,
-						this.persist,
-						variables,
-						data
+						this.persist
 					)
 					await newEntry.write(variables, data.value as any)()
 					return () => {

@@ -4,7 +4,7 @@ import { ArrayNode, array } from './Array'
 import { BooleanNode, boolean, staticBoolean } from './Boolean'
 import { FloatNode, float, staticFloat } from './Float'
 import { IntNode, int, staticInt } from './Int'
-import { MapNode, map, recordMap, tupleMap } from './Map'
+import { MapNode, map} from './Map'
 import { MutationNode, mutation } from './Mutation'
 import { NonEmptyArrayNode, nonEmptyArray } from './NonEmptyArray'
 import { OptionNode, option } from './Option'
@@ -47,8 +47,6 @@ export const node = {
 	int,
 	staticInt,
 	map,
-	recordMap,
-	tupleMap,
 	mutation,
 	nonEmptyArray,
 	option,

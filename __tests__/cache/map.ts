@@ -64,7 +64,7 @@ const newMap = new Map([['2', 2]])
 
 const combinedMap = new Map([...originalMap.entries(), ...newMap.entries()])
 
-describe('primitive', () => {
+describe('map', () => {
 	it('is reactive', async () => {
 		const { write, ref1, ref2 } = useCache();
 
