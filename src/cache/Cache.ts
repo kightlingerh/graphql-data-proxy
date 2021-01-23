@@ -5,7 +5,7 @@ import { IO, sequenceArray as sequenceArrayIO } from 'fp-ts/IO'
 import { fromArray, NonEmptyArray } from 'fp-ts/NonEmptyArray'
 import { chain, fold, isNone, isSome, map as mapO, none, Option, some } from 'fp-ts/Option'
 import { Reader } from 'fp-ts/Reader'
-import { chain as chainT, fromIO, Task } from 'fp-ts/Task'
+import { Task } from 'fp-ts/Task'
 import { TaskEither } from 'fp-ts/TaskEither'
 import { Tree } from 'fp-ts/Tree'
 import { computed, shallowReactive, shallowRef } from 'vue'
@@ -101,14 +101,7 @@ class SchemaCacheNode<S extends N.SchemaNode<any, any>> {
 			return () =>
 				new Promise((resolve) => {
 					this.pendingWrites.push(
-						pipe(
-							() => this.entry.write(variables, data),
-							chainT((evict) =>
-								fromIO(() => {
-									resolve(evict)
-								})
-							)
-						)
+						() => this.entry.write(variables, data).then(resolve)
 					)
 					// if this is the only task in the queue, start applying writes, otherwise other writes are in progress
 					if (!this.hasActiveWrite) {
@@ -219,50 +212,38 @@ class SumCacheNode extends CacheNode {
 				: none
 		)
 	}
+	private useNewNode(__typename: string) {
+		const newNode =  new TypeCacheNode(
+			(this.schemaNode.membersRecord as any)[__typename],
+			this.path,
+			this.uniqueNodes,
+			this.persist
+		)
+		this.entry.value = some([__typename as string, newNode])
+		return newNode;
+
+	}
+	private async setNewValue(variables: Record<string, unknown>, data: Record<string, unknown>, currentValue: Option<[string, TypeCacheNode]>, __typename: string) {
+		const newNode = this.useNewNode(__typename)
+		await newNode.write(variables, data)
+		return () => {
+			if (
+				isSome(this.entry.value) &&
+				this.entry.value.value[0] === __typename &&
+				this.entry.value.value[1] === newNode
+			) {
+				this.entry.value = currentValue
+			}
+		}
+
+	}
 	async write(variables: Record<string, unknown>, data: Record<string, unknown>) {
 		if (isNone(this.entry.value) && data.__typename) {
-			const __typename = data.__typename as string
-			const newNode = new TypeCacheNode(
-				(this.schemaNode.membersRecord as any)[__typename],
-				this.path,
-				this.uniqueNodes,
-				this.persist
-			)
-
-			this.entry.value = some([__typename as string, newNode])
-			await newNode.write(variables, data)
-			return () => {
-				if (
-					isSome(this.entry.value) &&
-					this.entry.value.value[0] === __typename &&
-					this.entry.value.value[1] === newNode
-				) {
-					this.entry.value = none
-				}
-			}
+			return this.setNewValue(variables, data, none, data.__typename as string)
 		}
 		// check if current value needs to be overwritten
 		if (isSome(this.entry.value) && data.__typename && this.entry.value.value[0] !== data.__typename) {
-			const __typename = data.__typename as string
-			const currentEntry = this.entry.value
-			const newNode = new TypeCacheNode(
-				(this.schemaNode.membersRecord as any)[__typename],
-				this.path,
-				this.uniqueNodes,
-				this.persist
-			)
-
-			this.entry.value = some([__typename as string, newNode])
-			await newNode.write(variables, data)
-			return () => {
-				if (
-					isSome(this.entry.value) &&
-					this.entry.value.value[0] === __typename &&
-					this.entry.value.value[1] === newNode
-				) {
-					this.entry.value = currentEntry
-				}
-			}
+			return this.setNewValue(variables, data, this.entry.value, data.__typename as string)
 		}
 		if (
 			isSome(this.entry.value) &&
@@ -407,9 +388,7 @@ class MapCacheNode extends CacheNode {
 		return (node: CacheNode) => node.toEntries(requestNode, variables)
 	}
 	useEntries(requestNode: N.MapNode<any, any, any, any, any, any, any, any>, variables: Record<string, unknown>) {
-		const x = traverseMap(this.useEntry(requestNode.item, variables))(this.entry)
-		console.log(x)
-		return x
+		return traverseMap(this.useEntry(requestNode.item, variables))(this.entry)
 	}
 	private useCacheNode(key: unknown): [CacheNode, boolean] {
 		const keyEntry = this.entry.get(key)
