@@ -1,9 +1,9 @@
 import { isNonEmpty, snoc } from 'fp-ts/Array'
 import { left, right } from 'fp-ts/Either'
-import { absurd, constant, constVoid, Endomorphism, pipe } from 'fp-ts/function'
+import { absurd, constVoid, Endomorphism, pipe } from 'fp-ts/function'
 import { IO, sequenceArray as sequenceArrayIO } from 'fp-ts/IO'
 import { fromArray, NonEmptyArray } from 'fp-ts/NonEmptyArray'
-import { chain, fold, isNone, isSome, map as mapO, none, Option, some } from 'fp-ts/Option'
+import { chain, isNone, isSome, none, Option, some } from 'fp-ts/Option'
 import { Reader } from 'fp-ts/Reader'
 import { Task } from 'fp-ts/Task'
 import { TaskEither } from 'fp-ts/TaskEither'
@@ -53,12 +53,6 @@ export function make(deps: CacheDependencies) {
 				const errors = validate(schema, request)
 				if (isNonEmpty(errors)) {
 					return left<CacheError, Cache<R>>(errors)
-				} else {
-					return right<CacheError, Cache<R>>({
-						read: cache.useRead(request),
-						write: cache.write,
-						toEntries: cache.useToEntries(request)
-					})
 				}
 			}
 			return right<CacheError, Cache<R>>({
@@ -561,16 +555,14 @@ class OptionCacheNode extends CacheNode {
 		super(schemaNode, path, persist)
 	}
 	read(requestNode: N.OptionNode<any, any, any>, variables: Record<string, unknown>) {
-		return pipe(
-			this.entry.value,
-			fold(constant(none), (node) => node.read(requestNode.item, variables))
-		)
+		return isSome(this.entry.value)
+			? some(this.entry.value.value.read(requestNode.item, variables))
+			: none
 	}
 	useEntries(requestNode: N.OptionNode<any, any, any>, variables: Record<string, unknown>) {
-		return pipe(
-			this.entry.value,
-			mapO((node) => node.toEntries(requestNode.item, variables))
-		)
+		return computed(() => {
+			return isSome(this.entry.value) ? some(this.entry.value.value.toEntries(requestNode.item, variables)) : none
+		})
 	}
 
 	async write(variables: Record<string, unknown>, data: Option<unknown>) {
@@ -582,7 +574,8 @@ class OptionCacheNode extends CacheNode {
 					snoc(this.path, 'value'),
 					this.uniqueNodes,
 					this.persist
-				)
+				) as CacheNode
+				this.entry.value = some(newEntry);
 				await newEntry.write(variables, data.value as any)
 				return () => {
 					if (isSome(this.entry.value)) {
