@@ -480,11 +480,11 @@ class ArrayCacheNode extends CacheNode<N.ArrayNode<any, any, any, any>> {
 	private writeToNode(variables: Record<string, unknown>) {
 		return async (index: number, data: unknown) => {
 			if (data === null || data === undefined) {
-				const cv = this.entry[index]
-				this.entry.splice(index, 1)
+				const [cv] = this.entry.splice(index, 1)
+				const newLength = this.entry.length;
 				return () => {
-					if (this.entry[index] === undefined) {
-						this.entry.splice(index, 1, cv)
+					if (this.entry.length === newLength) {
+						this.entry.splice(index, 0, cv)
 					}
 				}
 			}
@@ -492,7 +492,7 @@ class ArrayCacheNode extends CacheNode<N.ArrayNode<any, any, any, any>> {
 			if (isNew) {
 				await node.write(variables, data)
 				return () => {
-					if (this.entry[index] === undefined) {
+					if (this.entry[index] !== undefined) {
 						this.entry.splice(index, 1)
 					}
 				}
@@ -500,12 +500,15 @@ class ArrayCacheNode extends CacheNode<N.ArrayNode<any, any, any, any>> {
 			return node.write(variables, data)
 		}
 	}
-	async write(variables: Record<string, unknown>, value: unknown[]) {
+	async write(variables: Record<string, unknown>, data: unknown[]) {
+		if (!!this.deps.useImmutableArrays) {
+			this.entry.length = data.length
+		}
 		const _write = this.writeToNode(variables)
-		const length = value.length
+		const length = data.length
 		const evictions: Promise<IO<void>>[] = []
 		for (let i = 0; i < length; i++) {
-			evictions.push(_write(i, value[i]))
+			evictions.push(_write(i, data[i]))
 			// give main thread a break every 100 writes
 			if (i % 100 === 0) {
 				await Promise.all(evictions.slice(i - 100, i))
