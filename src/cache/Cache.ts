@@ -16,8 +16,6 @@ import { isEmptyObject } from '../shared'
 import { CacheGraphqlNode, isNonPrimitiveEntityNode, PrimitiveNode, traverseMap } from './shared'
 import { validate } from './validate'
 
-export interface CacheResult<T> extends IO<T> {}
-
 export interface CacheError extends NonEmptyArray<Tree<string>> {}
 
 export interface Persist {
@@ -33,6 +31,7 @@ export interface Persist {
 export interface CacheDependencies {
 	id?: string
 	persist?: Persist
+	useImmutableArrays?: boolean
 }
 
 export interface CacheWriteResult extends Task<Evict> {}
@@ -69,7 +68,7 @@ class SchemaCacheNode<S extends N.SchemaNode<any, any>> {
 	private pendingWrites: Array<Task<void>> = []
 	private hasActiveWrite: boolean = false
 	constructor(schemaNode: S, deps: CacheDependencies) {
-		this.entry = new TypeCacheNode(schemaNode, deps.id ? [deps.id] : [], new Map(), deps.persist)
+		this.entry = new TypeCacheNode(schemaNode, deps.id ? [deps.id] : [], new Map(), deps)
 		this.useRead = this.useRead.bind(this)
 		this.write = this.write.bind(this)
 		this.useToEntries = this.useToEntries.bind(this)
@@ -111,27 +110,23 @@ class SchemaCacheNode<S extends N.SchemaNode<any, any>> {
 	}
 }
 
-abstract class CacheNode {
-	protected constructor(readonly schemaNode: N.Node, readonly path: N.Path, readonly persist?: Persist) {
-		this.read = this.read.bind(this)
-		this.useEntries = this.useEntries.bind(this)
-		this.write = this.write.bind(this)
-		this.toEntries = this.toEntries.bind(this)
+abstract class CacheNode<T extends N.Node> {
+	protected constructor(protected readonly schemaNode: T, protected readonly path: N.Path, protected readonly deps: CacheDependencies) {
 	}
-	abstract read(requestNode: N.Node, variables: Record<string, unknown>): Option<unknown>
-	toEntries(requestNode: N.Node, variables: Record<string, unknown>): unknown {
+	abstract read(requestNode: T, variables: Record<string, unknown>): Option<unknown>
+	toEntries(requestNode: T, variables: Record<string, unknown>): unknown {
 		return isNonPrimitiveEntityNode(requestNode)
 			? computed(() => this.read(requestNode, variables))
 			: this.useEntries(requestNode, variables)
 	}
-	abstract useEntries(requestNode: N.Node, variables: Record<string, unknown>): unknown
+	abstract useEntries(requestNode: T, variables: Record<string, unknown>): unknown
 	abstract write(variables: Record<string, unknown>, data: unknown): Promise<Evict>
 }
 
-class PrimitiveCacheNode extends CacheNode {
+class PrimitiveCacheNode extends CacheNode<PrimitiveNode> {
 	readonly entry = shallowRef(none as Option<unknown>)
-	constructor(readonly schemaNode: PrimitiveNode, readonly path: N.Path, readonly persist?: Persist) {
-		super(schemaNode, path, persist)
+	constructor(schemaNode: PrimitiveNode, path: N.Path, deps: CacheDependencies) {
+		super(schemaNode, path, deps)
 	}
 	read() {
 		return this.entry.value
@@ -154,39 +149,39 @@ class PrimitiveCacheNode extends CacheNode {
 function useNewCacheNode(
 	node: CacheGraphqlNode,
 	path: N.Path,
-	uniqueNodes: Map<unknown, CacheNode>,
-	persist?: Persist
+	uniqueNodes: Map<unknown, CacheNode<any>>,
+	deps: CacheDependencies
 ) {
 	if (!!node.__isEntity) {
-		return new PrimitiveCacheNode(node as PrimitiveNode, path, persist)
+		return new PrimitiveCacheNode(node as PrimitiveNode, path, deps)
 	}
 	switch (node.tag) {
 		case 'Map':
-			return new MapCacheNode(node, path, uniqueNodes, persist)
+			return new MapCacheNode(node, path, uniqueNodes, deps)
 		case 'Option':
-			return new OptionCacheNode(node, path, uniqueNodes, persist)
+			return new OptionCacheNode(node, path, uniqueNodes, deps)
 		case 'NonEmptyArray':
-			return new NonEmptyArrayCacheNode(node as any, path, uniqueNodes, persist)
+			return new NonEmptyArrayCacheNode(node as any, path, uniqueNodes, deps)
 		case 'Array':
-			return new ArrayCacheNode(node, path, uniqueNodes, persist)
+			return new ArrayCacheNode(node, path, uniqueNodes, deps)
 		case 'Sum':
-			return new SumCacheNode(node, path, uniqueNodes, persist)
+			return new SumCacheNode(node, path, uniqueNodes, deps)
 		case 'Type':
-			return new TypeCacheNode(node, path, uniqueNodes, persist)
+			return new TypeCacheNode(node, path, uniqueNodes, deps)
 		default:
-			return new PrimitiveCacheNode(node as PrimitiveNode, path, persist)
+			return new PrimitiveCacheNode(node as PrimitiveNode, path, deps)
 	}
 }
 
-class SumCacheNode extends CacheNode {
+class SumCacheNode extends CacheNode<N.SumNode<any, any, any, any>> {
 	readonly entry: N.Ref<Option<[string, TypeCacheNode]>> = shallowRef(none)
 	constructor(
-		readonly schemaNode: N.SumNode<any, any, any>,
-		readonly path: N.Path,
-		readonly uniqueNodes: Map<unknown, CacheNode>,
-		readonly persist?: Persist
+		schemaNode: N.SumNode<any, any, any>,
+		path: N.Path,
+		readonly uniqueNodes: Map<unknown, any>,
+		deps: CacheDependencies
 	) {
-		super(schemaNode, path, persist)
+		super(schemaNode, path, deps)
 	}
 
 	read(requestNode: N.SumNode<any, any, any, any>, variables: Record<string, unknown>) {
@@ -211,7 +206,7 @@ class SumCacheNode extends CacheNode {
 			(this.schemaNode.membersRecord as any)[__typename],
 			this.path,
 			this.uniqueNodes,
-			this.persist
+			this.deps
 		)
 		this.entry.value = some([__typename as string, newNode])
 		return newNode;
@@ -249,16 +244,16 @@ class SumCacheNode extends CacheNode {
 	}
 }
 
-class TypeCacheNode extends CacheNode {
-	readonly entry: Ref<Record<string, CacheNode | Map<string, CacheNode>>>
+class TypeCacheNode extends CacheNode<N.TypeNode<any, any, any, any, any>> {
+	readonly entry: Ref<Record<string, CacheNode<any> | Map<string, CacheNode<any>>>>
 	readonly models: Record<string, Model<any, any, any>> = {}
 	constructor(
-		readonly schemaNode: N.TypeNode<any, any, any, any, any>,
-		readonly path: N.Path,
+		schemaNode: N.TypeNode<any, any, any, any, any>,
+		path: N.Path,
 		readonly uniqueNodes: Map<unknown, any>,
-		readonly persist?: Persist
+		deps: CacheDependencies
 	) {
-		super(schemaNode, path, persist)
+		super(schemaNode, path, deps)
 		this.entry = shallowRef(this.buildEntry())
 	}
 	private buildEntry() {
@@ -268,7 +263,7 @@ class TypeCacheNode extends CacheNode {
 			const hasVariables = !isEmptyObject(member.variables)
 			newEntry[key] = hasVariables
 				? new Map()
-				: useNewCacheNode(member as CacheGraphqlNode, snoc(this.path, key), this.uniqueNodes, this.persist)
+				: useNewCacheNode(member as CacheGraphqlNode, snoc(this.path, key), this.uniqueNodes, this.deps)
 			if (hasVariables) {
 				this.models[key] = N.useVariablesModel(member.variables)
 			}
@@ -298,13 +293,13 @@ class TypeCacheNode extends CacheNode {
 		}
 	}
 	private useCacheNode(
-		entry: Record<string, CacheNode | Map<string, CacheNode>>,
+		entry: Record<string, CacheNode<any> | Map<string, CacheNode<any>>>,
 		key: string,
 		variables: Record<string, unknown>
-	): CacheNode {
+	): CacheNode<any> {
 		if (this.models.hasOwnProperty(key)) {
 			const encodedVariables = JSON.stringify(this.models[key].encode(variables))
-			const newEntry = (entry[key] as Map<string, CacheNode>).get(encodedVariables)
+			const newEntry = (entry[key] as Map<string, CacheNode<any>>).get(encodedVariables)
 			if (newEntry) {
 				return newEntry
 			} else {
@@ -312,13 +307,13 @@ class TypeCacheNode extends CacheNode {
 					this.schemaNode.members[key],
 					snoc(this.path, key),
 					this.uniqueNodes,
-					this.persist
-				) as CacheNode
-				;(entry[key] as Map<string, CacheNode>).set(key, n)
+					this.deps
+				) as CacheNode<any>
+				;(entry[key] as Map<string, CacheNode<any>>).set(key, n)
 				return n
 			}
 		}
-		return entry[key] as CacheNode
+		return entry[key] as CacheNode<any>
 	}
 	read(requestNode: N.TypeNode<any, any, any, any>, variables: Record<string, unknown>) {
 		const result: any = {}
@@ -351,20 +346,17 @@ class TypeCacheNode extends CacheNode {
 	}
 }
 
-class MapCacheNode extends CacheNode {
-	readonly entry: Map<unknown, CacheNode>
+class MapCacheNode extends CacheNode<N.MapNode<any, any, any, any, any, any, any, any, any>> {
+	readonly entry: Map<unknown, CacheNode<any>>
 	constructor(
-		readonly schemaNode: N.MapNode<any, any, any, any, any, any>,
-		readonly path: N.Path,
-		readonly uniqueNodes: Map<unknown, CacheNode>,
-		readonly persist?: Persist
+		schemaNode: N.MapNode<any, any, any, any, any, any>,
+		path: N.Path,
+		readonly uniqueNodes: Map<unknown, CacheNode<any>>,
+		deps: CacheDependencies
 	) {
-		super(schemaNode, path, persist)
-		this.useCacheNode = this.useCacheNode.bind(this)
-		this.useWriteToNode = this.useWriteToNode.bind(this)
-		this.useEntry = this.useEntry.bind(this)
+		super(schemaNode, path, deps)
 		this.entry = schemaNode.__customCache
-			? (schemaNode.__customCache.entry as Map<unknown, CacheNode>)
+			? (schemaNode.__customCache.entry as Map<unknown, CacheNode<any>>)
 			: shallowReactive(new Map())
 	}
 	read(requestNode: N.MapNode<any, any, any, any, any, any, any, any>, variables: Record<string, unknown>) {
@@ -379,12 +371,12 @@ class MapCacheNode extends CacheNode {
 		return some(newMap)
 	}
 	private useEntry(requestNode: N.Node, variables: Record<string, unknown>) {
-		return (node: CacheNode) => node.toEntries(requestNode, variables)
+		return (node: CacheNode<any>) => node.toEntries(requestNode, variables)
 	}
 	useEntries(requestNode: N.MapNode<any, any, any, any, any, any, any, any>, variables: Record<string, unknown>) {
 		return traverseMap(this.useEntry(requestNode.item, variables))(this.entry)
 	}
-	private useCacheNode(key: unknown): [CacheNode, boolean] {
+	private useCacheNode(key: unknown): [CacheNode<any>, boolean] {
 		const keyEntry = this.entry.get(key)
 		if (keyEntry) {
 			return [keyEntry, false]
@@ -393,10 +385,10 @@ class MapCacheNode extends CacheNode {
 			this.schemaNode.item,
 			snoc(this.path, key as string | number),
 			this.uniqueNodes,
-			this.persist
-		) as CacheNode
+			this.deps
+		) as CacheNode<any>
 		this.entry.set(key, newEntry)
-		return [newEntry as CacheNode, true]
+		return [newEntry as CacheNode<any>, true]
 	}
 	private useWriteToNode(variables: Record<string, unknown>) {
 		return async (key: unknown, data: unknown) => {
@@ -438,21 +430,21 @@ class MapCacheNode extends CacheNode {
 	}
 }
 
-class ArrayCacheNode extends CacheNode {
-	readonly entry = shallowReactive([] as CacheNode[])
+class ArrayCacheNode extends CacheNode<N.ArrayNode<any, any, any, any>> {
+	readonly entry = shallowReactive([] as CacheNode<any>[])
 	constructor(
-		readonly schemaNode: N.ArrayNode<any, any, any, any>,
-		readonly path: N.Path,
+		schemaNode: N.ArrayNode<any, any, any, any>,
+		path: N.Path,
 		readonly uniqueNodes: Map<unknown, any>,
-		readonly persist?: Persist
+		deps: CacheDependencies
 	) {
-		super(schemaNode, path, persist)
+		super(schemaNode, path, deps)
 		this.useCacheNode = this.useCacheNode.bind(this)
 		this.writeToNode = this.writeToNode.bind(this)
 		this.readNode = this.readNode.bind(this)
 	}
 	private readNode(requestNode: N.Node, variables: Record<string, unknown>) {
-		return (node: CacheNode) => node.read(requestNode, variables)
+		return (node: CacheNode<any>) => node.read(requestNode, variables)
 	}
 	read(requestNode: N.ArrayNode<any, any, any>, variables: Record<string, unknown>) {
 		const result = []
@@ -470,7 +462,7 @@ class ArrayCacheNode extends CacheNode {
 	useEntries(requestNode: N.ArrayNode<any, any, any>, variables: Record<string, unknown>) {
 		return this.entry.map((n) => n.toEntries(requestNode.item, variables))
 	}
-	private useCacheNode(index: number): [CacheNode, boolean] {
+	private useCacheNode(index: number): [CacheNode<any>, boolean] {
 		let isNew = false
 		let indexEntry = this.entry[index]
 		if (!indexEntry) {
@@ -478,8 +470,8 @@ class ArrayCacheNode extends CacheNode {
 				this.schemaNode.item,
 				snoc(this.path, index),
 				this.uniqueNodes,
-				this.persist
-			) as CacheNode
+				this.deps
+			) as CacheNode<any>
 			this.entry[index] = indexEntry
 			isNew = true
 		}
@@ -526,12 +518,12 @@ class ArrayCacheNode extends CacheNode {
 class NonEmptyArrayCacheNode {
 	readonly cache: ArrayCacheNode
 	constructor(
-		readonly schemaNode: N.MapNode<any, any, any, any, any, any, any, any>,
+		readonly schemaNode: N.NonEmptyArrayNode<any, any, any, any>,
 		readonly path: N.Path,
 		readonly uniqueNodes: Map<unknown, any>,
-		readonly persist?: Persist
+		readonly deps: CacheDependencies
 	) {
-		this.cache = new ArrayCacheNode(schemaNode as any, path, uniqueNodes, persist)
+		this.cache = new ArrayCacheNode(schemaNode as any, path, uniqueNodes, deps)
 	}
 	read(requestNode: N.NonEmptyArrayNode<any, any, any>, variables: Record<string, unknown>) {
 		return pipe(this.cache.read(requestNode as any, variables), chain(fromArray))
@@ -544,51 +536,48 @@ class NonEmptyArrayCacheNode {
 	}
 }
 
-class OptionCacheNode extends CacheNode {
-	readonly entry = shallowRef(none as Option<CacheNode>)
+class OptionCacheNode extends CacheNode<N.OptionNode<any, any, any, any>> {
+	readonly isSome = shallowRef(false);
+	readonly entry: CacheNode<any>;
 	constructor(
-		readonly schemaNode: N.OptionNode<any, any, any>,
-		readonly path: N.Path,
+		schemaNode: N.OptionNode<any, any, any>,
+		path: N.Path,
 		readonly uniqueNodes: Map<unknown, any>,
-		readonly persist?: Persist
+		deps: CacheDependencies
 	) {
-		super(schemaNode, path, persist)
+		super(schemaNode, path, deps)
+		this.entry = useNewCacheNode(schemaNode.item, snoc(path, 'value'), uniqueNodes, deps) as CacheNode<any>;
 	}
 	read(requestNode: N.OptionNode<any, any, any>, variables: Record<string, unknown>) {
-		return isSome(this.entry.value)
-			? some(this.entry.value.value.read(requestNode.item, variables))
+		return this.isSome.value
+			? some(this.entry.read(requestNode.item, variables))
 			: none
 	}
 	useEntries(requestNode: N.OptionNode<any, any, any>, variables: Record<string, unknown>) {
 		return computed(() => {
-			return isSome(this.entry.value) ? some(this.entry.value.value.toEntries(requestNode.item, variables)) : none
+			return this.isSome.value ? some(this.entry.toEntries(requestNode.item, variables)) : none
 		})
 	}
 
 	async write(variables: Record<string, unknown>, data: Option<unknown>) {
-		const currentValue = this.entry.value
+		const isCurrentlySome = this.isSome.value;
 		if (isSome(data)) {
-			if (isNone(currentValue)) {
-				const newEntry = useNewCacheNode(
-					this.schemaNode.item,
-					snoc(this.path, 'value'),
-					this.uniqueNodes,
-					this.persist
-				) as CacheNode
-				this.entry.value = some(newEntry);
-				await newEntry.write(variables, data.value as any)
+			this.isSome.value = true;
+			if (!isCurrentlySome) {
+				const evict = await this.entry.write(variables, data.value as any)
 				return () => {
-					if (isSome(this.entry.value)) {
-						this.entry.value = none
+					if (this.isSome.value) {
+						this.isSome.value = false;
+						evict()
 					}
 				}
 			}
-			return currentValue.value.write(variables, data.value)
+			return this.entry.write(variables, data.value)
 		} else {
-			this.entry.value = none
+			this.isSome.value = false;
 			return () => {
-				if (isNone(this.entry.value)) {
-					this.entry.value = currentValue
+				if (!this.isSome.value) {
+					this.isSome.value = true
 				}
 			}
 		}
