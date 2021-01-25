@@ -334,11 +334,11 @@ class TypeCacheNode extends CacheNode<N.TypeNode<any, any, any, any, any>> {
 			} else {
 				const n = useNewCacheNode(
 					this.schemaNode.members[key],
-					snoc(this.path, key),
+					[...this.path, encodedVariables, key] as N.Path,
 					this.uniqueNodes,
 					this.deps
 				) as CacheNode<any>
-				;(entry[key] as Map<string, CacheNode<any>>).set(key, n)
+				;(entry[key] as Map<string, CacheNode<any>>).set(encodedVariables, n)
 				return n
 			}
 		}

@@ -1,4 +1,4 @@
-import { literal, Model, fromType, fromPartial } from '../model/Model'
+import { literal, Model, fromType, fromPartial, eqById as eqByIdModel, useEncoder } from '../model/Model'
 import { scalar, ScalarNode } from './Scalar'
 import {
 	BaseNode,
@@ -137,7 +137,7 @@ export interface DynamicTypeNodeConfig<
 
 export const TYPE_TAG = 'Type'
 
-function getTypeMemberModel(
+function useTypeMemberModel(
 	strict: boolean,
 	members: Record<string, AnyBaseNode>,
 	isLocal: boolean,
@@ -196,8 +196,8 @@ export function type<
 		tag: TYPE_TAG,
 		__typename,
 		members,
-		strict: getTypeMemberModel(true, members, !!config?.isLocal, useIdEncoder, useIdDecoder),
-		partial: getTypeMemberModel(false, members, !!config?.isLocal, useIdEncoder, useIdDecoder),
+		strict: useTypeMemberModel(true, members, !!config?.isLocal, useIdEncoder, useIdDecoder),
+		partial: useTypeMemberModel(false, members, !!config?.isLocal, useIdEncoder, useIdDecoder),
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasTransformations: {
 			encoding: !useIdEncoder,
@@ -211,7 +211,7 @@ export function type<
 
 export function pickFromType<T extends TypeNode<any, any, any, any, any>, P extends keyof T['members']>(
 	node: T,
-	...keys: P[]
+	keys: P[]
 ): TypeNode<ExtractTypeName<T>, Pick<T['members'], P>, T['variables']> {
 	const n: any = {}
 	keys.forEach((k) => {
@@ -222,7 +222,7 @@ export function pickFromType<T extends TypeNode<any, any, any, any, any>, P exte
 
 export function omitFromType<T extends TypeNode<any, any, any, any, any>, P extends keyof T['members']>(
 	node: T,
-	...keys: P[]
+	keys: P[]
 ): TypeNode<ExtractTypeName<T>, Omit<T['members'], P>, T['variables']> {
 	const n: any = {}
 	keys.forEach((k) => {
@@ -231,4 +231,20 @@ export function omitFromType<T extends TypeNode<any, any, any, any, any>, P exte
 		}
 	})
 	return type(node.__typename, n, node.variables) as any
+}
+
+export function eqById<T extends TypeNode<any, Record<'id', AnyBaseNode>, any, any, any>>(node: T): T {
+	return {
+		...node,
+		strict: eqByIdModel(node.strict as any)
+	}
+}
+
+export function encodeById<T extends TypeNode<any, Record<'id', AnyBaseNode>, any, any, any>>(node: T): T {
+	return {
+		...node,
+		strict: useEncoder(node.strict as any)({
+			encode: (a) => node.members.id.strict.encode((a as any).id)
+		})
+	}
 }
