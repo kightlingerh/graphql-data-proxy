@@ -1,35 +1,42 @@
 import * as assert from 'assert'
-import {right} from 'fp-ts/Either';
-import {constant, constVoid, pipe} from 'fp-ts/function';
-import {chain, fromEither, rightIO, fold} from 'fp-ts/IOEither';
-import {some, none, getOrElse, Option} from 'fp-ts/Option';
-import * as TE from 'fp-ts/TaskEither';
-import {computed, Ref, shallowRef} from 'vue';
-import * as N from '../../src/node';
+import { right } from 'fp-ts/Either'
+import { constant, constVoid, pipe } from 'fp-ts/function'
+import { chain, fromEither, rightIO, fold } from 'fp-ts/IOEither'
+import { some, none, getOrElse, Option } from 'fp-ts/Option'
+import * as TE from 'fp-ts/TaskEither'
+import { computed, Ref, shallowRef } from 'vue'
+import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
 
-const schema = N.schema('Test', { a: N.option(N.staticString) })
+const schema = N.schema('Option', { a: N.option(N.staticString) })
 
 function useCache() {
-	const cache = make({})(schema)(schema);
+	const cache = make({})(schema)(schema)
 
-	const write = (data: N.TypeOf<typeof schema>) => pipe(
-		TE.fromEither(cache),
-		TE.chain((c) => TE.fromTask(c.write({})(data))),
-		TE.getOrElse(() => async () => constVoid)
-	)()
+	const write = (data: N.TypeOf<typeof schema>) =>
+		pipe(
+			TE.fromEither(cache),
+			TE.chain((c) => TE.fromTask(c.write({})(data))),
+			TE.getOrElse(() => async () => constVoid)
+		)()
 
-	const ref = computed(() => pipe(
-		fromEither(cache),
-		chain((c) => rightIO(c.toEntries({}))),
-		fold(() => constant(shallowRef(none)), entries => () => {
-			return pipe(entries.a.value, getOrElse<Ref<Option<string>>>(constant(shallowRef(none))));
-		})
-	)().value)
+	const ref = computed(
+		() =>
+			pipe(
+				fromEither(cache),
+				chain((c) => rightIO(c.toEntries({}))),
+				fold(
+					() => constant(shallowRef(none)),
+					(entries) => () => {
+						return pipe(entries.a.value, getOrElse<Ref<Option<string>>>(constant(shallowRef(none))))
+					}
+				)
+			)().value
+	)
 
 	const read = pipe(
 		fromEither(cache),
-		chain((c) => rightIO(c.read({}))),
+		chain((c) => rightIO(c.read({})))
 	)
 
 	return {
@@ -40,10 +47,9 @@ function useCache() {
 	}
 }
 
-
 describe('option', () => {
 	it('is reactive', async () => {
-		const { ref, write } = useCache();
+		const { ref, write } = useCache()
 
 		assert.deepStrictEqual(ref.value, none)
 
@@ -53,46 +59,43 @@ describe('option', () => {
 
 		assert.deepStrictEqual(ref.value, writeValue.a)
 	}),
-	it('can evict to none', async () => {
-		const { ref, write } = useCache();
+		it('can evict to none', async () => {
+			const { ref, write } = useCache()
 
-		const writeValue = { a: some('1') }
+			const writeValue = { a: some('1') }
 
-		const evict1 = await write(writeValue)
+			const evict1 = await write(writeValue)
 
-		assert.deepStrictEqual(ref.value, writeValue.a)
+			assert.deepStrictEqual(ref.value, writeValue.a)
 
-		evict1();
+			evict1()
 
-		assert.deepStrictEqual(ref.value, none)
+			assert.deepStrictEqual(ref.value, none)
+		}),
+		it('can evict to previous value', async () => {
+			const { ref, write } = useCache()
 
-	}),
-	it('can evict to previous value', async () => {
-		const { ref, write } = useCache();
+			const data = { a: some('1') }
 
-		const data = { a: some('1') };
+			await write(data)
 
-		await write(data)
+			const update = { a: some('2') }
 
-		const update = { a: some('2') };
+			const evict = await write(update)
 
-		const evict = await write(update);
+			evict()
 
-		evict();
+			assert.deepStrictEqual(ref.value, data.a)
+		}),
+		it('can read', async () => {
+			const { read, write } = useCache()
 
-		assert.deepStrictEqual(ref.value, data.a)
+			const data = { a: some('1') }
 
-	}),
-	it('can read', async () => {
-		const { read, write } = useCache();
+			assert.deepStrictEqual(read(), right(none))
 
-		const data = { a: some('1') }
+			await write(data)
 
-		assert.deepStrictEqual(read(), right(none))
-
-		await write(data)
-
-		assert.deepStrictEqual(read(), right(some(data)))
-
-	})
+			assert.deepStrictEqual(read(), right(some(data)))
+		})
 })

@@ -93,9 +93,7 @@ class SchemaCacheNode<S extends N.SchemaNode<any, any>> {
 		return (data) => {
 			return () =>
 				new Promise((resolve) => {
-					this.pendingWrites.push(
-						() => this.entry.write(variables, data).then(resolve)
-					)
+					this.pendingWrites.push(() => this.entry.write(variables, data).then(resolve))
 					// if this is the only task in the queue, start applying writes, otherwise other writes are in progress
 					if (!this.hasActiveWrite) {
 						this.applyWrites()
@@ -111,8 +109,11 @@ class SchemaCacheNode<S extends N.SchemaNode<any, any>> {
 }
 
 abstract class CacheNode<T extends N.Node> {
-	protected constructor(protected readonly schemaNode: T, protected readonly path: N.Path, protected readonly deps: CacheDependencies) {
-	}
+	protected constructor(
+		protected readonly schemaNode: T,
+		protected readonly path: N.Path,
+		protected readonly deps: CacheDependencies
+	) {}
 	abstract read(requestNode: T, variables: Record<string, unknown>): Option<unknown>
 	toEntries(requestNode: T, variables: Record<string, unknown>): unknown {
 		return isNonPrimitiveEntityNode(requestNode)
@@ -202,17 +203,21 @@ class SumCacheNode extends CacheNode<N.SumNode<any, any, any, any>> {
 		)
 	}
 	private useNewNode(__typename: string) {
-		const newNode =  new TypeCacheNode(
+		const newNode = new TypeCacheNode(
 			(this.schemaNode.membersRecord as any)[__typename],
 			this.path,
 			this.uniqueNodes,
 			this.deps
 		)
 		this.entry.value = some([__typename as string, newNode])
-		return newNode;
-
+		return newNode
 	}
-	private async setNewValue(variables: Record<string, unknown>, data: Record<string, unknown>, currentValue: Option<[string, TypeCacheNode]>, __typename: string) {
+	private async setNewValue(
+		variables: Record<string, unknown>,
+		data: Record<string, unknown>,
+		currentValue: Option<[string, TypeCacheNode]>,
+		__typename: string
+	) {
 		const newNode = this.useNewNode(__typename)
 		await newNode.write(variables, data)
 		return () => {
@@ -224,7 +229,6 @@ class SumCacheNode extends CacheNode<N.SumNode<any, any, any, any>> {
 				this.entry.value = currentValue
 			}
 		}
-
 	}
 	async write(variables: Record<string, unknown>, data: Record<string, unknown>) {
 		if (isNone(this.entry.value) && data.__typename) {
@@ -481,7 +485,7 @@ class ArrayCacheNode extends CacheNode<N.ArrayNode<any, any, any, any>> {
 		return async (index: number, data: unknown) => {
 			if (data === null || data === undefined) {
 				const [cv] = this.entry.splice(index, 1)
-				const newLength = this.entry.length;
+				const newLength = this.entry.length
 				return () => {
 					if (this.entry.length === newLength) {
 						this.entry.splice(index, 0, cv)
@@ -540,8 +544,8 @@ class NonEmptyArrayCacheNode {
 }
 
 class OptionCacheNode extends CacheNode<N.OptionNode<any, any, any, any>> {
-	readonly isSome = shallowRef(false);
-	readonly entry: CacheNode<any>;
+	readonly isSome = shallowRef(false)
+	readonly entry: CacheNode<any>
 	constructor(
 		schemaNode: N.OptionNode<any, any, any>,
 		path: N.Path,
@@ -549,12 +553,10 @@ class OptionCacheNode extends CacheNode<N.OptionNode<any, any, any, any>> {
 		deps: CacheDependencies
 	) {
 		super(schemaNode, path, deps)
-		this.entry = useNewCacheNode(schemaNode.item, snoc(path, 'value'), uniqueNodes, deps) as CacheNode<any>;
+		this.entry = useNewCacheNode(schemaNode.item, snoc(path, 'value'), uniqueNodes, deps) as CacheNode<any>
 	}
 	read(requestNode: N.OptionNode<any, any, any>, variables: Record<string, unknown>) {
-		return this.isSome.value
-			? some(this.entry.read(requestNode.item, variables))
-			: none
+		return this.isSome.value ? some(this.entry.read(requestNode.item, variables)) : none
 	}
 	useEntries(requestNode: N.OptionNode<any, any, any>, variables: Record<string, unknown>) {
 		return computed(() => {
@@ -563,21 +565,21 @@ class OptionCacheNode extends CacheNode<N.OptionNode<any, any, any, any>> {
 	}
 
 	async write(variables: Record<string, unknown>, data: Option<unknown>) {
-		const isCurrentlySome = this.isSome.value;
+		const isCurrentlySome = this.isSome.value
 		if (isSome(data)) {
-			this.isSome.value = true;
+			this.isSome.value = true
 			if (!isCurrentlySome) {
 				const evict = await this.entry.write(variables, data.value as any)
 				return () => {
 					if (this.isSome.value) {
-						this.isSome.value = false;
+						this.isSome.value = false
 						evict()
 					}
 				}
 			}
 			return this.entry.write(variables, data.value)
 		} else {
-			this.isSome.value = false;
+			this.isSome.value = false
 			return () => {
 				if (!this.isSome.value) {
 					this.isSome.value = true

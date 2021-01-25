@@ -16,8 +16,8 @@
     "clean": "rimraf lib es5",
     "jest": "jest",
     "build": "yarn run clean && yarn run prettier-write && tsc --p tsconfig.json && tsc --p tsconfig.es6.json",
-    "prettier": "prettier --no-semi --single-quote --print-width 120 --parser typescript --list-different \"{src,test}/**/*.ts\"",
-    "prettier-write": "prettier --no-semi --single-quote --print-width 120 --parser typescript --write \"{src,test,examples,exercises}/**/*.ts\"",
+    "prettier": "prettier --no-semi --single-quote --print-width 120 --parser typescript --list-different \"{src,__tests__}/**/*.ts\"",
+    "prettier-write": "prettier --no-semi --single-quote --print-width 120 --parser typescript --write \"{src,__tests__}/**/*.ts\"",
     "test": "yarn jest"
   },
   "peerDependencies": {

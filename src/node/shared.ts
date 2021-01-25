@@ -107,19 +107,18 @@ export interface StaticCustomCache<CacheEntry> {
 	entry: CacheEntry
 }
 
-export interface DynamicCustomCache<PartialData, Variables, CacheEntry> {
+export interface DynamicCustomCache<PartialData, Variables> {
 	tag: 'Dynamic'
 	toId: <V extends Record<string, unknown> = Record<string, unknown>>(
 		path: Path,
 		variables?: Variables & V,
 		data?: PartialData
-	) => unknown
-	nodes?: Map<unknown, CacheEntry>
+	) => string | number
 }
 
 export type CustomCache<PartialData, Variables, CacheEntry> =
 	| StaticCustomCache<CacheEntry>
-	| DynamicCustomCache<PartialData, Variables, CacheEntry>
+	| DynamicCustomCache<PartialData, Variables>
 
 export const EMPTY_VARIABLES: any = {}
 
