@@ -178,7 +178,7 @@ const DEFAULT_MAP_PRINTER: MapPrinter = {
 	tokenizeMapRequest: (_, tokens) => tokens
 }
 
-export function definePrinter(mapPrinter: Partial<MapPrinter>) {
+export function definePrinter(mapPrinter: Partial<MapPrinter> = {}) {
 	return (schema: SchemaNode<any, any>, operation: string, operationName: string): string => {
 		return print({ ...DEFAULT_MAP_PRINTER, ...mapPrinter }, schema, operation, operationName)
 	}
