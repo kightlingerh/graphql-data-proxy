@@ -48,8 +48,7 @@ export interface MapNode<
 	readonly name?: string
 	readonly __customCache?: CustomCache<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>
+		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>
 	>
 }
 
@@ -62,8 +61,7 @@ export interface StaticMapNodeConfig<
 	readonly name?: string
 	readonly useCustomCache?: CustomCache<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>>,
-		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>
+		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>>
 	>
 }
 
@@ -77,8 +75,7 @@ export interface DynamicMapNodeConfig<
 	readonly name?: string
 	readonly useCustomCache?: CustomCache<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>,
-		ModifyIfEntity<IsEntity, Map<TypeOf<Key>, TypeOf<Item>>, Map<TypeOf<Key>, TypeOfCacheEntry<Item>>>
+		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>
 	>
 }
 

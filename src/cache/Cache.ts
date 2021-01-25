@@ -68,7 +68,7 @@ class SchemaCacheNode<S extends N.SchemaNode<any, any>> {
 	private pendingWrites: Array<Task<void>> = []
 	private hasActiveWrite: boolean = false
 	constructor(schemaNode: S, deps: CacheDependencies) {
-		this.entry = new TypeCacheNode(schemaNode, deps.id ? [deps.id] : [], new Map(), deps)
+		this.entry = new TypeCacheNode(schemaNode, deps.id ? [deps.id] : ['root'], new Map(), deps)
 		this.useRead = this.useRead.bind(this)
 		this.write = this.write.bind(this)
 		this.useToEntries = this.useToEntries.bind(this)
@@ -249,6 +249,7 @@ class SumCacheNode extends CacheNode<N.SumNode<any, any, any, any>> {
 }
 
 class TypeCacheNode extends CacheNode<N.TypeNode<any, any, any, any, any>> {
+	private shouldCheckId: boolean
 	readonly entry: Ref<Record<string, CacheNode<any> | Map<string, CacheNode<any>>>>
 	readonly models: Record<string, Model<any, any, any>> = {}
 	constructor(
@@ -258,43 +259,67 @@ class TypeCacheNode extends CacheNode<N.TypeNode<any, any, any, any, any>> {
 		deps: CacheDependencies
 	) {
 		super(schemaNode, path, deps)
-		this.entry = shallowRef(this.buildEntry())
+		if (schemaNode.__customCache) {
+			const id = schemaNode.__customCache.toId(path)
+			if (id) {
+				this.shouldCheckId = false
+				const entry = uniqueNodes.get(id)
+				if (entry) {
+					this.entry = entry
+				} else {
+					this.entry = shallowRef(this.buildEntry())
+					uniqueNodes.set(id, this.entry)
+				}
+			} else {
+				this.shouldCheckId = true
+				this.entry = shallowRef(this.buildEntry())
+			}
+		} else {
+			this.shouldCheckId = false
+			this.entry = shallowRef(this.buildEntry())
+		}
+	}
+	private shouldUseDynamicEntry(member: N.Node): boolean {
+		const hasVariables = !isEmptyObject(member.variables)
+		if (member.tag === 'Map' || member.tag === 'Type') {
+			return member.__customCache !== undefined ? false : hasVariables
+		}
+		return hasVariables
 	}
 	private buildEntry() {
 		const newEntry: any = {}
 		for (const key in this.schemaNode.members) {
 			const member: N.Node = this.schemaNode.members[key]
-			const hasVariables = !isEmptyObject(member.variables)
-			newEntry[key] = hasVariables
+			const shouldUseDynamicEntry = this.shouldUseDynamicEntry(member)
+			newEntry[key] = shouldUseDynamicEntry
 				? new Map()
 				: useNewCacheNode(member as CacheGraphqlNode, snoc(this.path, key), this.uniqueNodes, this.deps)
-			if (hasVariables) {
+			if (shouldUseDynamicEntry) {
 				this.models[key] = N.useVariablesModel(member.variables)
 			}
 		}
 		return newEntry
 	}
 	private useEntry(variables?: Record<string, unknown>, data?: Record<string, unknown>) {
-		if (this.schemaNode.__customCache) {
+		if (this.shouldCheckId && this.schemaNode.__customCache) {
 			const customCache = this.schemaNode.__customCache
 			const id = customCache.toId(this.path, variables, data)
 			if (id === null || id === undefined) {
 				return this.entry.value
 			} else {
-				const nodes = customCache.nodes ?? this.uniqueNodes
-				let newEntry = nodes.get(id)
+				this.shouldCheckId = false
+				let newEntry = this.uniqueNodes.get(id)
 				if (newEntry) {
 					if (newEntry !== this.entry.value) {
 						this.entry.value = newEntry
 					}
 					return newEntry
 				}
-				nodes.set(id, this.entry.value)
+				this.uniqueNodes.set(id, this.entry.value)
 				return this.entry.value
 			}
-		} else {
-			return this.entry.value
 		}
+		return this.entry.value
 	}
 	private useCacheNode(
 		entry: Record<string, CacheNode<any> | Map<string, CacheNode<any>>>,
@@ -351,21 +376,57 @@ class TypeCacheNode extends CacheNode<N.TypeNode<any, any, any, any, any>> {
 }
 
 class MapCacheNode extends CacheNode<N.MapNode<any, any, any, any, any, any, any, any, any>> {
-	readonly entry: Map<unknown, CacheNode<any>>
+	private shouldCheckId: boolean = true
+	readonly entry: Map<unknown, any>
 	constructor(
 		schemaNode: N.MapNode<any, any, any, any, any, any>,
 		path: N.Path,
-		readonly uniqueNodes: Map<unknown, CacheNode<any>>,
+		readonly uniqueNodes: Map<unknown, any>,
 		deps: CacheDependencies
 	) {
 		super(schemaNode, path, deps)
-		this.entry = schemaNode.__customCache
-			? (schemaNode.__customCache.entry as Map<unknown, CacheNode<any>>)
-			: shallowReactive(new Map())
+		if (this.schemaNode.__customCache) {
+			const id = this.schemaNode.__customCache.toId(this.path)
+			if (id) {
+				this.shouldCheckId = false
+				let entry = this.uniqueNodes.get(id)
+				if (entry) {
+					this.entry = entry
+				} else {
+					const newEntry = shallowReactive(new Map())
+					this.uniqueNodes.set(id, newEntry)
+					this.entry = newEntry
+				}
+			} else {
+				this.entry = shallowReactive(new Map())
+			}
+		} else {
+			this.shouldCheckId = false
+			this.entry = shallowReactive(new Map())
+		}
+	}
+	private useEntry(variables?: Record<string, unknown>, data?: Map<unknown, unknown>) {
+		if (this.shouldCheckId && this.schemaNode.__customCache) {
+			const id = this.schemaNode.__customCache.toId(this.path, variables, data)
+			if (id) {
+				this.shouldCheckId = false
+				let entry = this.uniqueNodes.get(id)
+				if (entry && entry !== this.entry) {
+					// copy entry
+					this.entry.clear()
+					for (const [key, value] of entry.entries()) {
+						this.entry.set(key, value)
+					}
+				} else {
+					this.uniqueNodes.set(id, this.entry)
+				}
+			}
+		}
+		return this.entry
 	}
 	read(requestNode: N.MapNode<any, any, any, any, any, any, any, any>, variables: Record<string, unknown>) {
 		const newMap = new Map<unknown, unknown>()
-		for (const [key, value] of this.entry.entries()) {
+		for (const [key, value] of this.useEntry(variables).entries()) {
 			const readValue = value.read(requestNode.item, variables)
 			if (isNone(readValue)) {
 				return none
@@ -374,14 +435,14 @@ class MapCacheNode extends CacheNode<N.MapNode<any, any, any, any, any, any, any
 		}
 		return some(newMap)
 	}
-	private useEntry(requestNode: N.Node, variables: Record<string, unknown>) {
+	private useNodeEntries(requestNode: N.Node, variables: Record<string, unknown>) {
 		return (node: CacheNode<any>) => node.toEntries(requestNode, variables)
 	}
 	useEntries(requestNode: N.MapNode<any, any, any, any, any, any, any, any>, variables: Record<string, unknown>) {
-		return traverseMap(this.useEntry(requestNode.item, variables))(this.entry)
+		return traverseMap(this.useNodeEntries(requestNode.item, variables))(this.useEntry(variables))
 	}
-	private useCacheNode(key: unknown): [CacheNode<any>, boolean] {
-		const keyEntry = this.entry.get(key)
+	private useCacheNode(key: unknown, variables?: Record<string, unknown>): [CacheNode<any>, boolean] {
+		const keyEntry = this.useEntry(variables).get(key)
 		if (keyEntry) {
 			return [keyEntry, false]
 		}
@@ -391,18 +452,19 @@ class MapCacheNode extends CacheNode<N.MapNode<any, any, any, any, any, any, any
 			this.uniqueNodes,
 			this.deps
 		) as CacheNode<any>
-		this.entry.set(key, newEntry)
+		this.useEntry().set(key, newEntry)
 		return [newEntry as CacheNode<any>, true]
 	}
 	private useWriteToNode(variables: Record<string, unknown>) {
+		const entry = this.useEntry(variables)
 		return async (key: unknown, data: unknown) => {
-			const [node, isNew] = this.useCacheNode(key)
+			const [node, isNew] = this.useCacheNode(key, variables)
 			if (data === null || data === undefined) {
 				if (isNew) {
 					// there is already no data at this key, so nothing to evict
 					return constVoid
 				}
-				this.entry.delete(key)
+				entry.delete(key)
 				return () => {
 					if (!this.entry.has(key)) {
 						this.entry.set(key, node)
@@ -424,11 +486,11 @@ class MapCacheNode extends CacheNode<N.MapNode<any, any, any, any, any, any, any
 		let iteration = 0
 		for (const [key, value] of data.entries()) {
 			evictions.push(_write(key, value))
-			iteration++
 			// give main thread a break every 100 writes
-			if (evictions.length % 100 === 0) {
-				await Promise.all(evictions.slice(iteration - 100, iteration))
+			if (iteration % 100 === 0) {
+				await Promise.resolve()
 			}
+			iteration++
 		}
 		return sequenceArrayIO(await Promise.all(evictions))
 	}
@@ -515,7 +577,7 @@ class ArrayCacheNode extends CacheNode<N.ArrayNode<any, any, any, any>> {
 			evictions.push(_write(i, data[i]))
 			// give main thread a break every 100 writes
 			if (i % 100 === 0) {
-				await Promise.all(evictions.slice(i - 100, i))
+				await Promise.resolve()
 			}
 		}
 		return sequenceArrayIO(await Promise.all(evictions))

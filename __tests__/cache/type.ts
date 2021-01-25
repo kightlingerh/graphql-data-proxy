@@ -84,7 +84,7 @@ const updated = {
 }
 
 describe('type', () => {
-	it('is reactive', async () => {
+	it('has reactive reads', async () => {
 		const { write, read } = useCache()
 
 		const ref = computed(read)
@@ -95,6 +95,31 @@ describe('type', () => {
 
 		assert.deepStrictEqual(ref.value, some(person))
 	}),
+		it('has reactive refs', async () => {
+			const { write, age, weight, name } = useCache()
+
+			assert.deepStrictEqual(age.value, none)
+
+			assert.deepStrictEqual(weight.value, none)
+
+			assert.deepStrictEqual(name.value, none)
+
+			await write(person)
+
+			assert.deepStrictEqual(age.value, some(person.age))
+
+			assert.deepStrictEqual(weight.value, some(person.weight))
+
+			assert.deepStrictEqual(name.value, some(person.name))
+
+			await write(update)
+
+			assert.deepStrictEqual(age.value, some(updated.age))
+
+			assert.deepStrictEqual(weight.value, some(updated.weight))
+
+			assert.deepStrictEqual(name.value, some(updated.name))
+		}),
 		it('allows partial updates', async () => {
 			const { write, read } = useCache()
 

@@ -1,4 +1,5 @@
 import { constUndefined } from 'fp-ts/function'
+import { NonEmptyArray } from 'fp-ts/NonEmptyArray'
 import { Option } from 'fp-ts/Option'
 import { Ref as R } from 'vue'
 import * as M from '../model/Model'
@@ -100,25 +101,15 @@ export interface DynamicNodeConfig<
 
 export type NodeVariables = Record<string, AnyBaseNode>
 
-export type Path = Array<string | number>
+export type Path = NonEmptyArray<string | number>
 
-export interface StaticCustomCache<CacheEntry> {
-	tag: 'Static'
-	entry: CacheEntry
-}
-
-export interface DynamicCustomCache<PartialData, Variables> {
-	tag: 'Dynamic'
+export interface CustomCache<PartialData, Variables> {
 	toId: <V extends Record<string, unknown> = Record<string, unknown>>(
 		path: Path,
 		variables?: Variables & V,
 		data?: PartialData
-	) => string | number
+	) => unknown
 }
-
-export type CustomCache<PartialData, Variables, CacheEntry> =
-	| StaticCustomCache<CacheEntry>
-	| DynamicCustomCache<PartialData, Variables>
 
 export const EMPTY_VARIABLES: any = {}
 

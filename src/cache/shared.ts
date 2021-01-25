@@ -37,24 +37,12 @@ export type PrimitiveNode =
 	| N.FloatNode<any, any>
 	| N.IntNode<any, any>
 	| N.StringNode<any, any>
+	| N.ScalarNode<any, any, any, any, any, any>
 
-const PrimitiveTags = new Set<N.NodeTag>(['Boolean', 'Float', 'Int', 'String'])
+const PrimitiveTags = new Set<N.NodeTag>(['Boolean', 'Float', 'Int', 'String', 'Scalar'])
 
 export function isPrimitiveNode(node: N.Node): node is PrimitiveNode {
 	return PrimitiveTags.has(node.tag)
-}
-
-export function isEntityNode(node: N.Node): boolean {
-	switch (node.tag) {
-		case 'Int':
-		case 'Boolean':
-		case 'String':
-		case 'Scalar':
-		case 'Float':
-			return true
-		default:
-			return !!node?.__isEntity
-	}
 }
 
 export function isNonPrimitiveEntityNode(node: N.Node): boolean {

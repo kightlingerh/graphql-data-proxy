@@ -27,7 +27,7 @@ import {
 	CacheNode,
 	ModifyIfEntity,
 	TypeOfRefs,
-	DynamicCustomCache
+	CustomCache
 } from './shared'
 
 export type ExtractTypeName<T> = T extends { readonly __typename: infer A } ? A : never
@@ -91,10 +91,9 @@ export interface BaseTypeNode<
 	readonly __typename: Typename
 	readonly tag: 'Type'
 	readonly members: MS
-	readonly __customCache?: DynamicCustomCache<
+	readonly __customCache?: CustomCache<
 		ExtractTypeNodePartialDataFromMembers<MS>,
-		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS> & Variables>,
-		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>
+		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS> & Variables>
 	>
 }
 
@@ -116,10 +115,9 @@ export interface StaticTypeNodeConfig<
 	IsEntity extends boolean
 > extends StaticNodeConfig<IsLocal, IsEntity> {
 	includeTypename?: IncludeTypename
-	useCustomCache?: DynamicCustomCache<
+	useCustomCache?: CustomCache<
 		ExtractTypeNodePartialDataFromMembers<MS>,
-		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS>>,
-		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>
+		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS>>
 	>
 }
 
@@ -131,10 +129,9 @@ export interface DynamicTypeNodeConfig<
 	IsEntity extends boolean
 > extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {
 	includeTypename?: IncludeTypename
-	useCustomCache?: DynamicCustomCache<
+	useCustomCache?: CustomCache<
 		ExtractTypeNodePartialDataFromMembers<MS>,
-		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS>>,
-		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>
+		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS>>
 	>
 }
 
