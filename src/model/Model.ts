@@ -1,3 +1,4 @@
+import { Either } from 'fp-ts/Either'
 import { eqStrict } from 'fp-ts/Eq'
 import { NonEmptyArray } from 'fp-ts/NonEmptyArray'
 import { Option } from 'fp-ts/Option'
@@ -180,6 +181,25 @@ export const optionString = fromOption(string)
 export const optionNumber = fromOption(number)
 
 export const optionBoolean = fromOption(boolean)
+
+export function fromEither<IL, OL, L, IR, OR, R>(
+	left: Model<IL, OL, L>,
+	right: Model<IR, OR, R>
+): Model<IL | IR, OL | OR, Either<L, R>> {
+	return {
+		equals: EQ.either(left, right).equals,
+		is: G.either(left, right).is,
+		encode: EN.either(left, right).encode,
+		decode: TD.fromEither(left, right).decode
+	}
+}
+
+export function either<L, R>(
+	left: Model<unknown, unknown, L>,
+	right: Model<unknown, unknown, R>
+): Model<unknown, unknown, Either<L, R>> {
+	return fromEither(left, right)
+}
 
 export function nullable<I, O, A>(item: Model<I, O, A>): Model<I | null, O | null, A | null> {
 	return {

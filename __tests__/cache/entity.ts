@@ -89,28 +89,28 @@ describe('entity', () => {
 			})
 		)
 	}),
-	it('has reactive refs', async () => {
-		const { write, people: peopleRef } = useCache()
+		it('has reactive refs', async () => {
+			const { write, people: peopleRef } = useCache()
 
-		assert.deepStrictEqual(peopleRef.value, none)
+			assert.deepStrictEqual(peopleRef.value, none)
 
-		await write({ people })
+			await write({ people })
 
-		assert.deepStrictEqual(peopleRef.value, some(people))
+			assert.deepStrictEqual(peopleRef.value, some(people))
 
-		await write({ people: newPeople })
+			await write({ people: newPeople })
 
-		assert.deepStrictEqual(peopleRef.value, some(newPeople))
-	}),
-	it('can evict new values', async () => {
-		const { write, read } = useCache()
+			assert.deepStrictEqual(peopleRef.value, some(newPeople))
+		}),
+		it('can evict new values', async () => {
+			const { write, read } = useCache()
 
-		const ref = computed(read)
+			const ref = computed(read)
 
-		const evict = await write({ people })
+			const evict = await write({ people })
 
-		evict()
+			evict()
 
-		assert.deepStrictEqual(ref.value, none)
-	})
+			assert.deepStrictEqual(ref.value, none)
+		})
 })

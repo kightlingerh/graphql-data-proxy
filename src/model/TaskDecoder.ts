@@ -121,7 +121,7 @@ export const option = <A>(a: TaskDecoder<unknown, A>) => fromOption(a)
 
 export const fromEither = <IL, IR, L, R>(
 	l: TaskDecoder<IL, L>,
-	r: TaskDecoder<IL, R>
+	r: TaskDecoder<IR, R>
 ): TaskDecoder<IL | IR, E.Either<L, R>> =>
 	pipe(
 		TD.map<R, E.Either<L, R>>(E.right)(r as TaskDecoder<IL | IR, R>),
