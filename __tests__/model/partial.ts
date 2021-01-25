@@ -20,18 +20,5 @@ describe('partial', () => {
 				return assert.deepStrictEqual(model.encode({ b }), { b })
 			})
 		)
-	}),
-		it('encode', () => {
-			fc.assert(
-				fc.property(fc.string(), (s) => {
-					return assert.deepStrictEqual(model.encode({ a: s }), { a: s })
-				})
-			)
-
-			fc.assert(
-				fc.property(fc.float(), (b) => {
-					return assert.deepStrictEqual(model.encode({ b }), { b })
-				})
-			)
-		})
+	})
 })
