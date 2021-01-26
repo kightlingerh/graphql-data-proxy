@@ -55,4 +55,8 @@ export declare function type<Typename extends string, MS extends Record<string, 
 export declare function pickFromType<T extends TypeNode<any, any, any, any, any>, P extends keyof T['members']>(node: T, keys: P[]): TypeNode<ExtractTypeName<T>, Pick<T['members'], P>, T['variables']>;
 export declare function omitFromType<T extends TypeNode<any, any, any, any, any>, P extends keyof T['members']>(node: T, keys: P[]): TypeNode<ExtractTypeName<T>, Omit<T['members'], P>, T['variables']>;
 export declare function eqById<T extends TypeNode<any, Record<'id', AnyBaseNode>, any, any, any>>(node: T): T;
-export declare function encodeById<T extends TypeNode<any, Record<'id', AnyBaseNode>, any, any, any>>(node: T): T;
+export declare function encodeById<Typename extends string, MS extends {
+    id: AnyBaseNode;
+    [K: string]: AnyBaseNode;
+}, Variables extends NodeVariables = {}, IsLocal extends boolean = false, IncludeTypename extends boolean = false, IsEntity extends boolean = false>(node: TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>;
+export declare function markAsEntity<T extends BaseTypeNode<any, any, any, any, any>>(node: T): BaseTypeNode<T['__typename'], T['members'], T['variables'], Exclude<T['__isLocal'], undefined>, true>;

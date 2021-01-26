@@ -240,11 +240,32 @@ export function eqById<T extends TypeNode<any, Record<'id', AnyBaseNode>, any, a
 	}
 }
 
-export function encodeById<T extends TypeNode<any, Record<'id', AnyBaseNode>, any, any, any>>(node: T): T {
+export function encodeById<
+	Typename extends string,
+	MS extends {
+		id: AnyBaseNode
+		[K: string]: AnyBaseNode
+	},
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false,
+	IncludeTypename extends boolean = false,
+	IsEntity extends boolean = false
+>(
+	node: TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>
+): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity> {
 	return {
 		...node,
 		strict: useEncoder(node.strict as any)({
 			encode: (a) => node.members.id.strict.encode((a as any).id)
 		})
 	}
+}
+
+export function markAsEntity<T extends BaseTypeNode<any, any, any, any, any>>(
+	node: T
+): BaseTypeNode<T['__typename'], T['members'], T['variables'], Exclude<T['__isLocal'], undefined>, true> {
+	return {
+		...node,
+		__isEntity: true
+	} as any
 }

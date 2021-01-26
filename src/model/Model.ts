@@ -230,9 +230,9 @@ export function fromSum<T extends string>(
 
 export function sum<T extends string>(
 	tag: T
-): <MS extends Record<string, Model<any, any, any>>>(
-	members: MS
-) => Model<unknown, EN.OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>> {
+): <MS>(
+	members: { [K in keyof MS]: Model<unknown, unknown, MS[K] & Record<T, K>> }
+) => Model<unknown, unknown, MS[keyof MS]> {
 	const s = fromSum(tag)
 	return (members) => s(members) as any
 }

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.encodeById = exports.eqById = exports.omitFromType = exports.pickFromType = exports.type = exports.TYPE_TAG = void 0;
+exports.markAsEntity = exports.encodeById = exports.eqById = exports.omitFromType = exports.pickFromType = exports.type = exports.TYPE_TAG = void 0;
 const Model_1 = require("../model/Model");
 const Scalar_1 = require("./Scalar");
 const shared_1 = require("./shared");
@@ -58,3 +58,7 @@ function encodeById(node) {
         }) });
 }
 exports.encodeById = encodeById;
+function markAsEntity(node) {
+    return Object.assign(Object.assign({}, node), { __isEntity: true });
+}
+exports.markAsEntity = markAsEntity;

@@ -47,7 +47,7 @@ export declare const fromSum: <T extends string>(tag: T) => <MS extends Record<s
 export declare const sum: <T extends string>(tag: T) => <A>(members: { [K in keyof A]: TD.TaskDecoder<unknown, A[K] & Record<T, K>>; }) => TD.TaskDecoder<unknown, A[keyof A]>;
 export declare const fromOption: <I, A>(a: TaskDecoder<I, A>) => TaskDecoder<I, Option<A>>;
 export declare const option: <A>(a: TaskDecoder<unknown, A>) => TaskDecoder<unknown, Option<A>>;
-export declare const fromEither: <IL, IR, L, R>(l: TaskDecoder<IL, L>, r: TaskDecoder<IL, R>) => TaskDecoder<IL | IR, E.Either<L, R>>;
+export declare const fromEither: <IL, IR, L, R>(l: TaskDecoder<IL, L>, r: TaskDecoder<IR, R>) => TaskDecoder<IL | IR, E.Either<L, R>>;
 export declare const either: <L, R>(l: TaskDecoder<unknown, L>, r: TaskDecoder<unknown, R>) => TaskDecoder<unknown, E.Either<L, R>>;
 export declare const fromMap: <IK extends string | number, IA, K, A>(k: TaskDecoder<IK, K>, a: TaskDecoder<IA, A>) => TaskDecoder<Record<IK, IA>, Map<K, A>>;
 export declare const map: <K, A>(k: TaskDecoder<unknown, K>, a: TaskDecoder<unknown, A>) => TaskDecoder<Record<string | number, unknown>, Map<K, A>>;

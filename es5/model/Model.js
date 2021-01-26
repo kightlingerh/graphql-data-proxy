@@ -19,7 +19,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useIdentityDecoder = exports.useDecoder = exports.eqById = exports.useEq = exports.encodeById = exports.useIdentityEncoder = exports.useEncoder = exports.lazy = exports.fromTuple = exports.sum = exports.fromSum = exports.nullable = exports.optionBoolean = exports.optionNumber = exports.optionString = exports.option = exports.fromOption = exports.set = exports.fromSet = exports.map = exports.fromMap = exports.nonEmptyArray = exports.fromNonEmptyArray = exports.array = exports.fromArray = exports.partial = exports.fromPartial = exports.type = exports.fromType = exports.literal = exports.boolean = exports.float = exports.int = exports.number = exports.string = void 0;
+exports.useIdentityDecoder = exports.useDecoder = exports.eqById = exports.useEq = exports.encodeById = exports.useIdentityEncoder = exports.useEncoder = exports.lazy = exports.fromTuple = exports.sum = exports.fromSum = exports.nullable = exports.either = exports.fromEither = exports.optionBoolean = exports.optionNumber = exports.optionString = exports.option = exports.fromOption = exports.set = exports.fromSet = exports.map = exports.fromMap = exports.nonEmptyArray = exports.fromNonEmptyArray = exports.array = exports.fromArray = exports.partial = exports.fromPartial = exports.type = exports.fromType = exports.literal = exports.boolean = exports.float = exports.int = exports.number = exports.string = void 0;
 const Eq_1 = require("fp-ts/Eq");
 const EQ = __importStar(require("./Eq"));
 const EN = __importStar(require("./Encoder"));
@@ -159,6 +159,19 @@ exports.option = option;
 exports.optionString = fromOption(exports.string);
 exports.optionNumber = fromOption(exports.number);
 exports.optionBoolean = fromOption(exports.boolean);
+function fromEither(left, right) {
+    return {
+        equals: EQ.either(left, right).equals,
+        is: G.either(left, right).is,
+        encode: EN.either(left, right).encode,
+        decode: TD.fromEither(left, right).decode
+    };
+}
+exports.fromEither = fromEither;
+function either(left, right) {
+    return fromEither(left, right);
+}
+exports.either = either;
 function nullable(item) {
     return {
         equals: EQ.nullable(item).equals,

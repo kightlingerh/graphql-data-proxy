@@ -1,3 +1,4 @@
+import { Either } from 'fp-ts/Either';
 import { NonEmptyArray } from 'fp-ts/NonEmptyArray';
 import { Option } from 'fp-ts/Option';
 import * as EQ from './Eq';
@@ -54,9 +55,13 @@ export declare function option<O, A>(item: Model<unknown, O, A>, lazy: Lazy<O>):
 export declare const optionString: Model<string | null, string | null, Option<string>>;
 export declare const optionNumber: Model<number | null, number | null, Option<number>>;
 export declare const optionBoolean: Model<boolean | null, boolean | null, Option<boolean>>;
+export declare function fromEither<IL, OL, L, IR, OR, R>(left: Model<IL, OL, L>, right: Model<IR, OR, R>): Model<IL | IR, OL | OR, Either<L, R>>;
+export declare function either<L, R>(left: Model<unknown, unknown, L>, right: Model<unknown, unknown, R>): Model<unknown, unknown, Either<L, R>>;
 export declare function nullable<I, O, A>(item: Model<I, O, A>): Model<I | null, O | null, A | null>;
 export declare function fromSum<T extends string>(tag: T): <MS extends Record<string, Model<any, any, any>>>(members: MS) => Model<TD.InputOf<MS[keyof MS]>, EN.OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>>;
-export declare function sum<T extends string>(tag: T): <MS extends Record<string, Model<any, any, any>>>(members: MS) => Model<unknown, EN.OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>>;
+export declare function sum<T extends string>(tag: T): <MS>(members: {
+    [K in keyof MS]: Model<unknown, unknown, MS[K] & Record<T, K>>;
+}) => Model<unknown, unknown, MS[keyof MS]>;
 export declare function fromTuple<MS extends ReadonlyArray<Model<any, any, any>>>(...members: MS): Model<{
     [K in keyof MS]: TD.InputOf<MS[K]>;
 }, {
