@@ -7,6 +7,7 @@ import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { fromNullable, Option } from 'fp-ts/Option'
 import * as TE from 'fp-ts/TaskEither'
 import * as TD from 'io-ts/TaskDecoder'
+import {disableValidation, isDev} from '../shared';
 export * from 'io-ts/TaskDecoder'
 import * as DE from './DecodeError'
 import { Literal } from './Schemable'
@@ -28,7 +29,7 @@ export const failure = <A = never>(actual: unknown, message: string): TE.TaskEit
 
 export const fromRefinement = <I, A extends I>(refinement: Refinement<I, A>, expected: string): TaskDecoder<I, A> => ({
 	decode: (i) => {
-		if (__DISABLE_VALIDATION__) {
+		if (disableValidation) {
 			return success(i as A)
 		} else {
 			return refinement(i) ? success(i) : failure(i, expected)
@@ -156,7 +157,7 @@ export const fromMap = <IK extends string | number, IA, K, A>(
 				let error: D.DecodeError | null = null
 				for (let i = 0; i < awaitedPairs.length; i++) {
 					const [key, value] = awaitedPairs[i]
-					if (__DEV__ || !__DISABLE_VALIDATION__) {
+					if (isDev || !disableValidation) {
 						if (E.isLeft(key)) {
 							error = error ? mergeErrors(error, key.left) : key.left
 						}
