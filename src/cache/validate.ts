@@ -6,37 +6,37 @@ import { isMapNode, isScalarNode, isSumNode, isTypeNode, isWrappedNode, WrappedN
 
 const VALIDATIONS: WeakMap<N.SchemaNode<any, any>, WeakMap<N.SchemaNode<any, any>, Array<Tree<string>>>> = new WeakMap()
 
-export function validate(schema: N.SchemaNode<any, any>, request: N.SchemaNode<any, any>) {
+export function validate(schema: N.SchemaNode<any, any>, request: N.SchemaNode<any, any>, allowMutations = true) {
 	const schemaValidations = VALIDATIONS.get(schema)
 	if (schemaValidations) {
 		const requestValidation = schemaValidations.get(request)
 		if (requestValidation) {
 			return requestValidation
 		} else {
-			const newValidation = validateTypeNode(schema as any, request as any)
+			const newValidation = validateTypeNode(schema as any, request as any, allowMutations)
 			schemaValidations.set(request, newValidation)
 			return newValidation
 		}
 	} else {
-		const newValidations = validateTypeNode(schema as any, request as any)
+		const newValidations = validateTypeNode(schema as any, request as any, allowMutations)
 		VALIDATIONS.set(schema, new WeakMap([[request, newValidations]]))
 		return newValidations
 	}
 }
 
-function validateNode(x: N.Node, y: N.Node): Array<Tree<string>> {
+function validateNode(x: N.Node, y: N.Node, allowMutations: boolean): Array<Tree<string>> {
 	const variableErrors = validateVariablesDefinition(x.variables, y.variables)
-	if (y.tag === 'Mutation') {
+	if (!allowMutations && y.tag === 'Mutation') {
 		return [...variableErrors, make(`cannot include mutations in a cache request`)]
 	}
 	if (isWrappedNode(x) && isWrappedNode(y)) {
-		return [...variableErrors, ...validateWrappedNode(x, y)]
+		return [...variableErrors, ...validateWrappedNode(x, y, allowMutations)]
 	} else if (isTypeNode(x) && isTypeNode(y)) {
-		return [...variableErrors, ...validateTypeNode(x, y)]
+		return [...variableErrors, ...validateTypeNode(x, y, allowMutations)]
 	} else if (isScalarNode(x) && isScalarNode(y)) {
 		return [...variableErrors, ...validateScalarNode(x, y)]
 	} else if (isSumNode(x) && isSumNode(y)) {
-		return [...variableErrors, ...validateSumNode(x, y)]
+		return [...variableErrors, ...validateSumNode(x, y, allowMutations)]
 	} else if (x.tag === y.tag) {
 		return variableErrors
 	} else {
@@ -55,7 +55,7 @@ function validateVariablesDefinition(x: N.NodeVariables, y: N.NodeVariables): Ar
 		if (xk === undefined) {
 			errors.push(make(`request has expected variable ${k} that is unavailable on ${JSON.stringify(x)}`))
 		} else {
-			const mErrors = validateNode(xk as N.Node, yk as N.Node)
+			const mErrors = validateNode(xk as N.Node, yk as N.Node, false)
 			if (isNonEmpty(mErrors)) {
 				errors.push(make(`invalid request on ${k}`, mErrors))
 			}
@@ -67,7 +67,7 @@ function validateVariablesDefinition(x: N.NodeVariables, y: N.NodeVariables): Ar
 function validateTypeNode<
 	SchemaNode extends N.TypeNode<any, any, any, any>,
 	RequestNode extends N.TypeNode<any, any, any, any>
->(x: SchemaNode, y: RequestNode): Array<Tree<string>> {
+>(x: SchemaNode, y: RequestNode, allowMutations: boolean): Array<Tree<string>> {
 	const xMembers = x.members
 	const yMembers = y.members
 	const errors: Array<Tree<string>> = []
@@ -77,7 +77,7 @@ function validateTypeNode<
 		if (xk === undefined) {
 			errors.push(make(`request has expected field ${k} that is unavailable on ${showNode.show(x)}`))
 		} else {
-			const mErrors = validateNode(xk, yk)
+			const mErrors = validateNode(xk, yk, allowMutations)
 			if (isNonEmpty(mErrors)) {
 				errors.push(make(`invalid request on ${k}`, mErrors))
 			}
@@ -88,9 +88,10 @@ function validateTypeNode<
 
 function validateWrappedNode<SchemaNode extends WrappedNode, RequestNode extends WrappedNode>(
 	x: SchemaNode,
-	y: RequestNode
+	y: RequestNode,
+	allowMutations: boolean
 ): Array<Tree<string>> {
-	const errors = validateNode(x.item, y.item)
+	const errors = validateNode(x.item, y.item, allowMutations)
 	if (isNonEmpty(errors)) {
 		return [
 			make(
@@ -121,7 +122,8 @@ function validateScalarNode<
 
 function validateSumNode<SchemaNode extends N.SumNode<any, any, any>, RequestNode extends N.SumNode<any, any, any>>(
 	x: SchemaNode,
-	y: RequestNode
+	y: RequestNode,
+	allowMutations: boolean
 ): Array<Tree<string>> {
 	const xMembers = x.membersRecord as Record<string, N.Node>
 	const yMembers = y.membersRecord as Record<string, N.Node>
@@ -132,7 +134,7 @@ function validateSumNode<SchemaNode extends N.SumNode<any, any, any>, RequestNod
 		if (xk === undefined) {
 			errors.push(make(`request has sum member ${k} that is unavailable in schema ${showTypeNode.show(xk)}`))
 		} else {
-			const mErrors = validateNode(xk, yk)
+			const mErrors = validateNode(xk, yk, allowMutations)
 			if (isNonEmpty(mErrors)) {
 				errors.push(make(`invalid request on ${k}`, mErrors))
 			}

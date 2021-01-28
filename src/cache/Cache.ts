@@ -49,7 +49,7 @@ export function make(deps: CacheDependencies) {
 		const cache = new SchemaCacheNode(schema, deps)
 		return <R extends N.SchemaNode<any, any>>(request: R) => {
 			if (isDev) {
-				const errors = validate(schema, request)
+				const errors = validate(schema, request, false)
 				if (isNonEmpty(errors)) {
 					return left<CacheError, Cache<R>>(errors)
 				}
