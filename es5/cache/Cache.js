@@ -44,7 +44,7 @@ function make(deps) {
     return (schema) => {
         const cache = new SchemaCacheNode(schema, deps);
         return (request) => {
-            if (__DEV__) {
+            if (shared_1.isDev) {
                 const errors = validate_1.validate(schema, request);
                 if (Array_1.isNonEmpty(errors)) {
                     return Either_1.left(errors);

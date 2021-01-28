@@ -12,7 +12,7 @@ import { computed, shallowReactive, shallowRef } from 'vue'
 import { Model } from '../model'
 import * as N from '../node'
 import { Ref } from '../node'
-import { isEmptyObject } from '../shared'
+import { isDev, isEmptyObject } from '../shared'
 import { CacheGraphqlNode, isNonPrimitiveEntityNode, PrimitiveNode, traverseMap } from './shared'
 import { validate } from './validate'
 
@@ -48,7 +48,7 @@ export function make(deps: CacheDependencies) {
 	return <S extends N.SchemaNode<any, any>>(schema: S) => {
 		const cache = new SchemaCacheNode(schema, deps)
 		return <R extends N.SchemaNode<any, any>>(request: R) => {
-			if (__DEV__) {
+			if (isDev) {
 				const errors = validate(schema, request)
 				if (isNonEmpty(errors)) {
 					return left<CacheError, Cache<R>>(errors)

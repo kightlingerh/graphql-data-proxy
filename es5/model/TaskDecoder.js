@@ -39,6 +39,7 @@ const function_1 = require("fp-ts/lib/function");
 const Option_1 = require("fp-ts/Option");
 const TE = __importStar(require("fp-ts/TaskEither"));
 const TD = __importStar(require("io-ts/TaskDecoder"));
+const shared_1 = require("../shared");
 __exportStar(require("io-ts/TaskDecoder"), exports);
 const DE = __importStar(require("./DecodeError"));
 const G = __importStar(require("./Guard"));
@@ -49,7 +50,7 @@ const failure = (actual, message) => TE.left(D.error(actual, message));
 exports.failure = failure;
 const fromRefinement = (refinement, expected) => ({
     decode: (i) => {
-        if (__DISABLE_VALIDATION__) {
+        if (shared_1.disableValidation) {
             return exports.success(i);
         }
         else {
@@ -132,7 +133,7 @@ const fromMap = (k, a) => {
                 let error = null;
                 for (let i = 0; i < awaitedPairs.length; i++) {
                     const [key, value] = awaitedPairs[i];
-                    if (__DEV__ || !__DISABLE_VALIDATION__) {
+                    if (shared_1.isDev || !shared_1.disableValidation) {
                         if (E.isLeft(key)) {
                             error = error ? mergeErrors(error, key.left) : key.left;
                         }

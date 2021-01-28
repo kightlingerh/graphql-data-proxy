@@ -22,6 +22,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.hasDecodingTransformations = exports.hasEncodingTransformations = exports.useAdjustedModel = exports.useLocalModel = exports.HAS_TRANSFORMATIONS = exports.NO_TRANSFORMATIONS = exports.extractPartialModels = exports.extractStrictModels = exports.EMPTY_VARIABLES_MODEL = exports.EMPTY_VARIABLES = void 0;
 const function_1 = require("fp-ts/function");
 const M = __importStar(require("../model/Model"));
+const shared_1 = require("../shared");
 exports.EMPTY_VARIABLES = {};
 exports.EMPTY_VARIABLES_MODEL = M.type({});
 function extractStrictModels(members) {
@@ -56,7 +57,7 @@ function useAdjustedModel(model, isLocal, useIdEncoder, useIdDecoder) {
     if (isLocal) {
         return useLocalModel(model);
     }
-    if (__DEV__ || !__DISABLE_VALIDATION__) {
+    if (shared_1.isDev || !shared_1.disableValidation) {
         return model;
     }
     if (useIdEncoder && useIdDecoder) {

@@ -145,10 +145,10 @@ function set(item) {
 exports.set = set;
 function fromOption(item, lazy = function_1.constNull) {
     return {
-        equals: EQ.option(item),
-        is: G.option(item),
-        decode: TD.fromOption(item),
-        encode: EN.option(item, lazy)
+        equals: EQ.option(item).equals,
+        is: G.option(item).is,
+        decode: TD.fromOption(item).decode,
+        encode: EN.option(item, lazy).encode
     };
 }
 exports.fromOption = fromOption;

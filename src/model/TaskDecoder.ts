@@ -7,7 +7,7 @@ import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { fromNullable, Option } from 'fp-ts/Option'
 import * as TE from 'fp-ts/TaskEither'
 import * as TD from 'io-ts/TaskDecoder'
-import {disableValidation, isDev} from '../shared';
+import { disableValidation, isDev } from '../shared'
 export * from 'io-ts/TaskDecoder'
 import * as DE from './DecodeError'
 import { Literal } from './Schemable'

@@ -86,7 +86,7 @@ export interface BaseTypeNode<
 		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>,
 		Variables,
 		ExtractTypeNodeSubVariablesFromMembers<MS>,
-		ExtractTypeNodeRefsFromMembers<MS>
+		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeRefsFromMembers<MS>>
 	> {
 	readonly __typename: Typename
 	readonly tag: 'Type'

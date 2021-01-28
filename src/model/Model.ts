@@ -163,10 +163,10 @@ export function fromOption<I, O, A>(item: Model<I, O, A>): Model<I | null, O | n
 export function fromOption<I, O, A>(item: Model<I, O, A>, lazy: Lazy<O>): Model<I | null, O, Option<A>>
 export function fromOption<I, O, A>(item: Model<I, O, A>, lazy: Lazy<O | null> = constNull): any {
 	return {
-		equals: EQ.option(item),
-		is: G.option(item),
-		decode: TD.fromOption(item),
-		encode: EN.option(item, lazy)
+		equals: EQ.option(item).equals,
+		is: G.option(item).is,
+		decode: TD.fromOption(item).decode,
+		encode: EN.option(item, lazy).encode
 	}
 }
 
