@@ -1,5 +1,5 @@
 import { isNonEmpty } from 'fp-ts/lib/Array'
-import { make, Tree } from 'fp-ts/Tree'
+import { make, Tree } from 'fp-ts/lib/Tree'
 import * as N from '../node'
 import { showNode, showTypeNode } from '../node/show'
 import { isMapNode, isScalarNode, isSumNode, isTypeNode, isWrappedNode, WrappedNode } from './shared'

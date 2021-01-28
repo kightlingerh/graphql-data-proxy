@@ -1,5 +1,5 @@
-import { Option } from 'fp-ts/Option'
-import { NonEmptyArray } from 'fp-ts/NonEmptyArray'
+import { Option } from 'fp-ts/lib/Option'
+import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import * as M from '../model/Model'
 import {
 	BaseNode,

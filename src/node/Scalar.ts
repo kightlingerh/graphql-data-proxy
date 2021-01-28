@@ -1,4 +1,4 @@
-import { Option } from 'fp-ts/Option'
+import { Option } from 'fp-ts/lib/Option'
 import { Model } from '../model/Model'
 import {
 	BaseNode,

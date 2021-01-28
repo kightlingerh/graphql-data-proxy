@@ -1,4 +1,4 @@
-import { Either, fold as foldE } from 'fp-ts/Either'
+import { Either, fold as foldE } from 'fp-ts/lib/Either'
 import { constNull, Lazy } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { fold, Option } from 'fp-ts/lib/Option'

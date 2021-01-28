@@ -1,4 +1,4 @@
-import { Option } from 'fp-ts/Option'
+import { Option } from 'fp-ts/lib/Option'
 import { Int } from '../model/Guard'
 import { int as intModel } from '../model/Model'
 import {

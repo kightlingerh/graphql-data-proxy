@@ -1,4 +1,4 @@
-import { Option } from 'fp-ts/Option'
+import { Option } from 'fp-ts/lib/Option'
 import { Float } from '../model/Guard'
 import { float as floatModel } from '../model/Model'
 import {

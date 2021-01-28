@@ -1,12 +1,12 @@
-import { Either } from 'fp-ts/Either'
-import { eqStrict } from 'fp-ts/Eq'
-import { NonEmptyArray } from 'fp-ts/NonEmptyArray'
-import { Option } from 'fp-ts/Option'
+import { Either } from 'fp-ts/lib/Either'
+import { eqStrict } from 'fp-ts/lib/Eq'
+import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
+import { Option } from 'fp-ts/lib/Option'
 import * as EQ from './Eq'
 import * as EN from './Encoder'
 import * as TD from './TaskDecoder'
 import * as G from './Guard'
-import { constNull, Lazy } from 'fp-ts/function'
+import { constNull, Lazy } from 'fp-ts/lib/function'
 import { Literal } from './Schemable'
 
 export interface Model<I, O, A> extends TD.TaskDecoder<I, A>, EN.Encoder<O, A>, G.Guard<unknown, A>, EQ.Eq<A> {}
