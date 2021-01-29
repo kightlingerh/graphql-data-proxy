@@ -261,7 +261,7 @@ export function encodeById<
 	}
 }
 
-export function markAsEntity<T extends BaseTypeNode<any, any, any, any, any>>(
+export function markTypeAsEntity<T extends BaseTypeNode<any, any, any, any, any>>(
 	node: T
 ): BaseTypeNode<T['__typename'], T['members'], T['variables'], Exclude<T['__isLocal'], undefined>, true> {
 	return {

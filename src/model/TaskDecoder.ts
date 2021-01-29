@@ -4,7 +4,7 @@ import { Refinement } from 'fp-ts/lib/function'
 import { isNonEmpty } from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
-import { fromNullable, Option, some } from 'fp-ts/lib/Option'
+import { none, Option, some } from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TD from 'io-ts/TaskDecoder'
 import { disableValidation, isDev } from '../shared'
@@ -115,7 +115,7 @@ export const fromOption = <I, A>(a: TaskDecoder<I, A>): TaskDecoder<I | null | u
 	return {
 		decode: (i) => async () => {
 			if (i === null || i === undefined) {
-				return E.right(fromNullable(i) as Option<A>)
+				return E.right(none as Option<A>)
 			} else {
 				return pipe(a.decode(i), TE.map(some))()
 			}
@@ -153,8 +153,8 @@ export const fromMap = <IK extends string | number, IA, K, A>(
 				const pairs: Promise<[E.Either<DecodeError, K>, E.Either<DecodeError, A>]>[] = []
 				for (const [key, value] of Object.entries(record.right as Record<IK, IA>)) {
 					pairs.push(Promise.all([k.decode(key as IK)(), a.decode(value as IA)()]))
-					if (iterations % 100 === 0) {
-						await Promise.all(pairs.slice(iterations - 100, iterations))
+					if (iterations % 500 === 0) {
+						await Promise.resolve()
 					}
 				}
 				const awaitedPairs = await Promise.all(pairs)
@@ -173,7 +173,7 @@ export const fromMap = <IK extends string | number, IA, K, A>(
 					if (E.isRight(key) && E.isRight(value)) {
 						extractedPairs.push([key.right, value.right])
 					}
-					if (i % 100 === 0) {
+					if (i % 500 === 0) {
 						await Promise.resolve()
 					}
 				}

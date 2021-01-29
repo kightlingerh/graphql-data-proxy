@@ -179,3 +179,13 @@ export function sum<
 		__isLocal: config?.isLocal
 	}
 }
+
+export function markSumAsEntity<T extends SumNode<any, any, any, any>>(
+	node: T
+): SumNode<T['members'], T['variables'], Exclude<T['__isLocal'], undefined>, true> {
+	return {
+		...node,
+		__isEntity: true
+	} as any
+}
+
