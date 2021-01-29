@@ -29,12 +29,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.make = void 0;
-const Array_1 = require("fp-ts/Array");
-const Either_1 = require("fp-ts/Either");
-const function_1 = require("fp-ts/function");
-const IO_1 = require("fp-ts/IO");
-const NonEmptyArray_1 = require("fp-ts/NonEmptyArray");
-const Option_1 = require("fp-ts/Option");
+const Array_1 = require("fp-ts/lib/Array");
+const Either_1 = require("fp-ts/lib/Either");
+const function_1 = require("fp-ts/lib/function");
+const IO_1 = require("fp-ts/lib/IO");
+const NonEmptyArray_1 = require("fp-ts/lib/NonEmptyArray");
+const Option_1 = require("fp-ts/lib/Option");
 const vue_1 = require("vue");
 const N = __importStar(require("../node"));
 const shared_1 = require("../shared");
@@ -45,7 +45,7 @@ function make(deps) {
         const cache = new SchemaCacheNode(schema, deps);
         return (request) => {
             if (shared_1.isDev) {
-                const errors = validate_1.validate(schema, request);
+                const errors = validate_1.validate(schema, request, false);
                 if (Array_1.isNonEmpty(errors)) {
                     return Either_1.left(errors);
                 }

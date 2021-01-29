@@ -1,4 +1,4 @@
-import { Option } from 'fp-ts/Option';
+import { Option } from 'fp-ts/lib/Option';
 import { BaseNode, DynamicNodeConfig, ExtractSubVariablesDefinition, ExtractVariablesDefinition, Intersection, ModifyOutputIfLocal, NodeVariables, StaticNodeConfig, TypeOf, TypeOfCacheEntry, TypeOfPartial, TypeOfPartialInput, TypeOfPartialOutput, TypeOfStrictInput, TypeOfStrictOutput, Ref, ModifyIfEntity, TypeOfRefs } from './shared';
 import { BaseTypeNode, ExtractTypeName } from './Type';
 declare type SumTypeNode = BaseTypeNode<any, any, any, any, any>;

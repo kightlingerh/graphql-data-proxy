@@ -1,4 +1,4 @@
-import { Option } from 'fp-ts/Option';
+import { Option } from 'fp-ts/lib/Option';
 import { Int } from '../model/Guard';
 import { BaseNode, DynamicNodeConfig, ModifyOutputIfLocal, NodeVariables, Ref, StaticNodeConfig } from './shared';
 export interface IntNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<number, ModifyOutputIfLocal<IsLocal, number>, Int, number, ModifyOutputIfLocal<IsLocal, number>, Int, Ref<Option<Int>>, Variables> {

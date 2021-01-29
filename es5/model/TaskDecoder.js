@@ -33,11 +33,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.lazy = exports.nonEmptyArray = exports.fromNonEmptyArray = exports.set = exports.fromSet = exports.map = exports.fromMap = exports.either = exports.fromEither = exports.option = exports.fromOption = exports.sum = exports.fromSum = exports.intersect = exports.union = exports.tuple = exports.fromTuple = exports.record = exports.fromRecord = exports.array = exports.fromArray = exports.partial = exports.fromPartial = exports.type = exports.fromType = exports.nullable = exports.parse = exports.refine = exports.withMessage = exports.mapLeftWithInput = exports.UnknownRecord = exports.UnknownArray = exports.boolean = exports.float = exports.int = exports.number = exports.string = exports.literal = exports.fromGuard = exports.fromRefinement = exports.failure = exports.success = exports.error = void 0;
 // expanded version of io-ts
-const E = __importStar(require("fp-ts/Either"));
+const E = __importStar(require("fp-ts/lib/Either"));
 const Array_1 = require("fp-ts/lib/Array");
 const function_1 = require("fp-ts/lib/function");
-const Option_1 = require("fp-ts/Option");
-const TE = __importStar(require("fp-ts/TaskEither"));
+const Option_1 = require("fp-ts/lib/Option");
+const TE = __importStar(require("fp-ts/lib/TaskEither"));
 const TD = __importStar(require("io-ts/TaskDecoder"));
 const shared_1 = require("../shared");
 __exportStar(require("io-ts/TaskDecoder"), exports);
@@ -99,9 +99,15 @@ exports.intersect = TD.intersect;
 exports.fromSum = TD.fromSum;
 exports.sum = TD.sum;
 const fromOption = (a) => {
-    const d = exports.nullable(a);
     return {
-        decode: (i) => function_1.pipe(d.decode(i), TE.map(Option_1.fromNullable))
+        decode: (i) => () => __awaiter(void 0, void 0, void 0, function* () {
+            if (i === null || i === undefined) {
+                return E.right(Option_1.fromNullable(i));
+            }
+            else {
+                return function_1.pipe(a.decode(i), TE.map(Option_1.some))();
+            }
+        })
     };
 };
 exports.fromOption = fromOption;

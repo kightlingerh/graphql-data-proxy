@@ -1,4 +1,4 @@
-import { Either } from 'fp-ts/Either';
+import { Either } from 'fp-ts/lib/Either';
 import { Lazy } from 'fp-ts/lib/function';
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray';
 import { Option } from 'fp-ts/lib/Option';

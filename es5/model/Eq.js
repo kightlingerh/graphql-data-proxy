@@ -23,11 +23,11 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.nonEmptyArray = exports.set = exports.map = exports.either = exports.option = exports.float = exports.int = void 0;
-const Either_1 = require("fp-ts/Either");
-const NonEmptyArray_1 = require("fp-ts/NonEmptyArray");
-const Option_1 = require("fp-ts/Option");
-const Map_1 = require("fp-ts/Map");
-const Set_1 = require("fp-ts/Set");
+const Either_1 = require("fp-ts/lib/Either");
+const NonEmptyArray_1 = require("fp-ts/lib/NonEmptyArray");
+const Option_1 = require("fp-ts/lib/Option");
+const Map_1 = require("fp-ts/lib/Map");
+const Set_1 = require("fp-ts/lib/Set");
 const EQ = __importStar(require("io-ts/Eq"));
 __exportStar(require("io-ts/Eq"), exports);
 exports.int = EQ.number;

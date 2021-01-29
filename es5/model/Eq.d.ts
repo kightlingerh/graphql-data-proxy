@@ -1,5 +1,5 @@
-import { getEq as getEqEither } from 'fp-ts/Either';
-import { getEq as getEqOption } from 'fp-ts/Option';
+import { getEq as getEqEither } from 'fp-ts/lib/Either';
+import { getEq as getEqOption } from 'fp-ts/lib/Option';
 import { Float, Int } from './Guard';
 export * from 'io-ts/Eq';
 export interface Eq<A> {

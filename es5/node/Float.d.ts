@@ -1,4 +1,4 @@
-import { Option } from 'fp-ts/Option';
+import { Option } from 'fp-ts/lib/Option';
 import { Float } from '../model/Guard';
 import { BaseNode, DynamicNodeConfig, ModifyOutputIfLocal, NodeVariables, Ref, StaticNodeConfig } from './shared';
 export interface FloatNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<number, ModifyOutputIfLocal<IsLocal, number>, Float, number, ModifyOutputIfLocal<IsLocal, number>, Float, Ref<Option<Float>>, Variables> {

@@ -1,5 +1,5 @@
-import { Option } from 'fp-ts/Option';
-import { NonEmptyArray } from 'fp-ts/NonEmptyArray';
+import { Option } from 'fp-ts/lib/Option';
+import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray';
 import { BaseNode, DynamicNodeConfig, ExtractSubVariablesDefinition, ExtractVariablesDefinition, ModifyOutputIfLocal, AnyBaseNode, NodeVariables, StaticNodeConfig, TypeOf, TypeOfPartial, TypeOfPartialInput, TypeOfPartialOutput, TypeOfStrictInput, TypeOfStrictOutput, Ref, TypeOfCacheEntry, ModifyIfEntity, TypeOfRefs } from './shared';
 export interface NonEmptyArrayNode<Item extends AnyBaseNode, Variables extends NodeVariables = {}, IsLocal extends boolean = false, IsEntity extends boolean = false> extends BaseNode<Array<TypeOfStrictInput<Item>>, ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfStrictOutput<Item>>>, NonEmptyArray<TypeOf<Item>>, Array<TypeOfPartialInput<Item>>, ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfPartialOutput<Item>>>, NonEmptyArray<TypeOfPartial<Item>>, ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>>, Variables, ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>, ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfRefs<Item>>>>>> {
     readonly tag: 'NonEmptyArray';

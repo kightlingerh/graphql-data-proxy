@@ -20,7 +20,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hasDecodingTransformations = exports.hasEncodingTransformations = exports.useAdjustedModel = exports.useLocalModel = exports.HAS_TRANSFORMATIONS = exports.NO_TRANSFORMATIONS = exports.extractPartialModels = exports.extractStrictModels = exports.EMPTY_VARIABLES_MODEL = exports.EMPTY_VARIABLES = void 0;
-const function_1 = require("fp-ts/function");
+const function_1 = require("fp-ts/lib/function");
 const M = __importStar(require("../model/Model"));
 const shared_1 = require("../shared");
 exports.EMPTY_VARIABLES = {};

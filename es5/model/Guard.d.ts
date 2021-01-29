@@ -1,4 +1,4 @@
-import { Either, Left, Right } from 'fp-ts/Either';
+import { Either, Left, Right } from 'fp-ts/lib/Either';
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray';
 import { None, Option, Some } from 'fp-ts/lib/Option';
 import * as G from 'io-ts/Guard';

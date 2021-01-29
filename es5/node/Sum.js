@@ -6,14 +6,14 @@ const shared_1 = require("./shared");
 const Type_1 = require("./Type");
 const SUM_TAG = 'Sum';
 function useSumMemberModelRecord(members, isStrict) {
-    const x = Object.create(null);
+    const x = {};
     members.forEach((member) => {
         x[member.__typename] = isStrict ? member.strict : member.partial;
     });
     return x;
 }
 function useSumMemberRecord(members) {
-    const x = Object.create(null);
+    const x = {};
     members.forEach((member) => {
         x[member.__typename] = member;
     });
@@ -33,7 +33,7 @@ function addTypenameToMembers(members) {
 function sum(ms, config) {
     var _a;
     const newMembers = addTypenameToMembers(ms);
-    const membersRecord = useSumMemberRecord(ms);
+    const membersRecord = useSumMemberRecord(newMembers);
     const useIdDecoder = !shared_1.hasDecodingTransformations(membersRecord);
     const useIdEncoder = !shared_1.hasEncodingTransformations(membersRecord);
     return {

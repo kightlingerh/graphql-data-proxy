@@ -1,4 +1,4 @@
-import { Option } from 'fp-ts/Option';
+import { Option } from 'fp-ts/lib/Option';
 import { BaseNode, DynamicNodeConfig, ModifyOutputIfLocal, NodeVariables, Ref, StaticNodeConfig } from './shared';
 export interface StringNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<string, ModifyOutputIfLocal<IsLocal, string>, string, string, ModifyOutputIfLocal<IsLocal, string>, string, Ref<Option<string>>, Variables> {
     readonly tag: 'String';

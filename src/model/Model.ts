@@ -225,7 +225,7 @@ export function fromSum<T extends string>(
 			is: guard(members).is,
 			decode: decoder(members).decode,
 			encode: encoder(members).encode
-		}) as any
+		} as any)
 }
 
 export function sum<T extends string>(

@@ -1,4 +1,4 @@
-import { Option } from 'fp-ts/Option';
+import { Option } from 'fp-ts/lib/Option';
 import { Model } from '../model/Model';
 import { BaseNode, DynamicNodeConfig, ModifyOutputIfLocal, NodeVariables, Ref, StaticNodeConfig } from './shared';
 export interface ScalarNode<Name extends string, Input, Output, Data, Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<Input, ModifyOutputIfLocal<IsLocal, Output>, Data, Input, ModifyOutputIfLocal<IsLocal, Output>, Data, Ref<Option<Data>>, Variables> {

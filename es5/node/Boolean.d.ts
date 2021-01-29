@@ -1,4 +1,4 @@
-import { Option } from 'fp-ts/Option';
+import { Option } from 'fp-ts/lib/Option';
 import { BaseNode, DynamicNodeConfig, ModifyOutputIfLocal, NodeVariables, Ref, StaticNodeConfig } from './shared';
 export interface BooleanNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<boolean, ModifyOutputIfLocal<IsLocal, boolean>, boolean, boolean, ModifyOutputIfLocal<IsLocal, boolean>, boolean, Ref<Option<boolean>>, Variables> {
     readonly tag: 'Boolean';

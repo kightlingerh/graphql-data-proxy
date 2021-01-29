@@ -1,5 +1,5 @@
-import { NonEmptyArray } from 'fp-ts/NonEmptyArray';
-import { Option } from 'fp-ts/Option';
+import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray';
+import { Option } from 'fp-ts/lib/Option';
 import { Ref as R } from 'vue';
 import * as M from '../model/Model';
 export declare type AnyBaseNode = BaseNode<any, any, any, any, any, any, any, any, any>;

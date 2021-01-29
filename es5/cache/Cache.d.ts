@@ -1,11 +1,11 @@
-import { Endomorphism } from 'fp-ts/function';
-import { IO } from 'fp-ts/IO';
-import { NonEmptyArray } from 'fp-ts/NonEmptyArray';
-import { Option } from 'fp-ts/Option';
-import { Reader } from 'fp-ts/Reader';
-import { Task } from 'fp-ts/Task';
-import { TaskEither } from 'fp-ts/TaskEither';
-import { Tree } from 'fp-ts/Tree';
+import { Endomorphism } from 'fp-ts/lib/function';
+import { IO } from 'fp-ts/lib/IO';
+import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray';
+import { Option } from 'fp-ts/lib/Option';
+import { Reader } from 'fp-ts/lib/Reader';
+import { Task } from 'fp-ts/lib/Task';
+import { TaskEither } from 'fp-ts/lib/TaskEither';
+import { Tree } from 'fp-ts/lib/Tree';
 import * as N from '../node';
 export interface CacheError extends NonEmptyArray<Tree<string>> {
 }

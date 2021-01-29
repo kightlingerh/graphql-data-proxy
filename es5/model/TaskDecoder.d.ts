@@ -1,8 +1,8 @@
-import * as E from 'fp-ts/Either';
-import { Refinement } from 'fp-ts/function';
+import * as E from 'fp-ts/lib/Either';
+import { Refinement } from 'fp-ts/lib/function';
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray';
-import { Option } from 'fp-ts/Option';
-import * as TE from 'fp-ts/TaskEither';
+import { Option } from 'fp-ts/lib/Option';
+import * as TE from 'fp-ts/lib/TaskEither';
 import * as TD from 'io-ts/TaskDecoder';
 export * from 'io-ts/TaskDecoder';
 import * as DE from './DecodeError';
@@ -45,7 +45,7 @@ export declare const union: <MS extends readonly [TD.TaskDecoder<any, any>, ...T
 export declare const intersect: <IB, B>(right: TD.TaskDecoder<IB, B>) => <IA, A>(left: TD.TaskDecoder<IA, A>) => TD.TaskDecoder<IA & IB, A & B>;
 export declare const fromSum: <T extends string>(tag: T) => <MS extends Record<string, TD.TaskDecoder<any, any>>>(members: MS) => TD.TaskDecoder<import("io-ts/lib/Kleisli").InputOf<"TaskEither", MS[keyof MS]>, import("io-ts/lib/Kleisli").TypeOf<"TaskEither", MS[keyof MS]>>;
 export declare const sum: <T extends string>(tag: T) => <A>(members: { [K in keyof A]: TD.TaskDecoder<unknown, A[K] & Record<T, K>>; }) => TD.TaskDecoder<unknown, A[keyof A]>;
-export declare const fromOption: <I, A>(a: TaskDecoder<I, A>) => TaskDecoder<I, Option<A>>;
+export declare const fromOption: <I, A>(a: TaskDecoder<I, A>) => TaskDecoder<I | null | undefined, Option<A>>;
 export declare const option: <A>(a: TaskDecoder<unknown, A>) => TaskDecoder<unknown, Option<A>>;
 export declare const fromEither: <IL, IR, L, R>(l: TaskDecoder<IL, L>, r: TaskDecoder<IR, R>) => TaskDecoder<IL | IR, E.Either<L, R>>;
 export declare const either: <L, R>(l: TaskDecoder<unknown, L>, r: TaskDecoder<unknown, R>) => TaskDecoder<unknown, E.Either<L, R>>;

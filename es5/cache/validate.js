@@ -2,11 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validate = void 0;
 const Array_1 = require("fp-ts/lib/Array");
-const Tree_1 = require("fp-ts/Tree");
+const Tree_1 = require("fp-ts/lib/Tree");
 const show_1 = require("../node/show");
 const shared_1 = require("./shared");
 const VALIDATIONS = new WeakMap();
-function validate(schema, request) {
+function validate(schema, request, allowMutations = true) {
     const schemaValidations = VALIDATIONS.get(schema);
     if (schemaValidations) {
         const requestValidation = schemaValidations.get(request);
@@ -14,34 +14,34 @@ function validate(schema, request) {
             return requestValidation;
         }
         else {
-            const newValidation = validateTypeNode(schema, request);
+            const newValidation = validateTypeNode(schema, request, allowMutations);
             schemaValidations.set(request, newValidation);
             return newValidation;
         }
     }
     else {
-        const newValidations = validateTypeNode(schema, request);
+        const newValidations = validateTypeNode(schema, request, allowMutations);
         VALIDATIONS.set(schema, new WeakMap([[request, newValidations]]));
         return newValidations;
     }
 }
 exports.validate = validate;
-function validateNode(x, y) {
+function validateNode(x, y, allowMutations) {
     const variableErrors = validateVariablesDefinition(x.variables, y.variables);
-    if (y.tag === 'Mutation') {
+    if (!allowMutations && y.tag === 'Mutation') {
         return [...variableErrors, Tree_1.make(`cannot include mutations in a cache request`)];
     }
     if (shared_1.isWrappedNode(x) && shared_1.isWrappedNode(y)) {
-        return [...variableErrors, ...validateWrappedNode(x, y)];
+        return [...variableErrors, ...validateWrappedNode(x, y, allowMutations)];
     }
     else if (shared_1.isTypeNode(x) && shared_1.isTypeNode(y)) {
-        return [...variableErrors, ...validateTypeNode(x, y)];
+        return [...variableErrors, ...validateTypeNode(x, y, allowMutations)];
     }
     else if (shared_1.isScalarNode(x) && shared_1.isScalarNode(y)) {
         return [...variableErrors, ...validateScalarNode(x, y)];
     }
     else if (shared_1.isSumNode(x) && shared_1.isSumNode(y)) {
-        return [...variableErrors, ...validateSumNode(x, y)];
+        return [...variableErrors, ...validateSumNode(x, y, allowMutations)];
     }
     else if (x.tag === y.tag) {
         return variableErrors;
@@ -62,7 +62,7 @@ function validateVariablesDefinition(x, y) {
             errors.push(Tree_1.make(`request has expected variable ${k} that is unavailable on ${JSON.stringify(x)}`));
         }
         else {
-            const mErrors = validateNode(xk, yk);
+            const mErrors = validateNode(xk, yk, false);
             if (Array_1.isNonEmpty(mErrors)) {
                 errors.push(Tree_1.make(`invalid request on ${k}`, mErrors));
             }
@@ -70,7 +70,7 @@ function validateVariablesDefinition(x, y) {
     }
     return errors;
 }
-function validateTypeNode(x, y) {
+function validateTypeNode(x, y, allowMutations) {
     const xMembers = x.members;
     const yMembers = y.members;
     const errors = [];
@@ -81,7 +81,7 @@ function validateTypeNode(x, y) {
             errors.push(Tree_1.make(`request has expected field ${k} that is unavailable on ${show_1.showNode.show(x)}`));
         }
         else {
-            const mErrors = validateNode(xk, yk);
+            const mErrors = validateNode(xk, yk, allowMutations);
             if (Array_1.isNonEmpty(mErrors)) {
                 errors.push(Tree_1.make(`invalid request on ${k}`, mErrors));
             }
@@ -89,8 +89,8 @@ function validateTypeNode(x, y) {
     }
     return errors;
 }
-function validateWrappedNode(x, y) {
-    const errors = validateNode(x.item, y.item);
+function validateWrappedNode(x, y, allowMutations) {
+    const errors = validateNode(x.item, y.item, allowMutations);
     if (Array_1.isNonEmpty(errors)) {
         return [
             Tree_1.make(`invalid request within ${x.tag}<${shared_1.isMapNode(x) ? `${x.key.name || x.key.__typename || x.key.tag}, ` : ''}${x.item.name || x.item.__typename || x.item.tag}>`, errors)
@@ -110,7 +110,7 @@ function validateScalarNode(x, y) {
     }
     return errors;
 }
-function validateSumNode(x, y) {
+function validateSumNode(x, y, allowMutations) {
     const xMembers = x.membersRecord;
     const yMembers = y.membersRecord;
     const errors = [];
@@ -121,7 +121,7 @@ function validateSumNode(x, y) {
             errors.push(Tree_1.make(`request has sum member ${k} that is unavailable in schema ${show_1.showTypeNode.show(xk)}`));
         }
         else {
-            const mErrors = validateNode(xk, yk);
+            const mErrors = validateNode(xk, yk, allowMutations);
             if (Array_1.isNonEmpty(mErrors)) {
                 errors.push(Tree_1.make(`invalid request on ${k}`, mErrors));
             }

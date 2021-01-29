@@ -23,7 +23,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.nonEmptyArray = exports.set = exports.map = exports.either = exports.option = exports.float = exports.int = exports.number = exports.boolean = exports.string = void 0;
-const Either_1 = require("fp-ts/Either");
+const Either_1 = require("fp-ts/lib/Either");
 const function_1 = require("fp-ts/lib/function");
 const Option_1 = require("fp-ts/lib/Option");
 const EN = __importStar(require("io-ts/Encoder"));

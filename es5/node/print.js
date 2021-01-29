@@ -1,12 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.definePrinter = void 0;
+exports.print = void 0;
 const index_1 = require("../shared/index");
 const Node_1 = require("./Node");
-const OPEN_BRACE = '{';
-const CLOSE_BRACE = '}';
-const OPEN_BRACKET = '[';
-const CLOSE_BRACKET = ']';
+const OPEN_BRACKET = '{';
+const CLOSE_BRACKET = '}';
 const OPEN_PAREN = '(';
 const CLOSE_PAREN = ')';
 const COLON = ':';
@@ -16,137 +14,99 @@ const ELLIPSIS = '...';
 const OPEN_SPACE = ' ';
 const TYPENAME = '__typename';
 const ON = 'on';
-const MAP = 'Map';
-function printTypeNodeMembers(mapPrinter, members, tokens) {
-    tokens.push(OPEN_BRACE, OPEN_SPACE);
+function printTypeNodeMembers(members) {
+    const tokens = [OPEN_BRACKET, OPEN_SPACE];
     for (const [key, value] of Object.entries(members)) {
         if (!(value === null || value === void 0 ? void 0 : value.__isLocal)) {
             tokens.push(key);
             if (!index_1.isEmptyObject(value.variables)) {
-                printVariables(mapPrinter, value.variables, tokens);
+                tokens.push(printVariables(value.variables));
             }
-            tokens.push(OPEN_SPACE);
-            printNode(mapPrinter, value, tokens);
-            tokens.push(OPEN_SPACE);
+            const val = printNode(value);
+            tokens.push(...(index_1.isEmptyString(val) ? [OPEN_SPACE] : [OPEN_SPACE, val, OPEN_SPACE]));
         }
     }
-    tokens.push(CLOSE_BRACE);
-    return tokens;
+    tokens.push(CLOSE_BRACKET);
+    return tokens.join('');
 }
-function printVariables(mapPrinter, variables, tokens, isRoot = false) {
-    tokens.push(OPEN_PAREN);
+function printVariables(variables, isRoot = false) {
+    const tokens = [OPEN_PAREN];
     const keys = Object.keys(variables);
     const length = keys.length;
     const last = length - 1;
     let i = 0;
     for (; i < length; i++) {
         const key = keys[i];
-        tokens.push(isRoot ? DOLLAR_SIGN : '', key, COLON, OPEN_SPACE);
-        if (isRoot) {
-            printVariableName(mapPrinter, variables[key], tokens);
-        }
-        else {
-            tokens.push(DOLLAR_SIGN, key);
-        }
-        if (i === last) {
-            tokens.push(', ');
-        }
+        tokens.push(isRoot ? DOLLAR_SIGN : '', key, COLON, OPEN_SPACE, isRoot ? printVariableName(variables[key]) : `$${key}`, i === last ? '' : ', ');
     }
     tokens.push(CLOSE_PAREN);
+    return tokens.join('');
 }
-function printVariableName(mapPrinter, node, tokens, isOptional = false) {
+function printVariableName(node, isOptional = false) {
     const optionalString = isOptional ? '' : EXCLAMATION;
     switch (node.tag) {
         case 'Array':
         case 'NonEmptyArray':
-            tokens.push(OPEN_BRACKET);
-            printVariableName(mapPrinter, node.item, tokens, isOptionNode(node.item)),
-                tokens.push(CLOSE_BRACKET, optionalString);
-            break;
+            return `[${printVariableName(node.item, isOptionNode(node.item))}]${optionalString}`;
         case 'Map':
-            const keyTokens = [];
-            printVariableName(mapPrinter, node.key, keyTokens);
-            const valueTokens = [];
-            printVariableName(mapPrinter, node.item, valueTokens, isOptionNode(node.item));
-            tokens.push(...mapPrinter.tokenizeMapVariables(node, keyTokens, valueTokens), optionalString);
-            break;
+            return `Map[${printVariableName(node.key)}, ${printVariableName(node.item, isOptionNode(node.item))}]${optionalString}`;
         case 'Option':
-            printVariableName(mapPrinter, node.item, tokens, true);
-            break;
+            return printVariableName(node.item, true);
         case 'Boolean':
         case 'String':
         case 'Int':
         case 'Float':
-            tokens.push(node.tag, optionalString);
-            break;
+            return `${node.tag}${optionalString}`;
         case 'Scalar':
-            tokens.push(node.name, optionalString);
-            break;
+            return `${node.name}${optionalString}`;
         case 'Type':
-            tokens.push(node.__typename, optionalString);
-            break;
+            return `${node.__typename}${optionalString}`;
+        default:
+            return '';
     }
 }
 function isOptionNode(node) {
     return node.tag === 'Option';
 }
-function printSumNodeMembers(mapPrinter, members, tokens) {
-    tokens.push(OPEN_BRACE, OPEN_SPACE, TYPENAME);
+function printSumNodeMembers(members) {
+    const tokens = [OPEN_BRACKET, OPEN_SPACE, TYPENAME];
     members.forEach((member) => {
-        tokens.push(OPEN_SPACE, ELLIPSIS, ON, OPEN_SPACE, member.__typename, OPEN_SPACE);
-        printTypeNodeMembers(mapPrinter, member.members, tokens);
+        tokens.push(OPEN_SPACE, ELLIPSIS, ON, OPEN_SPACE, member.__typename, OPEN_SPACE, printTypeNodeMembers(member.members));
     });
-    tokens.push(CLOSE_BRACE);
+    tokens.push(CLOSE_BRACKET);
+    return tokens.join('');
 }
-function printMapNode(mapPrinter, node, tokens) {
-    const keyTokens = [];
-    printNode(mapPrinter, node.key, keyTokens);
-    const valueTokens = [];
-    printNode(mapPrinter, node.item, valueTokens);
-    tokens.push(...mapPrinter.tokenizeMapRequest(node, keyTokens, valueTokens));
-}
-function printNode(mapPrinter, node, tokens) {
+function printNode(node) {
     if (node === null || node === void 0 ? void 0 : node.__isLocal) {
-        return;
+        return '';
     }
     switch (node.tag) {
+        case 'String':
+        case 'Boolean':
+        case 'Scalar':
+        case 'Int':
+        case 'Float':
+            return '';
         case 'Type':
-            printTypeNodeMembers(mapPrinter, node.members, tokens);
-            break;
+            return printTypeNodeMembers(node.members);
         case 'Sum':
-            printSumNodeMembers(mapPrinter, node.members, tokens);
-            break;
+            return printSumNodeMembers(node.members);
         case 'Map':
-            printMapNode(mapPrinter, node, tokens);
-            break;
         case 'Option':
         case 'NonEmptyArray':
         case 'Array':
-            printNode(mapPrinter, node.item, tokens);
-            break;
+            return printNode(node.item);
         case 'Mutation':
-            printNode(mapPrinter, node.result, tokens);
+            return printNode(node.result);
     }
 }
-function print(mapPrinter, schema, operation, operationName) {
+function print(schema, operation, operationName) {
     const tokens = [operation, OPEN_SPACE, operationName];
     const mergedVariables = Node_1.useMergedVariables(schema);
     if (!index_1.isEmptyObject(mergedVariables)) {
-        printVariables(mapPrinter, mergedVariables, tokens, true);
+        tokens.push(printVariables(mergedVariables, true));
     }
-    tokens.push(OPEN_SPACE);
-    printNode(mapPrinter, schema, tokens);
+    tokens.push(OPEN_SPACE, printNode(schema));
     return tokens.join('');
 }
-const DEFAULT_MAP_PRINTER = {
-    tokenizeMapVariables: (_, keyTokens, valueTokens) => {
-        return [MAP, OPEN_BRACE, ...keyTokens, OPEN_SPACE, ...valueTokens, CLOSE_BRACE];
-    },
-    tokenizeMapRequest: (_, tokens) => tokens
-};
-function definePrinter(mapPrinter = {}) {
-    return (schema, operation, operationName) => {
-        return print(Object.assign(Object.assign({}, DEFAULT_MAP_PRINTER), mapPrinter), schema, operation, operationName);
-    };
-}
-exports.definePrinter = definePrinter;
+exports.print = print;

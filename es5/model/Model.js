@@ -20,12 +20,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.useIdentityDecoder = exports.useDecoder = exports.eqById = exports.useEq = exports.encodeById = exports.useIdentityEncoder = exports.useEncoder = exports.lazy = exports.fromTuple = exports.sum = exports.fromSum = exports.nullable = exports.either = exports.fromEither = exports.optionBoolean = exports.optionNumber = exports.optionString = exports.option = exports.fromOption = exports.set = exports.fromSet = exports.map = exports.fromMap = exports.nonEmptyArray = exports.fromNonEmptyArray = exports.array = exports.fromArray = exports.partial = exports.fromPartial = exports.type = exports.fromType = exports.literal = exports.boolean = exports.float = exports.int = exports.number = exports.string = void 0;
-const Eq_1 = require("fp-ts/Eq");
+const Eq_1 = require("fp-ts/lib/Eq");
 const EQ = __importStar(require("./Eq"));
 const EN = __importStar(require("./Encoder"));
 const TD = __importStar(require("./TaskDecoder"));
 const G = __importStar(require("./Guard"));
-const function_1 = require("fp-ts/function");
+const function_1 = require("fp-ts/lib/function");
 exports.string = {
     equals: EQ.string.equals,
     is: G.string.is,
