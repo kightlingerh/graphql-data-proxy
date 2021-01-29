@@ -4,7 +4,7 @@ import { Refinement } from 'fp-ts/lib/function'
 import { isNonEmpty } from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
-import { fromNullable, Option } from 'fp-ts/lib/Option'
+import { fromNullable, Option, some } from 'fp-ts/lib/Option'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as TD from 'io-ts/TaskDecoder'
 import { disableValidation, isDev } from '../shared'
@@ -111,10 +111,15 @@ export const fromSum = TD.fromSum
 
 export const sum = TD.sum
 
-export const fromOption = <I, A>(a: TaskDecoder<I, A>): TaskDecoder<I, Option<A>> => {
-	const d = nullable(a)
+export const fromOption = <I, A>(a: TaskDecoder<I, A>): TaskDecoder<I | null | undefined, Option<A>> => {
 	return {
-		decode: (i) => pipe(d.decode(i), TE.map(fromNullable))
+		decode: (i) => async () => {
+			if (i === null || i === undefined) {
+				return E.right(fromNullable(i) as Option<A>)
+			} else {
+				return pipe(a.decode(i), TE.map(some))()
+			}
+		}
 	}
 }
 

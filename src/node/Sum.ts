@@ -101,7 +101,7 @@ export interface DynamicSumNodeConfig<
 const SUM_TAG = 'Sum'
 
 function useSumMemberModelRecord(members: ReadonlyArray<SumTypeNode>, isStrict: boolean) {
-	const x: any = Object.create(null)
+	const x: any = {}
 	members.forEach((member) => {
 		x[member.__typename] = isStrict ? member.strict : member.partial
 	})
@@ -109,7 +109,7 @@ function useSumMemberModelRecord(members: ReadonlyArray<SumTypeNode>, isStrict: 
 }
 
 function useSumMemberRecord(members: ReadonlyArray<SumTypeNode>) {
-	const x: any = Object.create(null)
+	const x: any = {}
 	members.forEach((member) => {
 		x[member.__typename] = member
 	})
@@ -161,7 +161,7 @@ export function sum<
 	IsEntity extends boolean = false
 >(ms: MS, config?: StaticSumNodeConfig<IsLocal, IsEntity> | DynamicSumNodeConfig<Variables, IsLocal, IsEntity>): any {
 	const newMembers = addTypenameToMembers(ms)
-	const membersRecord = useSumMemberRecord(ms)
+	const membersRecord = useSumMemberRecord(newMembers)
 	const useIdDecoder = !hasDecodingTransformations(membersRecord)
 	const useIdEncoder = !hasEncodingTransformations(membersRecord)
 	return {

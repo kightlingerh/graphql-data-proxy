@@ -18,7 +18,7 @@ export const float = EN.id<Float>()
 
 export function option<O, A>(item: EN.Encoder<O, A>): EN.Encoder<O | null, Option<A>>
 export function option<O, A>(item: EN.Encoder<O, A>, lazy: Lazy<O>): EN.Encoder<O, Option<A>>
-export function option<O, A>(item: EN.Encoder<O, A>, lazy?: Lazy<O>): any {
+export function option<O, A>(item: EN.Encoder<O, A>, lazy?: Lazy<O>) {
 	return {
 		encode: fold(lazy ?? constNull, item.encode)
 	}
