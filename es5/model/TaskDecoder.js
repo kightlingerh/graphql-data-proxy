@@ -102,7 +102,7 @@ const fromOption = (a) => {
     return {
         decode: (i) => () => __awaiter(void 0, void 0, void 0, function* () {
             if (i === null || i === undefined) {
-                return E.right(Option_1.fromNullable(i));
+                return E.right(Option_1.none);
             }
             else {
                 return function_1.pipe(a.decode(i), TE.map(Option_1.some))();
@@ -130,8 +130,8 @@ const fromMap = (k, a) => {
                 const pairs = [];
                 for (const [key, value] of Object.entries(record.right)) {
                     pairs.push(Promise.all([k.decode(key)(), a.decode(value)()]));
-                    if (iterations % 100 === 0) {
-                        yield Promise.all(pairs.slice(iterations - 100, iterations));
+                    if (iterations % 500 === 0) {
+                        yield Promise.resolve();
                     }
                 }
                 const awaitedPairs = yield Promise.all(pairs);
@@ -150,7 +150,7 @@ const fromMap = (k, a) => {
                     if (E.isRight(key) && E.isRight(value)) {
                         extractedPairs.push([key.right, value.right]);
                     }
-                    if (i % 100 === 0) {
+                    if (i % 500 === 0) {
                         yield Promise.resolve();
                     }
                 }

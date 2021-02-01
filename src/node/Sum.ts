@@ -188,4 +188,3 @@ export function markSumAsEntity<T extends SumNode<any, any, any, any>>(
 		__isEntity: true
 	} as any
 }
-

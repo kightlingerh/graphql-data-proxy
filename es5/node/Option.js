@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.option = void 0;
+exports.markOptionAsEntity = exports.option = void 0;
 const Model_1 = require("../model/Model");
 const shared_1 = require("./shared");
 const OPTION_TAG = 'Option';
@@ -21,3 +21,7 @@ function option(item, config) {
     };
 }
 exports.option = option;
+function markOptionAsEntity(node) {
+    return Object.assign(Object.assign({}, node), { __isEntity: true });
+}
+exports.markOptionAsEntity = markOptionAsEntity;

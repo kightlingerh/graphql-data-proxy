@@ -54,4 +54,5 @@ export interface DynamicSumNodeConfig<Variables extends NodeVariables, IsLocal e
 }
 export declare function sum<MS extends ReadonlyArray<SumTypeNode>, IsLocal extends boolean = false, IsEntity extends boolean = false>(ms: MS, config?: StaticSumNodeConfig<IsLocal, IsEntity>): SumNode<MS, {}, IsLocal, IsEntity>;
 export declare function sum<MS extends ReadonlyArray<SumTypeNode>, Variables extends NodeVariables, IsLocal extends boolean = false, IsEntity extends boolean = false>(ms: MS, config: DynamicSumNodeConfig<Variables, IsLocal, IsEntity>): SumNode<MS, Variables, IsLocal, IsEntity>;
+export declare function markSumAsEntity<T extends SumNode<any, any, any, any>>(node: T): SumNode<T['members'], T['variables'], Exclude<T['__isLocal'], undefined>, true>;
 export {};

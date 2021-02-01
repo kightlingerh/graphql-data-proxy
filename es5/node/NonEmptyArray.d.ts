@@ -11,3 +11,4 @@ export interface DynamicNonEmptyArrayNodeConfig<Variables extends NodeVariables,
 }
 export declare function nonEmptyArray<Item extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(item: Item, config?: StaticNonEmptyArrayNodeConfig<IsLocal, IsEntity>): NonEmptyArrayNode<Item, {}, IsLocal, IsEntity>;
 export declare function nonEmptyArray<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean = false, IsEntity extends boolean = false>(item: Item, config: DynamicNonEmptyArrayNodeConfig<Variables, IsLocal, IsEntity>): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity>;
+export declare function markNonEmptyArrayAsEntity<T extends NonEmptyArrayNode<any, any, any, any>>(node: T): NonEmptyArrayNode<T['item'], T['variables'], Exclude<T['__isLocal'], undefined>, true>;

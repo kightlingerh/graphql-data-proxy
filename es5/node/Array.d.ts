@@ -9,3 +9,4 @@ export interface DynamicArrayNodeConfig<Variables extends NodeVariables, IsLocal
 }
 export declare function array<Item extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(item: Item, config?: StaticArrayNodeConfig<IsLocal, IsEntity>): ArrayNode<Item, {}, IsLocal, IsEntity>;
 export declare function array<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean = false, IsEntity extends boolean = false>(item: Item, config: DynamicArrayNodeConfig<Variables, IsLocal, IsEntity>): ArrayNode<Item, Variables, IsLocal, IsEntity>;
+export declare function markArrayAsEntity<T extends ArrayNode<any, any, any, any>>(node: T): ArrayNode<T['item'], T['variables'], Exclude<T['__isLocal'], undefined>, true>;

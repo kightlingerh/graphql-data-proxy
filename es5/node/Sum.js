@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sum = void 0;
+exports.markSumAsEntity = exports.sum = void 0;
 const Model_1 = require("../model/Model");
 const shared_1 = require("./shared");
 const Type_1 = require("./Type");
@@ -52,3 +52,7 @@ function sum(ms, config) {
     };
 }
 exports.sum = sum;
+function markSumAsEntity(node) {
+    return Object.assign(Object.assign({}, node), { __isEntity: true });
+}
+exports.markSumAsEntity = markSumAsEntity;

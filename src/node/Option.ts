@@ -91,3 +91,12 @@ export function option<
 		__isLocal: config?.isLocal
 	}
 }
+
+export function markOptionAsEntity<T extends OptionNode<any, any, any, any>>(
+	node: T
+): OptionNode<T['item'], T['variables'], Exclude<T['__isLocal'], undefined>, true> {
+	return {
+		...node,
+		__isEntity: true
+	} as any
+}

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.array = void 0;
+exports.markArrayAsEntity = exports.array = void 0;
 const model_1 = require("../model");
 const shared_1 = require("./shared");
 const ARRAY_TAG = 'Array';
@@ -21,3 +21,7 @@ function array(item, config) {
     };
 }
 exports.array = array;
+function markArrayAsEntity(node) {
+    return Object.assign(Object.assign({}, node), { __isEntity: true });
+}
+exports.markArrayAsEntity = markArrayAsEntity;

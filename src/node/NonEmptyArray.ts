@@ -98,3 +98,12 @@ export function nonEmptyArray<
 		__isLocal: config?.isLocal
 	}
 }
+
+export function markNonEmptyArrayAsEntity<T extends NonEmptyArrayNode<any, any, any, any>>(
+	node: T
+): NonEmptyArrayNode<T['item'], T['variables'], Exclude<T['__isLocal'], undefined>, true> {
+	return {
+		...node,
+		__isEntity: true
+	} as any
+}

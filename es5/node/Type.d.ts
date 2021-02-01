@@ -59,4 +59,4 @@ export declare function encodeById<Typename extends string, MS extends {
     id: AnyBaseNode;
     [K: string]: AnyBaseNode;
 }, Variables extends NodeVariables = {}, IsLocal extends boolean = false, IncludeTypename extends boolean = false, IsEntity extends boolean = false>(node: TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>;
-export declare function markAsEntity<T extends BaseTypeNode<any, any, any, any, any>>(node: T): BaseTypeNode<T['__typename'], T['members'], T['variables'], Exclude<T['__isLocal'], undefined>, true>;
+export declare function markTypeAsEntity<T extends BaseTypeNode<any, any, any, any, any>>(node: T): BaseTypeNode<T['__typename'], T['members'], T['variables'], Exclude<T['__isLocal'], undefined>, true>;

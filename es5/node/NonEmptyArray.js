@@ -19,7 +19,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.nonEmptyArray = void 0;
+exports.markNonEmptyArrayAsEntity = exports.nonEmptyArray = void 0;
 const M = __importStar(require("../model/Model"));
 const shared_1 = require("./shared");
 const NON_EMPTY_ARRAY_TAG = 'NonEmptyArray';
@@ -40,3 +40,7 @@ function nonEmptyArray(item, config) {
     };
 }
 exports.nonEmptyArray = nonEmptyArray;
+function markNonEmptyArrayAsEntity(node) {
+    return Object.assign(Object.assign({}, node), { __isEntity: true });
+}
+exports.markNonEmptyArrayAsEntity = markNonEmptyArrayAsEntity;

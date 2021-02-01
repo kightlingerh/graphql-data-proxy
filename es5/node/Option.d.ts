@@ -10,3 +10,4 @@ export interface DynamicOptionNodeConfig<Variables extends NodeVariables, IsLoca
 }
 export declare function option<Item extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(item: Item, config?: StaticOptionNodeConfig<IsLocal, IsEntity>): OptionNode<Item, {}, IsLocal, IsEntity>;
 export declare function option<Item extends AnyBaseNode, Variables extends NodeVariables, IsLocal extends boolean = false, IsEntity extends boolean = false>(item: Item, config: DynamicOptionNodeConfig<Variables, IsLocal, IsEntity>): OptionNode<Item, Variables, IsLocal>;
+export declare function markOptionAsEntity<T extends OptionNode<any, any, any, any>>(node: T): OptionNode<T['item'], T['variables'], Exclude<T['__isLocal'], undefined>, true>;

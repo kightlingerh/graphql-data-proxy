@@ -96,3 +96,12 @@ export function array<
 		__isLocal: config?.isLocal
 	}
 }
+
+export function markArrayAsEntity<T extends ArrayNode<any, any, any, any>>(
+	node: T
+): ArrayNode<T['item'], T['variables'], Exclude<T['__isLocal'], undefined>, true> {
+	return {
+		...node,
+		__isEntity: true
+	} as any
+}
