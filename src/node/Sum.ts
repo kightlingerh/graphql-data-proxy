@@ -82,7 +82,7 @@ export interface SumNode<
 		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
 		Variables,
 		ExtractSumNodeSubVariablesDefinition<MS>,
-		ExtractSumNodeRefs<MS>
+		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeRefs<MS>>
 	> {
 	readonly tag: 'Sum'
 	readonly members: MS

@@ -41,7 +41,7 @@ export declare type ExtractSumNodeSubVariablesDefinition<MS extends ReadonlyArra
 export declare type ExtractSumNodeRefs<MS extends ReadonlyArray<SumTypeNode>> = {
     [K in keyof MS]: Ref<Option<TypeOfRefs<MS[K]>>>;
 }[number];
-export interface SumNode<MS extends ReadonlyArray<SumTypeNode>, Variables extends NodeVariables = {}, IsLocal extends boolean = false, IsEntity extends boolean = false> extends BaseNode<ExtractTypeOfSumNodeStrictInput<MS>, ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodeStrictOutput<MS>>, ExtractTypeOfSumNode<MS>, ExtractTypeOfSumNodePartialInput<MS>, ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodePartialOutput<MS>>, ExtractTypeOfPartialSumNode<MS>, ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>, Variables, ExtractSumNodeSubVariablesDefinition<MS>, ExtractSumNodeRefs<MS>> {
+export interface SumNode<MS extends ReadonlyArray<SumTypeNode>, Variables extends NodeVariables = {}, IsLocal extends boolean = false, IsEntity extends boolean = false> extends BaseNode<ExtractTypeOfSumNodeStrictInput<MS>, ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodeStrictOutput<MS>>, ExtractTypeOfSumNode<MS>, ExtractTypeOfSumNodePartialInput<MS>, ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodePartialOutput<MS>>, ExtractTypeOfPartialSumNode<MS>, ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>, Variables, ExtractSumNodeSubVariablesDefinition<MS>, ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeRefs<MS>>> {
     readonly tag: 'Sum';
     readonly members: MS;
     readonly membersRecord: Record<ExtractTypeName<{
