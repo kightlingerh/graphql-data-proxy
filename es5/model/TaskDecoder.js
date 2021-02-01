@@ -67,15 +67,33 @@ exports.literal = literal;
 exports.string = 
 /*#__PURE__*/
 exports.fromGuard(G.string, 'string');
+const numberFromString = {
+    decode: (i) => {
+        return () => __awaiter(void 0, void 0, void 0, function* () {
+            if (shared_1.disableValidation) {
+                return G.number.is(i) ? E.right(i) : E.right(parseFloat(i));
+            }
+            if (G.number.is(i)) {
+                return E.right(i);
+            }
+            else {
+                const val = parseFloat(i);
+                return Number.isNaN(val)
+                    ? E.left(D.error(i, 'expect a number or string representing a number'))
+                    : E.right(val);
+            }
+        });
+    }
+};
 exports.number = 
 /*#__PURE__*/
 exports.fromGuard(G.number, 'number');
 exports.int = 
 /*#__PURE__*/
-exports.fromGuard(G.int, 'integer');
+TD.compose(exports.fromGuard(G.int, 'integer'))(numberFromString);
 exports.float = 
 /*#__PURE__*/
-exports.fromGuard(G.float, 'float');
+TD.compose(exports.fromGuard(G.float, 'float'))(numberFromString);
 exports.boolean = exports.fromGuard(G.boolean, 'boolean');
 exports.UnknownArray = exports.fromGuard(G.UnknownArray, 'Array<unknown>');
 exports.UnknownRecord = exports.fromGuard(G.UnknownRecord, 'Record<string, unknown>');

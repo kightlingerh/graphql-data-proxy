@@ -427,8 +427,8 @@ class MapCacheNode extends CacheNode {
             let iteration = 0;
             for (const [key, value] of data.entries()) {
                 evictions.push(_write(key, value));
-                // give main thread a break every 100 writes
-                if (iteration % 100 === 0) {
+                // give main thread a break every 500 writes
+                if (iteration % 500 === 0) {
                     yield Promise.resolve();
                 }
                 iteration++;
@@ -508,8 +508,8 @@ class ArrayCacheNode extends CacheNode {
             const evictions = [];
             for (let i = 0; i < length; i++) {
                 evictions.push(_write(i, data[i]));
-                // give main thread a break every 100 writes
-                if (i % 100 === 0) {
+                // give main thread a break every 500 writes
+                if (i % 500 === 0) {
                     yield Promise.resolve();
                 }
             }

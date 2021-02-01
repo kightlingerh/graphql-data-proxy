@@ -49,17 +49,35 @@ export const string: TaskDecoder<string, string> =
 	/*#__PURE__*/
 	fromGuard(G.string, 'string')
 
+const numberFromString: TaskDecoder<number | string, number> = {
+	decode: (i) => {
+		return async () => {
+			if (disableValidation) {
+				return G.number.is(i) ? E.right(i) : (E.right(parseFloat(i)) as E.Either<D.DecodeError, number>)
+			}
+			if (G.number.is(i)) {
+				return E.right(i) as E.Either<D.DecodeError, number>
+			} else {
+				const val = parseFloat(i)
+				return Number.isNaN(val)
+					? E.left(D.error(i, 'expect a number or string representing a number'))
+					: (E.right(val) as E.Either<D.DecodeError, number>)
+			}
+		}
+	}
+}
+
 export const number: TaskDecoder<number, number> =
 	/*#__PURE__*/
 	fromGuard(G.number, 'number')
 
 export const int: TaskDecoder<number, G.Int> =
 	/*#__PURE__*/
-	fromGuard(G.int, 'integer')
+	TD.compose(fromGuard(G.int, 'integer'))(numberFromString)
 
 export const float: TaskDecoder<number, G.Float> =
 	/*#__PURE__*/
-	fromGuard(G.float, 'float')
+	TD.compose(fromGuard(G.float, 'float'))(numberFromString)
 
 export const boolean: TaskDecoder<boolean, boolean> = /*#__PURE__*/ fromGuard(G.boolean, 'boolean')
 
