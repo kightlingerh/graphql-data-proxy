@@ -29,20 +29,19 @@ const SumModel = M.fromSum('__typename')({
 })
 
 describe('sum', () => {
-	it('properly constructs strict model', async () => {
-		await fc.assert(
-			fc.asyncProperty(
+	it('properly constructs strict model', () => {
+		fc.assert(
+			fc.property(
 				fc.oneof(fc.constant('EmploymentInfo' as const), fc.constant('DemographicInfo' as const)),
 				fc.integer(),
 				fc.integer(),
 				fc.string(),
 				fc.string(),
-				async (__typename, age, weight, name, employer) => {
+				(__typename, age, weight, name, employer) => {
 					const val =
 						__typename === 'EmploymentInfo' ? { __typename, employer } : { __typename, age, weight, name }
 					assert.deepStrictEqual(InfoSumNode.strict.encode(val), SumModel.encode(val))
-					const [d1, d2] = await Promise.all([InfoSumNode.strict.decode(val)(), SumModel.decode(val)()])
-					assert.deepStrictEqual(d1, d2)
+					assert.deepStrictEqual(InfoSumNode.strict.decode(val), SumModel.decode(val))
 					assert.deepStrictEqual(InfoSumNode.strict.is(val), SumModel.is(val))
 				}
 			)

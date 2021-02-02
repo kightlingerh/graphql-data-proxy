@@ -9,16 +9,15 @@ const OptionNode = N.option(N.staticInt)
 const OptionModel = M.fromOption(M.int)
 
 describe('option', () => {
-	it('properly constructs strict model', async () => {
-		await fc.assert(
-			fc.asyncProperty(fc.option(fc.integer()), async (int) => {
+	it('properly constructs strict model', () => {
+		fc.assert(
+			fc.property(fc.option(fc.integer()), (int) => {
 				assert.deepStrictEqual(
 					OptionNode.strict.encode(fromNullable(int)),
 					OptionModel.encode(fromNullable(int))
 				)
 				const intOption = fromNullable(int)
-				const [d1, d2] = await Promise.all([OptionNode.strict.decode(int)(), OptionModel.decode(int)()])
-				assert.deepStrictEqual(d1, d2)
+				assert.deepStrictEqual(OptionNode.strict.decode(int), OptionModel.decode(int))
 				assert.deepStrictEqual(OptionNode.strict.is(intOption), OptionModel.is(intOption))
 			})
 		)

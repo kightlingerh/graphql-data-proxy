@@ -2,7 +2,7 @@ import * as assert from 'assert'
 import { constant, constVoid, pipe } from 'fp-ts/function'
 import { chain, fromEither, rightIO, fold } from 'fp-ts/IOEither'
 import { Option, none, some } from 'fp-ts/Option'
-import * as TE from 'fp-ts/TaskEither'
+import * as IOE from 'fp-ts/IOEither'
 import { computed } from 'vue'
 import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
@@ -109,12 +109,12 @@ const readData: SchemaData = {
 }
 
 describe('map with custom cache', () => {
-	it('properly extracts entries by id', async () => {
+	it('properly extracts entries by id', () => {
 		const cache = make({})(SchemaNode)(SchemaNode)
-		await pipe(
-			TE.fromEither(cache),
-			TE.chain((c) => TE.fromTask(c.write(variables)(writeData))),
-			TE.getOrElse(() => async () => constVoid)
+		pipe(
+			IOE.fromEither(cache),
+			IOE.chain((c) => IOE.fromIO(c.write(variables)(writeData))),
+			IOE.getOrElse(() => () => constVoid)
 		)()
 
 		const ref = computed<Option<SchemaData>>(

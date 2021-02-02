@@ -3,7 +3,7 @@ import { constant, constVoid, pipe } from 'fp-ts/function'
 import { chain, fromEither, rightIO, fold, getOrElse } from 'fp-ts/IOEither'
 import { some } from 'fp-ts/lib/Option'
 import { Option, none } from 'fp-ts/Option'
-import * as TE from 'fp-ts/TaskEither'
+import * as IOE from 'fp-ts/IOEither'
 import { computed, shallowRef } from 'vue'
 import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
@@ -42,9 +42,9 @@ function useCache() {
 	const cache = make({})(SchemaNode)(SchemaNode)
 	const write = (data: N.TypeOfPartial<typeof SchemaNode>) =>
 		pipe(
-			TE.fromEither(cache),
-			TE.chain((c) => TE.fromTask(c.write({})(data))),
-			TE.getOrElse(() => async () => constVoid)
+			IOE.fromEither(cache),
+			IOE.chain((c) => IOE.fromIO(c.write({})(data))),
+			IOE.getOrElse(() => () => constVoid)
 		)()
 
 	const read = pipe(
@@ -71,14 +71,14 @@ function useCache() {
 }
 
 describe('entity', () => {
-	it('has reactive reads', async () => {
+	it('has reactive reads', () => {
 		const { write, read } = useCache()
 
 		const ref = computed(read)
 
 		assert.deepStrictEqual(ref.value, none)
 
-		await write({
+		write({
 			people
 		})
 
@@ -89,25 +89,25 @@ describe('entity', () => {
 			})
 		)
 	}),
-		it('has reactive refs', async () => {
+		it('has reactive refs', () => {
 			const { write, people: peopleRef } = useCache()
 
 			assert.deepStrictEqual(peopleRef.value, none)
 
-			await write({ people })
+			write({ people })
 
 			assert.deepStrictEqual(peopleRef.value, some(people))
 
-			await write({ people: newPeople })
+			write({ people: newPeople })
 
 			assert.deepStrictEqual(peopleRef.value, some(newPeople))
 		}),
-		it('can evict new values', async () => {
+		it('can evict new values', () => {
 			const { write, read } = useCache()
 
 			const ref = computed(read)
 
-			const evict = await write({ people })
+			const evict = write({ people })
 
 			evict()
 

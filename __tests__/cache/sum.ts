@@ -3,7 +3,7 @@ import { constant, constVoid, pipe } from 'fp-ts/function'
 import { chain, fromEither, rightIO, getOrElse, fold } from 'fp-ts/IOEither'
 import * as IO from 'fp-ts/IO'
 import { Option, none, map, some, chain as chainO } from 'fp-ts/Option'
-import * as TE from 'fp-ts/TaskEither'
+import * as IOE from 'fp-ts/IOEither'
 import { computed, shallowRef } from 'vue'
 import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
@@ -59,9 +59,9 @@ function useCache() {
 	const cache = make({})(Schema)(Schema)
 	const write = (data: N.TypeOfPartial<typeof Schema>) =>
 		pipe(
-			TE.fromEither(cache),
-			TE.chain((c) => TE.fromTask(c.write({})(data))),
-			TE.getOrElse(() => async () => constVoid)
+			IOE.fromEither(cache),
+			IOE.chain((c) => IOE.fromIO(c.write({})(data))),
+			IOE.getOrElse(() => () => constVoid)
 		)()
 
 	const read = pipe(
@@ -97,25 +97,25 @@ function useCache() {
 }
 
 describe('sum', () => {
-	it('is reactive', async () => {
+	it('is reactive', () => {
 		const { write, read } = useCache()
 
 		const ref = computed(read)
 
 		assert.deepStrictEqual(ref.value, none)
 
-		await write({ education: highSchool })
+		write({ education: highSchool })
 
 		assert.deepStrictEqual(ref.value, some(highSchool))
 	}),
-		it('will properly evict', async () => {
+		it('will properly evict', () => {
 			const { write, read } = useCache()
 
 			const ref = computed(read)
 
-			await write({ education: highSchool })
+			write({ education: highSchool })
 
-			const evictHighSchoolUpdate = await write({ education: highSchoolUpdate })
+			const evictHighSchoolUpdate = write({ education: highSchoolUpdate })
 
 			assert.deepStrictEqual(ref.value, some(updatedHighSchool))
 
@@ -123,7 +123,7 @@ describe('sum', () => {
 
 			assert.deepStrictEqual(ref.value, some(highSchool))
 
-			const evictCollege = await write({ education: college })
+			const evictCollege = write({ education: college })
 
 			assert.deepStrictEqual(ref.value, some(college))
 
@@ -131,14 +131,14 @@ describe('sum', () => {
 
 			assert.deepStrictEqual(ref.value, some(highSchool))
 		}),
-		it('will not evict if overwritten', async () => {
+		it('will not evict if overwritten', () => {
 			const { write, read } = useCache()
 
 			const ref = computed(read)
 
-			const evict = await write({ education: highSchool })
+			const evict = write({ education: highSchool })
 
-			await write({ education: college })
+			write({ education: college })
 
 			evict()
 

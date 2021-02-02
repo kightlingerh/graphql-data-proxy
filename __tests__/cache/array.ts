@@ -2,7 +2,7 @@ import * as assert from 'assert'
 import { constant, constVoid, flow, pipe } from 'fp-ts/function'
 import { chain, fromEither, rightIO, fold } from 'fp-ts/IOEither'
 import { fold as foldO, some } from 'fp-ts/Option'
-import * as TE from 'fp-ts/TaskEither'
+import * as IOE from 'fp-ts/IOEither'
 import { computed, shallowRef } from 'vue'
 import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
@@ -13,9 +13,9 @@ function useCache(useImmutableArrays = false) {
 	const cache = make({ useImmutableArrays })(Array)(Array)
 	const write = (data: N.TypeOf<typeof Array>) =>
 		pipe(
-			TE.fromEither(cache),
-			TE.chain((c) => TE.fromTask(c.write({})(data))),
-			TE.getOrElse(() => async () => constVoid)
+			IOE.fromEither(cache),
+			IOE.chain((c) => IOE.fromIO(c.write({})(data))),
+			IOE.getOrElse(() => () => constVoid)
 		)()
 
 	const refs = computed(
@@ -57,73 +57,42 @@ const data = ['1']
 const update = ['2', '3']
 
 describe('array', () => {
-	it('has reactive reads', async () => {
+	it('has reactive reads', () => {
 		const { write, values } = useCache()
 
 		assert.deepStrictEqual(values.value, [])
 
-		await write({ a: data })
+		write({ a: data })
 
 		assert.deepStrictEqual(values.value, data)
 	}),
-		it('has reactive entries', async () => {
+		it('has reactive entries', () => {
 			const { write, refs } = useCache()
 
 			assert.deepStrictEqual(refs.value, [])
 
-			await write({ a: data })
+			write({ a: data })
 
 			assert.deepStrictEqual(refs.value, data.map(flow(some, shallowRef)))
 		}),
-		it('evicts new entries', async () => {
+		it('evicts new entries', () => {
 			const { values, write } = useCache()
 
-			const evict = await write({ a: data })
+			const evict = write({ a: data })
 
 			evict()
 
 			assert.deepStrictEqual(values.value, [])
 		}),
-		it('evicts overwritten entries by returning the previous value', async () => {
+		it('evicts overwritten entries by returning the previous value', () => {
 			const { values, write } = useCache()
 
-			await write({ a: data })
+			write({ a: data })
 
-			const evict = await write({ a: update })
+			const evict = write({ a: update })
 
 			evict()
 
 			assert.deepStrictEqual(values.value, data)
-		}),
-		it('applies partial updates with mutable arrays', async () => {
-			const { values, write } = useCache()
-
-			await write({ a: update })
-
-			await write({ a: data })
-
-			assert.deepStrictEqual(values.value, ['1', '3'])
-		}),
-		it('does not apply partial update with immutable arrays', async () => {
-			const { values, write } = useCache(true)
-
-			await write({ a: update })
-
-			await write({ a: data })
-
-			assert.deepStrictEqual(values.value, data)
-		}),
-		it('deletes null entries', async () => {
-			const { write, values } = useCache()
-
-			await write({ a: update })
-
-			const evict = await write({ a: [null as any] })
-
-			assert.deepStrictEqual(values.value, ['3'])
-
-			evict()
-
-			assert.deepStrictEqual(values.value, update)
 		})
 })

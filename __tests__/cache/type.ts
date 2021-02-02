@@ -3,7 +3,7 @@ import { constant, constVoid, pipe } from 'fp-ts/function'
 import { chain, fromEither, rightIO, fold, getOrElse } from 'fp-ts/IOEither'
 import { some } from 'fp-ts/lib/Option'
 import { Option, none } from 'fp-ts/Option'
-import * as TE from 'fp-ts/TaskEither'
+import * as IOE from 'fp-ts/IOEither'
 import { computed, shallowRef } from 'vue'
 import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
@@ -20,9 +20,9 @@ function useCache() {
 	const cache = make({})(schema)(schema)
 	const write = (data: N.TypeOfPartial<typeof schema>) =>
 		pipe(
-			TE.fromEither(cache),
-			TE.chain((c) => TE.fromTask(c.write({})(data))),
-			TE.getOrElse(() => async () => constVoid)
+			IOE.fromEither(cache),
+			IOE.chain((c) => IOE.fromIO(c.write({})(data))),
+			IOE.getOrElse(() => () => constVoid)
 		)()
 
 	const read = pipe(
@@ -84,18 +84,18 @@ const updated = {
 }
 
 describe('type', () => {
-	it('has reactive reads', async () => {
+	it('has reactive reads', () => {
 		const { write, read } = useCache()
 
 		const ref = computed(read)
 
 		assert.deepStrictEqual(ref.value, none)
 
-		await write(person)
+		write(person)
 
 		assert.deepStrictEqual(ref.value, some(person))
 	}),
-		it('has reactive refs', async () => {
+		it('has reactive refs', () => {
 			const { write, age, weight, name } = useCache()
 
 			assert.deepStrictEqual(age.value, none)
@@ -104,7 +104,7 @@ describe('type', () => {
 
 			assert.deepStrictEqual(name.value, none)
 
-			await write(person)
+			write(person)
 
 			assert.deepStrictEqual(age.value, some(person.age))
 
@@ -112,7 +112,7 @@ describe('type', () => {
 
 			assert.deepStrictEqual(name.value, some(person.name))
 
-			await write(update)
+			write(update)
 
 			assert.deepStrictEqual(age.value, some(updated.age))
 
@@ -120,14 +120,14 @@ describe('type', () => {
 
 			assert.deepStrictEqual(name.value, some(updated.name))
 		}),
-		it('allows partial updates', async () => {
+		it('allows partial updates', () => {
 			const { write, read } = useCache()
 
 			const ref = computed(read)
 
-			await write(person)
+			write(person)
 
-			await write(update)
+			write(update)
 
 			assert.deepStrictEqual(ref.value, some(updated))
 		})

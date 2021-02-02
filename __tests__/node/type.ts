@@ -16,13 +16,12 @@ const TypeModel = M.type({
 })
 
 describe('type', () => {
-	it('properly constructs strict model', async () => {
-		await fc.assert(
-			fc.asyncProperty(fc.integer(), fc.integer(), fc.string(), async (age, weight, name) => {
+	it('properly constructs strict model', () => {
+		fc.assert(
+			fc.property(fc.integer(), fc.integer(), fc.string(), (age, weight, name) => {
 				const val = { age, weight, name }
 				assert.deepStrictEqual(TypeNodeModel.encode(val), TypeModel.encode(val))
-				const [d1, d2] = await Promise.all([TypeNodeModel.decode(val)(), TypeModel.decode(val)()])
-				assert.deepStrictEqual(d1, d2)
+				assert.deepStrictEqual(TypeNodeModel.decode(val), TypeModel.decode(val))
 				assert.deepStrictEqual(TypeNodeModel.is(val), TypeModel.is(val))
 			})
 		)

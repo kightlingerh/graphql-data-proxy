@@ -3,7 +3,7 @@ import { constant, constVoid, pipe } from 'fp-ts/function'
 import { chain, fromEither, rightIO, fold } from 'fp-ts/IOEither'
 import { some } from 'fp-ts/lib/Option'
 import { Option, none } from 'fp-ts/Option'
-import * as TE from 'fp-ts/TaskEither'
+import * as IOE from 'fp-ts/IOEither'
 import { computed } from 'vue'
 import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
@@ -57,13 +57,13 @@ const readData: SchemaData = {
 }
 
 describe('type with custom cache', () => {
-	it('properly creates entries based on toId function', async () => {
+	it('properly creates entries based on toId function', () => {
 		const cache = make({})(SchemaNode)(SchemaNode)
 		const write = (data: N.TypeOfPartial<typeof SchemaNode>) =>
 			pipe(
-				TE.fromEither(cache),
-				TE.chain((c) => TE.fromTask(c.write({})(data))),
-				TE.getOrElse(() => async () => constVoid)
+				IOE.fromEither(cache),
+				IOE.chain((c) => IOE.fromIO(c.write({})(data))),
+				IOE.getOrElse(() => () => constVoid)
 			)()
 
 		const ref = computed<Option<SchemaData>>(
@@ -77,7 +77,7 @@ describe('type with custom cache', () => {
 			)
 		)
 
-		await write(writeData)
+		write(writeData)
 
 		assert.deepStrictEqual(ref.value, some(readData))
 	})

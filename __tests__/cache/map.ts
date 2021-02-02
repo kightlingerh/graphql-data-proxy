@@ -4,7 +4,7 @@ import { constant, constVoid, flow, pipe } from 'fp-ts/function'
 import { chain, fromEither, rightIO, fold } from 'fp-ts/IOEither'
 import { some } from 'fp-ts/lib/Option'
 import { fromNullable, Option, chain as chainOption, none } from 'fp-ts/Option'
-import * as TE from 'fp-ts/TaskEither'
+import * as IOE from 'fp-ts/IOEither'
 import { computed } from 'vue'
 import { Ref } from '../../src/node'
 import * as N from '../../src/node'
@@ -16,9 +16,9 @@ function useCache() {
 	const cache = make({})(schema)(schema)
 	const write = (data: N.TypeOf<typeof schema>) =>
 		pipe(
-			TE.fromEither(cache),
-			TE.chain((c) => TE.fromTask(c.write({})(data))),
-			TE.getOrElse(() => async () => constVoid)
+			IOE.fromEither(cache),
+			IOE.chain((c) => IOE.fromIO(c.write({})(data))),
+			IOE.getOrElse(() => () => constVoid)
 		)()
 
 	const toMap = pipe(
@@ -69,56 +69,56 @@ const newMap = new Map([['2', 2]])
 const combinedMap = new Map([...originalMap.entries(), ...newMap.entries()])
 
 describe('map', () => {
-	it('is reactive', async () => {
+	it('is reactive', () => {
 		const { write, ref1, ref2 } = useCache()
 
 		assert.deepStrictEqual(ref1.value, none)
 
-		await write({ a: originalMap })
+		write({ a: originalMap })
 
 		assert.deepStrictEqual(ref1.value, some(1))
 
-		await write({ a: newMap })
+		write({ a: newMap })
 
 		assert.deepStrictEqual(ref2.value, some(2))
 	}),
-		it('evicts new entries by deleting the key', async () => {
+		it('evicts new entries by deleting the key', () => {
 			const { ref1, write } = useCache()
 
-			const evict = await write({ a: originalMap })
+			const evict = write({ a: originalMap })
 
 			evict()
 
 			assert.deepStrictEqual(ref1.value, none)
 		}),
-		it('evicts overwritten entries by returning the previous value', async () => {
+		it('evicts overwritten entries by returning the previous value', () => {
 			const { ref1, write } = useCache()
 
-			await write({ a: originalMap })
+			write({ a: originalMap })
 
-			const evict = await write({ a: overwriteOriginalMap })
+			const evict = write({ a: overwriteOriginalMap })
 
 			evict()
 
 			assert.deepStrictEqual(ref1.value, some(1))
 		}),
-		it('can read', async () => {
+		it('can read', () => {
 			const { write, read } = useCache()
 
-			await write({ a: originalMap })
+			write({ a: originalMap })
 
 			assert.deepStrictEqual(read(), right(some({ a: originalMap })))
 
-			await write({ a: newMap })
+			write({ a: newMap })
 
 			assert.deepStrictEqual(read(), right(some({ a: combinedMap })))
 		}),
-		it('deletes null entries', async () => {
+		it('deletes null entries', () => {
 			const { write, ref1 } = useCache()
 
-			await write({ a: originalMap })
+			write({ a: originalMap })
 
-			const evict = await write({ a: new Map([['1', null as any]]) })
+			const evict = write({ a: new Map([['1', null as any]]) })
 
 			assert.deepStrictEqual(ref1.value, none)
 

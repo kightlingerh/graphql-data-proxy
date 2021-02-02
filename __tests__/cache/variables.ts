@@ -3,7 +3,7 @@ import { map } from 'fp-ts/IO'
 import { constant, constVoid, pipe } from 'fp-ts/function'
 import { chain, fold, fromEither, rightIO } from 'fp-ts/IOEither'
 import { none, some, chain as chainO } from 'fp-ts/Option'
-import * as TE from 'fp-ts/TaskEither'
+import * as IOE from 'fp-ts/IOEither'
 
 import { computed } from 'vue'
 import * as N from '../../src/node'
@@ -54,30 +54,30 @@ const person2Variables: SchemaVariables = {
 }
 
 describe('type', () => {
-	it('has reactive reads', async () => {
+	it('has reactive reads', () => {
 		const cache = make({})(SchemaNode)(SchemaNode)
 		const writePerson1 = pipe(
-			TE.fromEither(cache),
-			TE.chain((c) =>
-				TE.fromTask(
+			IOE.fromEither(cache),
+			IOE.chain((c) =>
+				IOE.fromIO(
 					c.write(person1Variables)({
 						person: person1Data
 					})
 				)
 			),
-			TE.getOrElse(() => async () => constVoid)
+			IOE.getOrElse(() => () => constVoid)
 		)
 
 		const writePerson2 = pipe(
-			TE.fromEither(cache),
-			TE.chain((c) =>
-				TE.fromTask(
+			IOE.fromEither(cache),
+			IOE.chain((c) =>
+				IOE.fromIO(
 					c.write(person2Variables)({
 						person: person2Data
 					})
 				)
 			),
-			TE.getOrElse(() => async () => constVoid)
+			IOE.getOrElse(() => () => constVoid)
 		)
 
 		const person1Ref = computed<Person>(
@@ -118,7 +118,7 @@ describe('type', () => {
 
 		assert.deepStrictEqual(person2Ref.value, none)
 
-		await Promise.all([writePerson1(), writePerson2()])
+		Promise.all([writePerson1(), writePerson2()])
 
 		assert.deepStrictEqual(person1Ref.value, person1Data)
 
