@@ -55,24 +55,24 @@ describe('nonEmptyArray', () => {
 
 		assert.deepStrictEqual(values.value, some(data))
 	}),
-	it('evicts new entries', () => {
-		const { values, write } = useCache()
+		it('evicts new entries', () => {
+			const { values, write } = useCache()
 
-		const evict = write({ a: data })
+			const evict = write({ a: data })
 
-		evict()
+			evict()
 
-		assert.deepStrictEqual(values.value, none)
-	}),
-	it('evicts overwritten entries by returning the previous value', () => {
-		const { values, write } = useCache()
+			assert.deepStrictEqual(values.value, none)
+		}),
+		it('evicts overwritten entries by returning the previous value', () => {
+			const { values, write } = useCache()
 
-		write({ a: data })
+			write({ a: data })
 
-		const evict = write({ a: update })
+			const evict = write({ a: update })
 
-		evict()
+			evict()
 
-		assert.deepStrictEqual(values.value, some(data))
-	})
+			assert.deepStrictEqual(values.value, some(data))
+		})
 })

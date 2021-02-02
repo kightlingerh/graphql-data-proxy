@@ -1,6 +1,6 @@
 import { isNonEmpty, snoc } from 'fp-ts/lib/Array'
 import { left, right } from 'fp-ts/lib/Either'
-import {absurd, constVoid, Endomorphism, pipe} from 'fp-ts/lib/function'
+import { absurd, constVoid, Endomorphism, pipe } from 'fp-ts/lib/function'
 import { IO, sequenceArray as sequenceArrayIO } from 'fp-ts/lib/IO'
 import { NonEmptyArray, of } from 'fp-ts/lib/NonEmptyArray'
 import { isNone, isSome, none, Option, some, map as mapO, Some } from 'fp-ts/lib/Option'
@@ -522,16 +522,17 @@ function writeToTypeNode(
 ) {
 	const evictions: Evict[] = []
 	for (const k in data) {
+		const keyPath = snoc(path, k)
 		evictions.push(
 			write(
 				data[k],
 				schema.members[k],
 				request.members[k],
-				snoc(path, k),
+				keyPath,
 				uniqueNodes,
 				deps,
 				variables,
-				useTypeNodeMemberCacheEntry(k, schema, snoc(path, k), uniqueNodes, variables, entry, data[k])
+				useTypeNodeMemberCacheEntry(k, schema, keyPath, uniqueNodes, variables, entry, data[k])
 			)
 		)
 	}
@@ -571,20 +572,11 @@ function writeToArrayNode(
 	data.forEach((val, index) => {
 		let indexEntry = entry[index]
 		if (!indexEntry) {
-			indexEntry = useCacheEntry(schema.item, snoc(path, index), uniqueNodes, variables, data[index]);
-			entry[index] = indexEntry;
+			indexEntry = useCacheEntry(schema.item, snoc(path, index), uniqueNodes, variables, data[index])
+			entry[index] = indexEntry
 		}
 		evictions.push(
-			write(
-				val,
-				schema.item,
-				request.item,
-				snoc(path, index),
-				uniqueNodes,
-				deps,
-				variables,
-				indexEntry
-			)
+			write(val, schema.item, request.item, snoc(path, index), uniqueNodes, deps, variables, indexEntry)
 		)
 	})
 	return sequenceArrayIO(evictions)
@@ -681,9 +673,10 @@ function writeToMapNode(
 ) {
 	const evictions: Evict[] = []
 	for (const [k, v] of data.entries()) {
+		const keyPath = snoc(path, k);
 		if (cache.has(k)) {
 			if (v === null || v === undefined) {
-				const currentValue = cache.get(k)
+				const currentValue = useMapNodeKeyCacheEntry(k, schema, keyPath, uniqueNodes, variables, cache, data.get(k))
 				cache.delete(k)
 				evictions.push(() => {
 					if (!cache.has(k)) {
@@ -692,14 +685,13 @@ function writeToMapNode(
 				})
 			} else {
 				evictions.push(
-					write(v, schema.item, request.item, snoc(path, k), uniqueNodes, deps, variables, cache.get(k))
+					write(v, schema.item, request.item, keyPath, uniqueNodes, deps, variables, useMapNodeKeyCacheEntry(k, schema, keyPath, uniqueNodes, variables, cache, data.get(k)))
 				)
 			}
 		} else {
-			const newPath = snoc(path, k)
-			const newCacheEntry = useCacheEntry(schema.item, newPath, uniqueNodes, variables, v)
+			const newCacheEntry = useMapNodeKeyCacheEntry(k, schema, keyPath, uniqueNodes, variables, cache, data.get(k))
 			cache.set(k, newCacheEntry)
-			write(v, schema.item, request.item, newPath, uniqueNodes, deps, variables, newCacheEntry)
+			write(v, schema.item, request.item, keyPath, uniqueNodes, deps, variables, newCacheEntry)
 			evictions.push(() => cache.delete(k))
 		}
 	}
@@ -716,12 +708,22 @@ function writeToSumNode(
 	variables: Record<string, unknown>,
 	cache: Ref<Option<[string, any]>>
 ) {
-	if ((isNone(cache.value) && data.__typename) || (isSome(cache.value) && data.__typename && cache.value.value[0] !== data.__typename)) {
+	if (
+		(isNone(cache.value) && data.__typename) ||
+		(isSome(cache.value) && data.__typename && cache.value.value[0] !== data.__typename)
+	) {
 		const currentValue = cache.value
 		const __typename = data.__typename as string
-		const newNode = useTypeNodeCacheEntry((schema.membersRecord as any)[__typename], path, uniqueNodes, variables, data)
-		cache.value = some([__typename, newNode]);
-		writeToTypeNode(data,
+		const newNode = useTypeNodeCacheEntry(
+			(schema.membersRecord as any)[__typename],
+			path,
+			uniqueNodes,
+			variables,
+			data
+		)
+		cache.value = some([__typename, newNode])
+		writeToTypeNode(
+			data,
 			(schema.membersRecord as any)[__typename],
 			(request.membersRecord as any)[__typename],
 			path,
@@ -731,21 +733,15 @@ function writeToSumNode(
 			newNode
 		)
 		return () => {
-			if (
-				isSome(cache.value) &&
-				cache.value.value[0] === __typename &&
-				cache.value.value[1] === newNode
-			) {
+			if (isSome(cache.value) && cache.value.value[0] === __typename && cache.value.value[1] === newNode) {
 				cache.value = currentValue
 			}
 		}
 	}
-	if (
-		isSome(cache.value) &&
-		(data.__typename === undefined || data.__typename === cache.value.value[0])
-	) {
-		const __typename = cache.value.value[0];
-		return writeToTypeNode(data,
+	if (isSome(cache.value) && (data.__typename === undefined || data.__typename === cache.value.value[0])) {
+		const __typename = cache.value.value[0]
+		return writeToTypeNode(
+			data,
 			(schema.membersRecord as any)[__typename],
 			(request.membersRecord as any)[__typename],
 			path,
@@ -757,6 +753,36 @@ function writeToSumNode(
 	}
 	return absurd as Evict
 }
+
+function useMapNodeKeyCacheEntry(
+	key: string,
+	schema: N.MapNode<any, any, any, any, any, any>,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	variables: Record<string, unknown>,
+	entry: Map<any, any>,
+	data?: any
+) {
+	const itemNode: N.Node = schema.item;
+	if ((itemNode.tag === 'Map' || itemNode.tag === 'Type') && itemNode.__customCache !== undefined) {
+		// @ts-ignore
+		const id = itemNode.__customCache.toId(path, variables, data)
+		if (id) {
+			const memberCustomCache = useCustomCache(uniqueNodes, itemNode, path, id, variables, data)
+			if (memberCustomCache !== entry.get(key)) {
+				entry.set(key, memberCustomCache)
+			}
+			return memberCustomCache;
+		}
+	}
+	let keyEntry = entry.get(key);
+	if (!keyEntry) {
+		keyEntry = useCacheEntry(itemNode, path, uniqueNodes, variables, data);
+		entry.set(key, keyEntry);
+	}
+	return keyEntry;
+}
+
 
 function useTypeNodeMemberCacheEntry(
 	member: string,
@@ -772,7 +798,7 @@ function useTypeNodeMemberCacheEntry(
 		// @ts-ignore
 		const id = memberNode.__customCache.toId(path, variables, data)
 		if (id) {
-			const memberCustomCache = useTypeNodeMemberCustomCache(uniqueNodes, memberNode, path, id, variables, data)
+			const memberCustomCache = useCustomCache(uniqueNodes, memberNode, path, id, variables, data)
 			if (memberCustomCache !== entry[member]) {
 				entry[member] = memberCustomCache
 			}
@@ -785,13 +811,13 @@ function useTypeNodeMemberCacheEntry(
 	const encodedVariables = encode(schema.members[member], variables)
 	let memberCache = entry[member].get(encodedVariables)
 	if (!memberCache) {
-		memberCache = useCacheEntry(schema.members[member], path, uniqueNodes, variables, data && data[member])
+		memberCache = useCacheEntry(schema.members[member], path, uniqueNodes, variables)
 		entry[member].set(encodedVariables, memberCache)
 	}
 	return memberCache
 }
 
-function useTypeNodeMemberCustomCache(
+function useCustomCache(
 	uniqueNodes: Map<string, any>,
 	member: N.Node,
 	path: N.Path,
@@ -824,7 +850,7 @@ function useTypeNodeCacheEntry(
 			// @ts-ignore
 			const id = member.__customCache.toId(newPath, variables, data)
 			if (id) {
-				x[k] = useTypeNodeMemberCustomCache(uniqueNodes, member, newPath, id, variables, data)
+				x[k] = useCustomCache(uniqueNodes, member, newPath, id, variables, data)
 			} else {
 				x[k] = useCacheEntry(member, newPath, uniqueNodes, variables, data)
 			}
