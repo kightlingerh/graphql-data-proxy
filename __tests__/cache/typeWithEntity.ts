@@ -8,15 +8,19 @@ import { computed, shallowRef } from 'vue'
 import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
 
-const EmployerNode = N.type('Employer', {
-	id: N.staticString,
-	name: N.staticString,
-}, {
-	isEntity: true,
-	variables: {
-		id: N.staticString
+const EmployerNode = N.type(
+	'Employer',
+	{
+		id: N.staticString,
+		name: N.staticString
+	},
+	{
+		isEntity: true,
+		variables: {
+			id: N.staticString
+		}
 	}
-});
+)
 
 const TypeWithEntityNode = N.schema('Type', {
 	employer: EmployerNode
@@ -91,17 +95,17 @@ describe('type with entity', () => {
 
 		assert.deepStrictEqual(ref.value, some(person))
 	}),
-	it('has reactive refs', async () => {
-		const { write, employer } = useCache()
+		it('has reactive refs', async () => {
+			const { write, employer } = useCache()
 
-		assert.deepStrictEqual(employer.value, none)
+			assert.deepStrictEqual(employer.value, none)
 
-		await write(person)
+			await write(person)
 
-		assert.deepStrictEqual(employer.value, some(person.employer))
+			assert.deepStrictEqual(employer.value, some(person.employer))
 
-		await write(update)
+			await write(update)
 
-		assert.deepStrictEqual(employer.value, some(updated.employer))
-	})
+			assert.deepStrictEqual(employer.value, some(updated.employer))
+		})
 })

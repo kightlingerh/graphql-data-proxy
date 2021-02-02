@@ -4,47 +4,47 @@ import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
 import * as EQ from './Eq'
 import * as EN from './Encoder'
-import * as TD from './TaskDecoder'
+import * as D from './Decoder'
 import * as G from './Guard'
 import { constNull, Lazy } from 'fp-ts/lib/function'
 import { Literal } from './Schemable'
 
-export interface Model<I, O, A> extends TD.TaskDecoder<I, A>, EN.Encoder<O, A>, G.Guard<unknown, A>, EQ.Eq<A> {}
+export interface Model<I, O, A> extends D.Decoder<I, A>, EN.Encoder<O, A>, G.Guard<unknown, A>, EQ.Eq<A> {}
 
 export type TypeOf<M> = M extends Model<any, any, infer A> ? A : never
 
 export const string: Model<string, string, string> = {
 	equals: EQ.string.equals,
 	is: G.string.is,
-	decode: TD.string.decode,
+	decode: D.string.decode,
 	encode: EN.string.encode
 }
 
 export const number: Model<number, number, number> = {
 	equals: EQ.number.equals,
 	is: G.number.is,
-	decode: TD.number.decode,
+	decode: D.number.decode,
 	encode: EN.number.encode
 }
 
 export const int: Model<number, number, G.Int> = {
 	equals: EQ.int.equals,
 	is: G.int.is,
-	decode: TD.int.decode,
+	decode: D.int.decode,
 	encode: EN.int.encode
 }
 
 export const float: Model<number, number, G.Float> = {
 	equals: EQ.float.equals,
 	is: G.float.is,
-	decode: TD.float.decode,
+	decode: D.float.decode,
 	encode: EN.float.encode
 }
 
 export const boolean: Model<boolean, boolean, boolean> = {
 	equals: EQ.boolean.equals,
 	is: G.boolean.is,
-	decode: TD.boolean.decode,
+	decode: D.boolean.decode,
 	encode: EN.boolean.encode
 }
 
@@ -54,22 +54,18 @@ export function literal<A extends readonly [Literal, ...Array<Literal>]>(
 	return {
 		equals: eqStrict.equals,
 		is: G.literal(...values).is,
-		decode: TD.literal(...values).decode,
+		decode: D.literal(...values).decode,
 		encode: EN.id<A[number]>().encode
 	}
 }
 
 export function fromType<P extends Record<string, Model<any, any, any>>>(
 	properties: P
-): Model<
-	{ [K in keyof P]: TD.InputOf<P[K]> },
-	{ [K in keyof P]: EN.OutputOf<P[K]> },
-	{ [K in keyof P]: TypeOf<P[K]> }
-> {
+): Model<{ [K in keyof P]: D.InputOf<P[K]> }, { [K in keyof P]: EN.OutputOf<P[K]> }, { [K in keyof P]: TypeOf<P[K]> }> {
 	return {
 		equals: EQ.type(properties).equals,
 		is: G.type(properties).is,
-		decode: TD.fromType(properties).decode,
+		decode: D.fromType(properties).decode,
 		encode: EN.type(properties).encode
 	} as any
 }
@@ -83,14 +79,14 @@ export function type<P extends Record<string, Model<any, any, any>>>(
 export function fromPartial<P extends Record<string, Model<any, any, any>>>(
 	properties: P
 ): Model<
-	Partial<{ [K in keyof P]: TD.InputOf<P[K]> }>,
+	Partial<{ [K in keyof P]: D.InputOf<P[K]> }>,
 	Partial<{ [K in keyof P]: EN.OutputOf<P[K]> }>,
 	Partial<{ [K in keyof P]: TypeOf<P[K]> }>
 > {
 	return {
 		equals: EQ.partial(properties).equals,
 		is: G.partial(properties).is,
-		decode: TD.fromPartial(properties).decode,
+		decode: D.fromPartial(properties).decode,
 		encode: EN.partial(properties).encode
 	} as any
 }
@@ -105,7 +101,7 @@ export function fromArray<I, O, A>(item: Model<I, O, A>): Model<Array<I>, Array<
 	return {
 		equals: EQ.array(item).equals,
 		is: G.array(item).is,
-		decode: TD.fromArray(item).decode,
+		decode: D.fromArray(item).decode,
 		encode: EN.array(item).encode
 	}
 }
@@ -118,7 +114,7 @@ export function fromNonEmptyArray<I, O, A>(item: Model<I, O, A>): Model<Array<I>
 	return {
 		equals: EQ.nonEmptyArray(item).equals,
 		is: G.nonEmptyArray(item).is,
-		decode: TD.fromNonEmptyArray(item).decode,
+		decode: D.fromNonEmptyArray(item).decode,
 		encode: EN.nonEmptyArray(item).encode
 	}
 }
@@ -134,7 +130,7 @@ export function fromMap<IK extends string | number, IA, O, OK, OA, K, A>(
 	return {
 		equals: EQ.map(key, item).equals,
 		is: G.map(key, item).is,
-		decode: TD.fromMap<IK, IA, K, A>(key, item).decode,
+		decode: D.fromMap<IK, IA, K, A>(key, item).decode,
 		encode: EN.map<O, OK, OA, K, A>(Object.fromEntries)(key, item).encode
 	}
 }
@@ -150,7 +146,7 @@ export function fromSet<I, O, A>(item: Model<I, O, A>): Model<Array<I>, Array<O>
 	return {
 		equals: EQ.set(item).equals,
 		is: G.set(item).is,
-		decode: TD.fromSet(item).decode,
+		decode: D.fromSet(item).decode,
 		encode: EN.set(item).encode
 	}
 }
@@ -165,7 +161,7 @@ export function fromOption<I, O, A>(item: Model<I, O, A>, lazy: Lazy<O | null> =
 	return {
 		equals: EQ.option(item).equals,
 		is: G.option(item).is,
-		decode: TD.fromOption(item).decode,
+		decode: D.fromOption(item).decode,
 		encode: EN.option(item, lazy).encode
 	}
 }
@@ -190,7 +186,7 @@ export function fromEither<IL, OL, L, IR, OR, R>(
 		equals: EQ.either(left, right).equals,
 		is: G.either(left, right).is,
 		encode: EN.either(left, right).encode,
-		decode: TD.fromEither(left, right).decode
+		decode: D.fromEither(left, right).decode
 	}
 }
 
@@ -205,7 +201,7 @@ export function nullable<I, O, A>(item: Model<I, O, A>): Model<I | null, O | nul
 	return {
 		equals: EQ.nullable(item).equals,
 		is: G.nullable(item).is,
-		decode: TD.nullable(item).decode,
+		decode: D.nullable(item).decode,
 		encode: EN.nullable(item).encode
 	}
 }
@@ -214,10 +210,10 @@ export function fromSum<T extends string>(
 	tag: T
 ): <MS extends Record<string, Model<any, any, any>>>(
 	members: MS
-) => Model<TD.InputOf<MS[keyof MS]>, EN.OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>> {
+) => Model<D.InputOf<MS[keyof MS]>, EN.OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>> {
 	const eq = EQ.sum(tag)
 	const guard = G.sum(tag)
-	const decoder = TD.fromSum(tag)
+	const decoder = D.fromSum(tag)
 	const encoder = EN.sum(tag)
 	return (members) =>
 		({
@@ -240,14 +236,14 @@ export function sum<T extends string>(
 export function fromTuple<MS extends ReadonlyArray<Model<any, any, any>>>(
 	...members: MS
 ): Model<
-	{ [K in keyof MS]: TD.InputOf<MS[K]> },
+	{ [K in keyof MS]: D.InputOf<MS[K]> },
 	{ [K in keyof MS]: EN.OutputOf<MS[K]> },
 	{ [K in keyof MS]: TypeOf<MS[K]> }
 > {
 	return {
 		equals: EQ.tuple(...members).equals,
 		is: G.tuple(...members).is,
-		decode: TD.fromTuple(...members).decode,
+		decode: D.fromTuple(...members).decode,
 		encode: EN.tuple(...members).encode
 	} as any
 }
@@ -256,7 +252,7 @@ export function lazy<I, O, A>(id: string, model: Lazy<Model<I, O, A>>): Model<I,
 	return {
 		equals: EQ.lazy(model).equals,
 		is: G.lazy(model).is,
-		decode: TD.lazy(id, model).decode,
+		decode: D.lazy(id, model).decode,
 		encode: EN.lazy(model).encode
 	}
 }
@@ -294,7 +290,7 @@ export function eqById<I, O, A extends Record<'id', Literal>>(model: Model<I, O,
 }
 
 export function useDecoder<I, O, A>(model: Model<I, O, A>) {
-	return <IB>(decoder: TD.TaskDecoder<IB, A>): Model<IB, O, A> => ({
+	return <IB>(decoder: D.Decoder<IB, A>): Model<IB, O, A> => ({
 		...model,
 		decode: decoder.decode
 	})
@@ -302,6 +298,6 @@ export function useDecoder<I, O, A>(model: Model<I, O, A>) {
 
 export function useIdentityDecoder<I, O, A>(model: Model<I, O, A>): Model<A, O, A> {
 	return useDecoder(model)({
-		decode: TD.success
+		decode: D.success
 	})
 }
