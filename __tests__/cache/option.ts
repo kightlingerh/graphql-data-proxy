@@ -92,7 +92,7 @@ describe('option', () => {
 
 			const data = { a: some('1') }
 
-			assert.deepStrictEqual(read(), right(none))
+			assert.deepStrictEqual(read(), right(some({ a: none })))
 
 			write(data)
 

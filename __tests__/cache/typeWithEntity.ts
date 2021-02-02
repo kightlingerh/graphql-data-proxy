@@ -12,18 +12,24 @@ const EmployerNode = N.type(
 	'Employer',
 	{
 		id: N.staticString,
-		name: N.staticString
+		name: N.staticString,
+		endDate: N.option(N.staticString)
 	},
 	{
-		isEntity: true,
 		variables: {
 			id: N.staticString
 		}
 	}
 )
 
+const EmployerRequestNode = N.markTypeAsEntity(EmployerNode)
+
 const TypeWithEntityNode = N.schema('Type', {
 	employer: EmployerNode
+})
+
+const TypeWithEntityRequestNode = N.schema('Type', {
+	employer: EmployerRequestNode
 })
 
 interface Person extends N.TypeOf<typeof TypeWithEntityNode> {}
@@ -33,7 +39,7 @@ const variables = {
 }
 
 function useCache() {
-	const cache = make({})(TypeWithEntityNode)(TypeWithEntityNode)
+	const cache = make({})(TypeWithEntityNode)(TypeWithEntityRequestNode)
 	const write = (data: N.TypeOfPartial<typeof TypeWithEntityNode>) =>
 		pipe(
 			IOE.fromEither(cache),
@@ -67,14 +73,16 @@ function useCache() {
 const person: Person = {
 	employer: {
 		id: 'PFM',
-		name: 'Public Financial Management'
+		name: 'Public Financial Management',
+		endDate: some('12-10-2014')
 	}
 }
 
 const update: N.TypeOfPartial<typeof TypeWithEntityNode> = {
 	employer: {
 		id: 'DeepSport',
-		name: 'DeepSport, Inc.'
+		name: 'DeepSport, Inc.',
+		endDate: none
 	}
 }
 
@@ -95,17 +103,17 @@ describe('type with entity', () => {
 
 		assert.deepStrictEqual(ref.value, some(person))
 	}),
-		it('has reactive refs', () => {
-			const { write, employer } = useCache()
+	it('has reactive refs', () => {
+		const { write, employer } = useCache()
 
-			assert.deepStrictEqual(employer.value, none)
+		assert.deepStrictEqual(employer.value, none)
 
-			write(person)
+		write(person)
 
-			assert.deepStrictEqual(employer.value, some(person.employer))
+		assert.deepStrictEqual(employer.value, some(person.employer))
 
-			write(update)
+		write(update)
 
-			assert.deepStrictEqual(employer.value, some(updated.employer))
-		})
+		assert.deepStrictEqual(employer.value, some(updated.employer))
+	})
 })

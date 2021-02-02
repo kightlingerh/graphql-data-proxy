@@ -3,7 +3,6 @@ import { IO } from 'fp-ts/lib/IO';
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray';
 import { Option } from 'fp-ts/lib/Option';
 import { Reader } from 'fp-ts/lib/Reader';
-import { Task } from 'fp-ts/lib/Task';
 import { TaskEither } from 'fp-ts/lib/TaskEither';
 import { Tree } from 'fp-ts/lib/Tree';
 import * as N from '../node';
@@ -20,7 +19,7 @@ export interface CacheDependencies {
     persist?: Persist;
     useImmutableArrays?: boolean;
 }
-export interface CacheWriteResult extends Task<Evict> {
+export interface CacheWriteResult extends IO<Evict> {
 }
 export interface Evict extends IO<void> {
 }

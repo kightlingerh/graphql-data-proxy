@@ -23,44 +23,44 @@ exports.useIdentityDecoder = exports.useDecoder = exports.eqById = exports.useEq
 const Eq_1 = require("fp-ts/lib/Eq");
 const EQ = __importStar(require("./Eq"));
 const EN = __importStar(require("./Encoder"));
-const TD = __importStar(require("./TaskDecoder"));
+const D = __importStar(require("./Decoder"));
 const G = __importStar(require("./Guard"));
 const function_1 = require("fp-ts/lib/function");
 exports.string = {
     equals: EQ.string.equals,
     is: G.string.is,
-    decode: TD.string.decode,
+    decode: D.string.decode,
     encode: EN.string.encode
 };
 exports.number = {
     equals: EQ.number.equals,
     is: G.number.is,
-    decode: TD.number.decode,
+    decode: D.number.decode,
     encode: EN.number.encode
 };
 exports.int = {
     equals: EQ.int.equals,
     is: G.int.is,
-    decode: TD.int.decode,
+    decode: D.int.decode,
     encode: EN.int.encode
 };
 exports.float = {
     equals: EQ.float.equals,
     is: G.float.is,
-    decode: TD.float.decode,
+    decode: D.float.decode,
     encode: EN.float.encode
 };
 exports.boolean = {
     equals: EQ.boolean.equals,
     is: G.boolean.is,
-    decode: TD.boolean.decode,
+    decode: D.boolean.decode,
     encode: EN.boolean.encode
 };
 function literal(...values) {
     return {
         equals: Eq_1.eqStrict.equals,
         is: G.literal(...values).is,
-        decode: TD.literal(...values).decode,
+        decode: D.literal(...values).decode,
         encode: EN.id().encode
     };
 }
@@ -69,7 +69,7 @@ function fromType(properties) {
     return {
         equals: EQ.type(properties).equals,
         is: G.type(properties).is,
-        decode: TD.fromType(properties).decode,
+        decode: D.fromType(properties).decode,
         encode: EN.type(properties).encode
     };
 }
@@ -82,7 +82,7 @@ function fromPartial(properties) {
     return {
         equals: EQ.partial(properties).equals,
         is: G.partial(properties).is,
-        decode: TD.fromPartial(properties).decode,
+        decode: D.fromPartial(properties).decode,
         encode: EN.partial(properties).encode
     };
 }
@@ -95,7 +95,7 @@ function fromArray(item) {
     return {
         equals: EQ.array(item).equals,
         is: G.array(item).is,
-        decode: TD.fromArray(item).decode,
+        decode: D.fromArray(item).decode,
         encode: EN.array(item).encode
     };
 }
@@ -108,7 +108,7 @@ function fromNonEmptyArray(item) {
     return {
         equals: EQ.nonEmptyArray(item).equals,
         is: G.nonEmptyArray(item).is,
-        decode: TD.fromNonEmptyArray(item).decode,
+        decode: D.fromNonEmptyArray(item).decode,
         encode: EN.nonEmptyArray(item).encode
     };
 }
@@ -121,7 +121,7 @@ function fromMap(key, item) {
     return {
         equals: EQ.map(key, item).equals,
         is: G.map(key, item).is,
-        decode: TD.fromMap(key, item).decode,
+        decode: D.fromMap(key, item).decode,
         encode: EN.map(Object.fromEntries)(key, item).encode
     };
 }
@@ -134,7 +134,7 @@ function fromSet(item) {
     return {
         equals: EQ.set(item).equals,
         is: G.set(item).is,
-        decode: TD.fromSet(item).decode,
+        decode: D.fromSet(item).decode,
         encode: EN.set(item).encode
     };
 }
@@ -147,7 +147,7 @@ function fromOption(item, lazy = function_1.constNull) {
     return {
         equals: EQ.option(item).equals,
         is: G.option(item).is,
-        decode: TD.fromOption(item).decode,
+        decode: D.fromOption(item).decode,
         encode: EN.option(item, lazy).encode
     };
 }
@@ -164,7 +164,7 @@ function fromEither(left, right) {
         equals: EQ.either(left, right).equals,
         is: G.either(left, right).is,
         encode: EN.either(left, right).encode,
-        decode: TD.fromEither(left, right).decode
+        decode: D.fromEither(left, right).decode
     };
 }
 exports.fromEither = fromEither;
@@ -176,7 +176,7 @@ function nullable(item) {
     return {
         equals: EQ.nullable(item).equals,
         is: G.nullable(item).is,
-        decode: TD.nullable(item).decode,
+        decode: D.nullable(item).decode,
         encode: EN.nullable(item).encode
     };
 }
@@ -184,7 +184,7 @@ exports.nullable = nullable;
 function fromSum(tag) {
     const eq = EQ.sum(tag);
     const guard = G.sum(tag);
-    const decoder = TD.fromSum(tag);
+    const decoder = D.fromSum(tag);
     const encoder = EN.sum(tag);
     return (members) => ({
         equals: eq(members).equals,
@@ -203,7 +203,7 @@ function fromTuple(...members) {
     return {
         equals: EQ.tuple(...members).equals,
         is: G.tuple(...members).is,
-        decode: TD.fromTuple(...members).decode,
+        decode: D.fromTuple(...members).decode,
         encode: EN.tuple(...members).encode
     };
 }
@@ -212,7 +212,7 @@ function lazy(id, model) {
     return {
         equals: EQ.lazy(model).equals,
         is: G.lazy(model).is,
-        decode: TD.lazy(id, model).decode,
+        decode: D.lazy(id, model).decode,
         encode: EN.lazy(model).encode
     };
 }
@@ -243,7 +243,7 @@ function useDecoder(model) {
 exports.useDecoder = useDecoder;
 function useIdentityDecoder(model) {
     return useDecoder(model)({
-        decode: TD.success
+        decode: D.success
     });
 }
 exports.useIdentityDecoder = useIdentityDecoder;

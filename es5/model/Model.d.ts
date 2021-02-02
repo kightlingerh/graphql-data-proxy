@@ -3,11 +3,11 @@ import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray';
 import { Option } from 'fp-ts/lib/Option';
 import * as EQ from './Eq';
 import * as EN from './Encoder';
-import * as TD from './TaskDecoder';
+import * as D from './Decoder';
 import * as G from './Guard';
 import { Lazy } from 'fp-ts/lib/function';
 import { Literal } from './Schemable';
-export interface Model<I, O, A> extends TD.TaskDecoder<I, A>, EN.Encoder<O, A>, G.Guard<unknown, A>, EQ.Eq<A> {
+export interface Model<I, O, A> extends D.Decoder<I, A>, EN.Encoder<O, A>, G.Guard<unknown, A>, EQ.Eq<A> {
 }
 export declare type TypeOf<M> = M extends Model<any, any, infer A> ? A : never;
 export declare const string: Model<string, string, string>;
@@ -17,7 +17,7 @@ export declare const float: Model<number, number, G.Float>;
 export declare const boolean: Model<boolean, boolean, boolean>;
 export declare function literal<A extends readonly [Literal, ...Array<Literal>]>(...values: A): Model<unknown, A[number], A[number]>;
 export declare function fromType<P extends Record<string, Model<any, any, any>>>(properties: P): Model<{
-    [K in keyof P]: TD.InputOf<P[K]>;
+    [K in keyof P]: D.InputOf<P[K]>;
 }, {
     [K in keyof P]: EN.OutputOf<P[K]>;
 }, {
@@ -29,7 +29,7 @@ export declare function type<P extends Record<string, Model<any, any, any>>>(pro
     [K in keyof P]: TypeOf<P[K]>;
 }>;
 export declare function fromPartial<P extends Record<string, Model<any, any, any>>>(properties: P): Model<Partial<{
-    [K in keyof P]: TD.InputOf<P[K]>;
+    [K in keyof P]: D.InputOf<P[K]>;
 }>, Partial<{
     [K in keyof P]: EN.OutputOf<P[K]>;
 }>, Partial<{
@@ -58,12 +58,12 @@ export declare const optionBoolean: Model<boolean | null, boolean | null, Option
 export declare function fromEither<IL, OL, L, IR, OR, R>(left: Model<IL, OL, L>, right: Model<IR, OR, R>): Model<IL | IR, OL | OR, Either<L, R>>;
 export declare function either<L, R>(left: Model<unknown, unknown, L>, right: Model<unknown, unknown, R>): Model<unknown, unknown, Either<L, R>>;
 export declare function nullable<I, O, A>(item: Model<I, O, A>): Model<I | null, O | null, A | null>;
-export declare function fromSum<T extends string>(tag: T): <MS extends Record<string, Model<any, any, any>>>(members: MS) => Model<TD.InputOf<MS[keyof MS]>, EN.OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>>;
+export declare function fromSum<T extends string>(tag: T): <MS extends Record<string, Model<any, any, any>>>(members: MS) => Model<D.InputOf<MS[keyof MS]>, EN.OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>>;
 export declare function sum<T extends string>(tag: T): <MS>(members: {
     [K in keyof MS]: Model<unknown, unknown, MS[K] & Record<T, K>>;
 }) => Model<unknown, unknown, MS[keyof MS]>;
 export declare function fromTuple<MS extends ReadonlyArray<Model<any, any, any>>>(...members: MS): Model<{
-    [K in keyof MS]: TD.InputOf<MS[K]>;
+    [K in keyof MS]: D.InputOf<MS[K]>;
 }, {
     [K in keyof MS]: EN.OutputOf<MS[K]>;
 }, {
@@ -75,5 +75,5 @@ export declare function useIdentityEncoder<I, O, A>(model: Model<I, O, A>): Mode
 export declare function encodeById<I, O, A extends Record<'id', Literal>>(model: Model<I, O, A>): Model<I, Literal, A>;
 export declare function useEq<I, O, A>(model: Model<I, O, A>, eq: EQ.Eq<A>): Model<I, O, A>;
 export declare function eqById<I, O, A extends Record<'id', Literal>>(model: Model<I, O, A>): Model<I, O, A>;
-export declare function useDecoder<I, O, A>(model: Model<I, O, A>): <IB>(decoder: TD.TaskDecoder<IB, A>) => Model<IB, O, A>;
+export declare function useDecoder<I, O, A>(model: Model<I, O, A>): <IB>(decoder: D.Decoder<IB, A>) => Model<IB, O, A>;
 export declare function useIdentityDecoder<I, O, A>(model: Model<I, O, A>): Model<A, O, A>;
