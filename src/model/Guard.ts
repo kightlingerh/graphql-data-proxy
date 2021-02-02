@@ -14,7 +14,7 @@ export const int: G.Guard<unknown, Int> = {
 export type Float = number
 
 export const float: G.Guard<unknown, Float> = {
-	is: (u): u is Float => G.number.is(u) && !Number.isInteger(u)
+	is: (u): u is Float => G.number.is(u)
 }
 
 export const none: G.Guard<unknown, None> = G.type({ _tag: G.literal('None') })

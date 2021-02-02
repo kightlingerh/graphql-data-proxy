@@ -30,7 +30,7 @@ exports.int = {
     is: (u) => G.number.is(u) && Number.isInteger(u)
 };
 exports.float = {
-    is: (u) => G.number.is(u) && !Number.isInteger(u)
+    is: (u) => G.number.is(u)
 };
 exports.none = G.type({ _tag: G.literal('None') });
 const some = (value) => G.type({

@@ -225,11 +225,11 @@ export function omitFromType<T extends TypeNode<any, any, any, any, any>, P exte
 	keys: P[]
 ): TypeNode<ExtractTypeName<T>, Omit<T['members'], P>, T['variables']> {
 	const n: any = {}
-	keys.forEach((k) => {
-		if (!keys.includes(k)) {
+	for (const k in node.members) {
+		if (!keys.includes(k as P)) {
 			n[k] = node.members[k]
 		}
-	})
+	}
 	return type(node.__typename, n, node.variables) as any
 }
 

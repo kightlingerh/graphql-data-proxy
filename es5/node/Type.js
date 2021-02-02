@@ -40,11 +40,11 @@ function pickFromType(node, keys) {
 exports.pickFromType = pickFromType;
 function omitFromType(node, keys) {
     const n = {};
-    keys.forEach((k) => {
+    for (const k in node.members) {
         if (!keys.includes(k)) {
             n[k] = node.members[k];
         }
-    });
+    }
     return type(node.__typename, n, node.variables);
 }
 exports.omitFromType = omitFromType;

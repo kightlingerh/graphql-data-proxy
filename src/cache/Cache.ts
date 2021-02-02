@@ -265,10 +265,10 @@ class TypeCacheNode extends CacheNode<N.TypeNode<any, any, any, any, any>> {
 				this.shouldCheckId = false
 				const entry = uniqueNodes.get(id)
 				if (entry) {
-					this.entry = entry
+					this.entry = shallowRef(entry)
 				} else {
 					this.entry = shallowRef(this.buildEntry())
-					uniqueNodes.set(id, this.entry)
+					uniqueNodes.set(id, this.entry.value)
 				}
 			} else {
 				this.shouldCheckId = true
@@ -321,13 +321,21 @@ class TypeCacheNode extends CacheNode<N.TypeNode<any, any, any, any, any>> {
 		}
 		return this.entry.value
 	}
+	private useNodeModel(key: string) {
+		const model = this.models[key]
+		if (model === undefined) {
+			this.models[key] = N.useVariablesModel(this.schemaNode.members[key].variables)
+			return this.models[key]
+		}
+		return model
+	}
 	private useCacheNode(
 		entry: Record<string, CacheNode<any> | Map<string, CacheNode<any>>>,
 		key: string,
 		variables: Record<string, unknown>
 	): CacheNode<any> {
-		if (this.models.hasOwnProperty(key)) {
-			const encodedVariables = JSON.stringify(this.models[key].encode(variables))
+		if (this.models.hasOwnProperty(key) || this.shouldUseDynamicEntry(this.schemaNode.members[key])) {
+			const encodedVariables = JSON.stringify(this.useNodeModel(key).encode(variables))
 			const newEntry = (entry[key] as Map<string, CacheNode<any>>).get(encodedVariables)
 			if (newEntry) {
 				return newEntry

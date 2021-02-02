@@ -214,11 +214,11 @@ class TypeCacheNode extends CacheNode {
                 this.shouldCheckId = false;
                 const entry = uniqueNodes.get(id);
                 if (entry) {
-                    this.entry = entry;
+                    this.entry = vue_1.shallowRef(entry);
                 }
                 else {
                     this.entry = vue_1.shallowRef(this.buildEntry());
-                    uniqueNodes.set(id, this.entry);
+                    uniqueNodes.set(id, this.entry.value);
                 }
             }
             else {
@@ -274,9 +274,17 @@ class TypeCacheNode extends CacheNode {
         }
         return this.entry.value;
     }
+    useNodeModel(key) {
+        const model = this.models[key];
+        if (model === undefined) {
+            this.models[key] = N.useVariablesModel(this.schemaNode.members[key].variables);
+            return this.models[key];
+        }
+        return model;
+    }
     useCacheNode(entry, key, variables) {
-        if (this.models.hasOwnProperty(key)) {
-            const encodedVariables = JSON.stringify(this.models[key].encode(variables));
+        if (this.models.hasOwnProperty(key) || this.shouldUseDynamicEntry(this.schemaNode.members[key])) {
+            const encodedVariables = JSON.stringify(this.useNodeModel(key).encode(variables));
             const newEntry = entry[key].get(encodedVariables);
             if (newEntry) {
                 return newEntry;

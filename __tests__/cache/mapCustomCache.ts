@@ -7,7 +7,7 @@ import { computed } from 'vue'
 import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
 
-const toId = (path: N.Path) => path[path.length - 2]
+const toId = (path: N.Path) => path[path.length - 1]
 
 const PersonNode = N.type('Person', {
 	allFriends: N.map(N.staticString, N.staticString, {
