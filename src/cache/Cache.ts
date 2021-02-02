@@ -673,10 +673,18 @@ function writeToMapNode(
 ) {
 	const evictions: Evict[] = []
 	for (const [k, v] of data.entries()) {
-		const keyPath = snoc(path, k);
+		const keyPath = snoc(path, k)
 		if (cache.has(k)) {
 			if (v === null || v === undefined) {
-				const currentValue = useMapNodeKeyCacheEntry(k, schema, keyPath, uniqueNodes, variables, cache, data.get(k))
+				const currentValue = useMapNodeKeyCacheEntry(
+					k,
+					schema,
+					keyPath,
+					uniqueNodes,
+					variables,
+					cache,
+					data.get(k)
+				)
 				cache.delete(k)
 				evictions.push(() => {
 					if (!cache.has(k)) {
@@ -685,11 +693,28 @@ function writeToMapNode(
 				})
 			} else {
 				evictions.push(
-					write(v, schema.item, request.item, keyPath, uniqueNodes, deps, variables, useMapNodeKeyCacheEntry(k, schema, keyPath, uniqueNodes, variables, cache, data.get(k)))
+					write(
+						v,
+						schema.item,
+						request.item,
+						keyPath,
+						uniqueNodes,
+						deps,
+						variables,
+						useMapNodeKeyCacheEntry(k, schema, keyPath, uniqueNodes, variables, cache, data.get(k))
+					)
 				)
 			}
 		} else {
-			const newCacheEntry = useMapNodeKeyCacheEntry(k, schema, keyPath, uniqueNodes, variables, cache, data.get(k))
+			const newCacheEntry = useMapNodeKeyCacheEntry(
+				k,
+				schema,
+				keyPath,
+				uniqueNodes,
+				variables,
+				cache,
+				data.get(k)
+			)
 			cache.set(k, newCacheEntry)
 			write(v, schema.item, request.item, keyPath, uniqueNodes, deps, variables, newCacheEntry)
 			evictions.push(() => cache.delete(k))
@@ -763,7 +788,7 @@ function useMapNodeKeyCacheEntry(
 	entry: Map<any, any>,
 	data?: any
 ) {
-	const itemNode: N.Node = schema.item;
+	const itemNode: N.Node = schema.item
 	if ((itemNode.tag === 'Map' || itemNode.tag === 'Type') && itemNode.__customCache !== undefined) {
 		// @ts-ignore
 		const id = itemNode.__customCache.toId(path, variables, data)
@@ -772,17 +797,16 @@ function useMapNodeKeyCacheEntry(
 			if (memberCustomCache !== entry.get(key)) {
 				entry.set(key, memberCustomCache)
 			}
-			return memberCustomCache;
+			return memberCustomCache
 		}
 	}
-	let keyEntry = entry.get(key);
+	let keyEntry = entry.get(key)
 	if (!keyEntry) {
-		keyEntry = useCacheEntry(itemNode, path, uniqueNodes, variables, data);
-		entry.set(key, keyEntry);
+		keyEntry = useCacheEntry(itemNode, path, uniqueNodes, variables, data)
+		entry.set(key, keyEntry)
 	}
-	return keyEntry;
+	return keyEntry
 }
-
 
 function useTypeNodeMemberCacheEntry(
 	member: string,
