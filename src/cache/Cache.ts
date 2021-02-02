@@ -531,7 +531,7 @@ function writeToTypeNode(
 				uniqueNodes,
 				deps,
 				variables,
-				useTypeNodeMemberCacheEntry(k, schema, snoc(path, k), uniqueNodes, variables, entry, data)
+				useTypeNodeMemberCacheEntry(k, schema, snoc(path, k), uniqueNodes, variables, entry, data[k])
 			)
 		)
 	}
@@ -602,7 +602,6 @@ function writeToNonEmptyArrayNode(
 ) {
 	const currentValue = entry.value
 	if (isSome(currentValue)) {
-		console.log(currentValue.value);
 		return writeToArrayNode(
 			data,
 			schema as any,
@@ -835,7 +834,7 @@ function useTypeNodeCacheEntry(
 			x[k] = useCacheEntry(member, newPath, uniqueNodes, variables, data)
 		}
 	}
-	return x
+	return shallowReactive(x)
 }
 
 function useMapNodeCacheEntry(
