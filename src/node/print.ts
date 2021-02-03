@@ -1,5 +1,9 @@
 import { isEmptyObject, isEmptyString } from '../shared/index'
-import { Node, NodeVariablesDefinition, OptionNode, SchemaNode, TypeNode } from './Node'
+import { Node, useMergedVariables } from './Node'
+import { OptionNode } from './Option'
+import { SchemaNode } from './Schema'
+import { NodeVariables } from './shared'
+import { TypeNode } from './Type'
 
 const OPEN_BRACKET = '{'
 const CLOSE_BRACKET = '}'
@@ -16,10 +20,10 @@ const ON = 'on'
 function printTypeNodeMembers(members: { [K: string]: Node }): string {
 	const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE]
 	for (const [key, value] of Object.entries(members)) {
-		if (!value?.__cache__?.isLocal) {
+		if (!value?.__isLocal) {
 			tokens.push(key)
-			if (!isEmptyObject(value.__variables_definition__)) {
-				tokens.push(printVariables(value.__variables_definition__))
+			if (!isEmptyObject(value.variables)) {
+				tokens.push(printVariables(value.variables))
 			}
 			const val = printNode(value)
 			tokens.push(...(isEmptyString(val) ? [OPEN_SPACE] : [OPEN_SPACE, val, OPEN_SPACE]))
@@ -29,7 +33,7 @@ function printTypeNodeMembers(members: { [K: string]: Node }): string {
 	return tokens.join('')
 }
 
-function printVariables<V extends NodeVariablesDefinition>(variables: V, isRoot: boolean = false): string {
+function printVariables<V extends NodeVariables>(variables: V, isRoot: boolean = false): string {
 	const tokens: string[] = [OPEN_PAREN]
 	const keys = Object.keys(variables)
 	const length = keys.length
@@ -42,7 +46,7 @@ function printVariables<V extends NodeVariablesDefinition>(variables: V, isRoot:
 			key,
 			COLON,
 			OPEN_SPACE,
-			isRoot ? printVariableName(variables[key]) : `$${key}`,
+			isRoot ? printVariableName(variables[key] as Node) : `$${key}`,
 			i === last ? '' : ', '
 		)
 	}
@@ -55,14 +59,9 @@ function printVariableName(node: Node, isOptional: boolean = false): string {
 	switch (node.tag) {
 		case 'Array':
 		case 'NonEmptyArray':
-			return `[${printVariableName(node.wrapped, isOptionNode(node.wrapped))}]${optionalString}`
-		case 'Map':
-			return `Map[${printVariableName(node.key)}, ${printVariableName(
-				node.wrapped,
-				isOptionNode(node.wrapped)
-			)}]${optionalString}`
+			return `[${printVariableName(node.item, isOptionNode(node.item))}]${optionalString}`
 		case 'Option':
-			return printVariableName(node.wrapped, true)
+			return printVariableName(node.item, true)
 		case 'Boolean':
 		case 'String':
 		case 'Int':
@@ -81,7 +80,7 @@ function isOptionNode(node: Node): node is OptionNode<any> {
 	return node.tag === 'Option'
 }
 
-function printSumNodeMembers(members: ReadonlyArray<TypeNode<any, any, any, any, any, any, any>>): string {
+function printSumNodeMembers(members: ReadonlyArray<TypeNode<any, any>>): string {
 	const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE, TYPENAME]
 	members.forEach((member) => {
 		tokens.push(
@@ -99,7 +98,7 @@ function printSumNodeMembers(members: ReadonlyArray<TypeNode<any, any, any, any,
 }
 
 function printNode(node: Node): string {
-	if (node?.__cache__?.isLocal) {
+	if (node?.__isLocal) {
 		return ''
 	}
 	switch (node.tag) {
@@ -113,11 +112,11 @@ function printNode(node: Node): string {
 			return printTypeNodeMembers(node.members)
 		case 'Sum':
 			return printSumNodeMembers(node.members)
-		case 'Map':
+
 		case 'Option':
 		case 'NonEmptyArray':
 		case 'Array':
-			return printNode(node.wrapped)
+			return printNode(node.item)
 		case 'Mutation':
 			return printNode(node.result)
 	}
@@ -129,8 +128,9 @@ export function print<N extends string, T extends { [K in keyof T]: Node }>(
 	operationName: string
 ): string {
 	const tokens = [operation, OPEN_SPACE, operationName]
-	if (!isEmptyObject(schema.__sub_variables_definition__)) {
-		tokens.push(printVariables(schema.__sub_variables_definition__, true))
+	const mergedVariables = useMergedVariables(schema)
+	if (!isEmptyObject(mergedVariables)) {
+		tokens.push(printVariables(mergedVariables, true))
 	}
 	tokens.push(OPEN_SPACE, printNode(schema))
 	return tokens.join('')

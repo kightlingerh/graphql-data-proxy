@@ -1,340 +1,387 @@
-import { computed, Ref, shallowReactive, shallowRef } from 'vue'
-import { isNonEmpty, makeBy } from 'fp-ts/lib/Array'
+import { isNonEmpty, snoc } from 'fp-ts/lib/Array'
 import { left, right } from 'fp-ts/lib/Either'
-import { constant, constVoid, pipe } from 'fp-ts/lib/function'
-import { map } from 'fp-ts/lib/Map'
-import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
-import { chain, isNone, isSome, none, Option, Some, some, map as mapO } from 'fp-ts/lib/Option'
+import { absurd, constVoid, Endomorphism, pipe } from 'fp-ts/lib/function'
+import { IO, sequenceArray as sequenceArrayIO } from 'fp-ts/lib/IO'
+import { NonEmptyArray, of } from 'fp-ts/lib/NonEmptyArray'
+import {isNone, isSome, none, Option, some, map as mapO, Some, chain} from 'fp-ts/lib/Option'
 import { Reader } from 'fp-ts/lib/Reader'
-import * as N from '../node/Node'
-import {
-	CacheError,
-	CacheResult,
-	CacheWriteResult,
-	cacheWriteResultMonoid,
-	concatEvict,
-	isEmptyObject,
-	Persist
-} from '../shared'
-import { isEntityNode } from './shared'
+import { TaskEither } from 'fp-ts/lib/TaskEither'
+import { Tree } from 'fp-ts/lib/Tree'
+import { computed, shallowReactive, shallowRef } from 'vue'
+import * as N from '../node'
+import { Ref } from '../node'
+import { isEmptyObject } from '../shared'
+import { isPrimitiveNode } from './shared'
 import { validate } from './validate'
+
+export interface CacheError extends NonEmptyArray<Tree<string>> {}
+
+export interface Persist {
+	store(key: string, value: unknown): TaskEither<CacheError, void>
+
+	restore<T>(key: string): TaskEither<CacheError, T>
+
+	delete(key: string): TaskEither<CacheError, void>
+
+	update<T>(key: string, f: Endomorphism<T>): TaskEither<CacheError, void>
+}
 
 export interface CacheDependencies {
 	id?: string
 	persist?: Persist
+	useImmutableArrays?: boolean
 }
 
-export interface Cache<R> {
-	write(variables: N.TypeOfMergedVariables<R>): Reader<N.TypeOfPartial<R>, CacheWriteResult>
-	read(variables: N.TypeOfMergedVariables<R>): CacheResult<Option<N.TypeOf<R>>>
-	toRefs(variables: N.TypeOfMergedVariables<R>): CacheResult<N.TypeOfRefs<R>>
+export interface CacheWriteResult extends IO<Evict> {}
+
+export interface Evict extends IO<void> {}
+
+export interface Cache<R extends N.SchemaNode<any, any>> {
+	read: Reader<N.TypeOfMergedVariables<R>, IO<Option<N.TypeOf<R>>>>
+	write: Reader<N.TypeOfMergedVariables<R>, Reader<N.TypeOfPartial<R>, CacheWriteResult>>
+	toEntries: Reader<N.TypeOfMergedVariables<R>, IO<N.TypeOfRefs<R>>>
 }
 
-export function make(_: CacheDependencies) {
+export function make(deps: CacheDependencies) {
 	return <S extends N.SchemaNode<any, any>>(schema: S) => {
-		const cache: object = Object.create(null)
+		const rootPath = of(deps.id ?? 'root')
+		const uniqueNodes = new Map<string, any>()
+		const cache: object = useTypeNodeCacheEntry(schema, rootPath, uniqueNodes, {})
 		return <R extends N.SchemaNode<any, any>>(request: R) => {
 			const errors = validate(schema, request)
 			if (isNonEmpty(errors)) {
 				return left<CacheError, Cache<R>>(errors)
 			} else {
 				return right<CacheError, Cache<R>>({
-					read: (variables) => read(schema, request, variables, cache),
-					write: (variables) => (data) => write(data, schema, request, variables, cache),
-					toRefs: (variables) => toRefs(schema, request, variables, cache)
+					read: (variables) => () => read(schema, request, rootPath, uniqueNodes, deps, variables, cache),
+					write: (variables) => (data) => () =>
+						write(data, schema, request, rootPath, uniqueNodes, deps, variables, cache),
+					toEntries: (variables) => () =>
+						toEntries(schema, request, rootPath, uniqueNodes, deps, variables, cache)
 				})
 			}
 		}
 	}
 }
 
-function toRefs(schema: N.Node, request: N.Node, variables: object, cache: any): CacheResult<any> {
-	if (isEntityNode(schema)) {
-		return () => cache
+function toEntries(
+	schema: N.Node,
+	request: N.Node,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
+	cache: any
+): any {
+	if (isPrimitiveNode(schema) || !!schema.__isEntity) {
+		return cache
 	}
-	if (isEntityNode(request)) {
-		return () => computed(read(schema, request, variables, cache))
+	if (!!request.__isEntity) {
+		return computed(() => read(schema, request, path, uniqueNodes, deps, variables, cache))
 	}
 	switch (request.tag) {
 		case 'Type':
-			return toRefsTypeNode(schema as N.TypeNode<any, any>, request, variables, cache)
+			return toEntriesTypeNode(schema as N.TypeNode<any, any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'Array':
-			return toRefsArrayNode(schema as N.ArrayNode<any>, request, variables, cache)
+			return toEntriesArrayNode(schema as N.ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'NonEmptyArray':
-			return toRefsNonEmptyArrayNode(schema as N.NonEmptyArrayNode<any>, request, variables, cache)
+			return toEntriesNonEmptyArrayNode(
+				schema as N.NonEmptyArrayNode<any>,
+				request,
+				path,
+				uniqueNodes,
+				deps,
+				variables,
+				cache
+			)
 		case 'Option':
-			return toRefsOptionNode(schema as N.OptionNode<any>, request, variables, cache)
-		case 'Map':
-			return toRefsMapNode(schema as N.MapNode<any, any>, request, variables, cache)
+			return toEntriesOptionNode(schema as N.OptionNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'Sum':
-			return toRefsSumNode(schema as N.SumNode<any>, request, variables, cache)
+			return toEntriesSumNode(schema as N.SumNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		default:
 			return cache
 	}
 }
 
-function toRefsTypeNode(
+function toEntriesTypeNode(
 	schema: N.TypeNode<any, any>,
 	request: N.TypeNode<any, any>,
-	variables: object,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
 	entry: any
-): CacheResult<any> {
-	return () => {
-		const x: any = Object.create(null)
-		for (const k in request.members) {
-			x[k] = toRefs(
+) {
+	const x: any = {}
+	for (const k in request.members) {
+		const keyPath = snoc(path, k)
+		x[k] = toEntries(
+			schema.members[k],
+			request.members[k],
+			keyPath,
+			uniqueNodes,
+			deps,
+			variables,
+			useMemberCacheEntry(
 				schema.members[k],
-				request.members[k],
+				keyPath,
+				uniqueNodes,
 				variables,
-				getTypeNodeMemberCacheEntry(k, schema, request, variables, entry)
-			)()
-		}
-		return x
+				entry[k],
+				newEntry => {entry[k] = newEntry},
+			)
+		)
 	}
+	return x
 }
 
-function toRefsArrayNode(schema: N.ArrayNode<any>, request: N.ArrayNode<any>, variables: object, cache: Ref<any[]>) {
-	return () => {
-		return computed(() => cache.value.map((val) => toRefs(schema.wrapped, request.wrapped, variables, val)()))
-	}
+function toEntriesArrayNode(
+	schema: N.ArrayNode<any>,
+	request: N.ArrayNode<any>,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
+	cache: any[]
+) {
+	return cache.map((val, i) => toEntries(schema.item, request.item, snoc(path, i), uniqueNodes, deps, variables, val))
 }
 
-function toRefsNonEmptyArrayNode(
+function toEntriesNonEmptyArrayNode(
 	schema: N.NonEmptyArrayNode<any>,
 	request: N.NonEmptyArrayNode<any>,
-	variables: object,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
 	cache: Ref<Option<NonEmptyArray<any>>>
 ) {
-	return () => {
-		return computed(() =>
-			mapO((entry: NonEmptyArray<any>) =>
-				entry.map((val: any) => toRefs(schema.wrapped, request.wrapped, variables, val)())
-			)(cache.value)
-		)
-	}
+	return computed(() =>
+		mapO((entry: NonEmptyArray<any>) =>
+			entry.map((val: any, index) =>
+				toEntries(
+					schema.item,
+					request.item,
+					path.concat(['some', index]) as N.Path,
+					uniqueNodes,
+					deps,
+					variables,
+					val
+				)
+			)
+		)(cache.value)
+	)
 }
 
-function toRefsOptionNode(
+function toEntriesOptionNode(
 	schema: N.OptionNode<any>,
 	request: N.OptionNode<any>,
-	variables: object,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
 	cache: Ref<Option<any>>
 ) {
-	return () => {
-		return computed(() => mapO((entry) => toRefs(schema.wrapped, request.wrapped, variables, entry)())(cache.value))
-	}
+	return computed(() =>
+		mapO((entry) => toEntries(schema.item, request.item, snoc(path, 'some'), uniqueNodes, deps, variables, entry))(
+			cache.value
+		)
+	)
 }
 
-function toRefsMapNode(
-	schema: N.MapNode<any, any>,
-	request: N.MapNode<any, any>,
-	variables: object,
-	cache: Ref<Map<any, any>>
-) {
-	return () => {
-		return computed(() => map((val) => toRefs(schema.wrapped, request.wrapped, variables, val)())(cache.value))
-	}
-}
-
-function toRefsSumNode(
+function toEntriesSumNode(
 	schema: N.SumNode<any>,
 	request: N.SumNode<any>,
-	variables: object,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
 	cache: Ref<Option<[string, any]>>
 ) {
-	return () =>
-		computed(() =>
-			isNone(cache.value)
-				? none
-				: readTypeNode(
-						schema.membersRecord[cache.value.value[0]],
-						request.membersRecord[cache.value.value[0]],
-						variables,
-						cache.value.value[1]
-				  )()
-		)
+	return computed(() =>
+		isNone(cache.value)
+			? none
+			: toEntriesTypeNode(
+					(schema.membersRecord as any)[cache.value.value[0]],
+					(request.membersRecord as any)[cache.value.value[0]],
+					path,
+					uniqueNodes,
+					deps,
+					variables,
+					cache.value.value[1]
+			  )
+	)
 }
 
-function read(schema: N.Node, request: N.Node, variables: object, cache: any): CacheResult<Option<any>> {
-	if (isEntityNode(schema)) {
-		return readEntity(cache)
+function read(
+	schema: N.Node,
+	request: N.Node,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
+	cache: any
+): Option<any> {
+	if (isPrimitiveNode(schema) || !!schema?.__isEntity) {
+		return cache.value
 	}
 	switch (request.tag) {
 		case 'Type':
-			return readTypeNode(schema as N.TypeNode<any, any>, request, variables, cache)
+			return readTypeNode(schema as N.TypeNode<any, any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'Array':
-			return readArrayNode(schema as N.ArrayNode<any>, request, variables, cache)
+			return readArrayNode(schema as N.ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'NonEmptyArray':
-			return readNonEmptyArrayNode(schema as N.NonEmptyArrayNode<any>, request, variables, cache)
+			return readNonEmptyArrayNode(
+				schema as N.NonEmptyArrayNode<any>,
+				request,
+				path,
+				uniqueNodes,
+				deps,
+				variables,
+				cache
+			)
 		case 'Option':
-			return readOptionNode(schema as N.OptionNode<any>, request, variables, cache)
-		case 'Map':
-			return readMapNode(schema as N.MapNode<any, any>, request, variables, cache)
+			return readOptionNode(schema as N.OptionNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'Sum':
-			return readSumNode(schema as N.SumNode<any>, request, variables, cache)
+			return readSumNode(schema as N.SumNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'Mutation':
-			return constant(none)
+			return none
 		default:
-			return readEntity(cache)
+			return cache.value
 	}
-}
-
-function readEntity(cache: Ref<Option<any>>) {
-	return () => cache.value
 }
 
 function readTypeNode(
 	schema: N.TypeNode<any, any>,
 	request: N.TypeNode<any, any>,
-	variables: object,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
 	entry: any
-): CacheResult<Option<any>> {
-	return () => {
-		const x: any = {}
-		for (const k in request.members) {
-			const result = read(
+): Option<any> {
+	const x: any = {}
+	for (const k in request.members) {
+		const keyPath = snoc(path, k);
+		const result = read(
+			schema.members[k],
+			request.members[k],
+			keyPath,
+			uniqueNodes,
+			deps,
+			variables,
+			useMemberCacheEntry(
 				schema.members[k],
-				request.members[k],
+				keyPath,
+				uniqueNodes,
 				variables,
-				getTypeNodeMemberCacheEntry(k, schema, request, variables, entry)
-			)()
-			if (isNone(result)) {
-				return none
-			}
-			x[k] = result.value
-		}
-		return some(x)
-	}
-}
-
-function getTypeNodeMemberCacheEntry(
-	member: string,
-	schema: N.TypeNode<any, any>,
-	request: N.TypeNode<any, any>,
-	variables: object,
-	entry: any,
-	data?: any
-) {
-	if (entry[member] === undefined) {
-		entry[member] = isEmptyObject(schema.members[member].__variables_definition__)
-			? useStaticCacheEntry(schema.members[member], request.members[member], variables, data && data[member])
-			: new Map()
-	}
-	let memberCache
-	if (isEmptyObject(schema.members[member].__variables_definition__)) {
-		memberCache = entry[member]
-	} else {
-		const encodedVariables = encode(schema.members[member], variables)
-		memberCache = entry[member].get(encodedVariables)
-		if (!memberCache) {
-			memberCache = useStaticCacheEntry(
-				schema.members[member],
-				request.members[member],
-				variables,
-				data && data[member]
+				entry[k],
+				newEntry => {entry[k] = newEntry},
 			)
-			entry[member].set(encodedVariables, memberCache)
+		)
+		if (isNone(result)) {
+			return none
 		}
+		x[k] = result.value
 	}
-	return memberCache
+	return some(x)
 }
 
-function readArrayNode(schema: N.ArrayNode<any>, request: N.ArrayNode<any>, variables: object, cache: Ref<any[]>) {
-	return () => {
-		const cv = cache.value
-		const length = cv.length
-		const sw = schema.wrapped
-		const rw = request.wrapped
-		const result = new Array(length)
-		for (let i = 0; i < length; i++) {
-			const r = read(sw, rw, variables, cv[i])()
-			if (isSome(r)) {
-				result[i] = r.value
-			} else {
-				return none
-			}
+function readArrayNode(
+	schema: N.ArrayNode<any>,
+	request: N.ArrayNode<any>,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
+	cache: any[]
+) {
+	const length = cache.length
+	const sw = schema.item
+	const rw = request.item
+	const result = new Array(length)
+	for (let i = 0; i < length; i++) {
+		const r = read(sw, rw, snoc(path, i), uniqueNodes, deps, variables, cache[i])
+		if (isNone(r)) {
+			return none
 		}
-		return some(result)
+		result[i] = r.value
 	}
+	return some(result)
 }
 
 function readNonEmptyArrayNode(
 	schema: N.NonEmptyArrayNode<any>,
 	request: N.NonEmptyArrayNode<any>,
-	variables: object,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
 	cache: Ref<Option<NonEmptyArray<any>>>
 ) {
-	return () => {
-		if (isSome(cache.value)) {
-			return readArrayNode(schema as any, request as any, variables, cache.value as any)()
-		} else {
-			return none
-		}
+	if (isSome(cache.value)) {
+		return readArrayNode(
+			schema as any,
+			request as any,
+			snoc(path, 'some'),
+			uniqueNodes,
+			deps,
+			variables,
+			cache.value.value as any
+		)
+	} else {
+		return none
 	}
 }
 
 function readOptionNode(
 	schema: N.OptionNode<any>,
 	request: N.OptionNode<any>,
-	variables: object,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
 	cache: Ref<Option<any>>
 ) {
-	return () => {
-		return some(
-			pipe(
-				cache.value,
-				chain((entry) => read(schema.wrapped, request.wrapped, variables, entry)())
-			)
-		)
-	}
-}
-
-function readMapNode(
-	schema: N.MapNode<any, any>,
-	request: N.MapNode<any, any>,
-	variables: object,
-	cache: Ref<Map<any, any>>
-) {
-	return () => {
-		const v = cache.value
-		if (v.size === 0) {
-			return some(v)
-		} else {
-			const result = new Map()
-			const sw = schema.wrapped
-			const rw = request.wrapped
-			for (const [key, value] of v.entries()) {
-				const r = read(sw, rw, variables, value)()
-				if (isSome(r)) {
-					result.set(key, r.value)
-				} else {
-					return none
-				}
-			}
-			return some(result)
-		}
-	}
+	return some(pipe(
+		cache.value,
+		chain((entry) => read(schema.item, request.item, snoc(path, 'some'), uniqueNodes, deps, variables, entry))
+	))
 }
 
 function readSumNode(
 	schema: N.SumNode<any>,
 	request: N.SumNode<any>,
-	variables: object,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
 	cache: Ref<Option<[string, any]>>
 ) {
-	return () =>
-		isNone(cache.value)
-			? none
-			: readTypeNode(
-					schema.membersRecord[cache.value.value[0]],
-					request.membersRecord[cache.value.value[0]],
-					variables,
-					cache.value.value[1]
-			  )()
+	return isNone(cache.value)
+		? none
+		: readTypeNode(
+				(schema.membersRecord as any)[cache.value.value[0]],
+				(request.membersRecord as any)[cache.value.value[0]],
+				path,
+				uniqueNodes,
+				deps,
+				variables,
+				cache.value.value[1]
+		  )
 }
 
-function write(data: any, schema: N.Node, request: N.Node, variables: object, cache: any): CacheWriteResult {
-	if (schema?.__cache__?.isEntity) {
+function write(
+	data: any,
+	schema: N.Node,
+	request: N.Node,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
+	cache: any
+): Evict {
+	if (!!schema?.__isEntity) {
 		return writeToEntity(data, cache)
 	}
 	switch (request.tag) {
@@ -345,101 +392,183 @@ function write(data: any, schema: N.Node, request: N.Node, variables: object, ca
 		case 'Int':
 			return writeToEntity(data, cache)
 		case 'Type':
-			return writeToTypeNode(data, schema as N.TypeNode<any, any>, request, variables, cache)
+			return writeToTypeNode(
+				data,
+				schema as N.TypeNode<any, any>,
+				request,
+				path,
+				uniqueNodes,
+				deps,
+				variables,
+				cache
+			)
 		case 'Array':
-			return writeToArrayNode(data, schema as N.ArrayNode<any>, request, variables, cache)
+			return writeToArrayNode(
+				data,
+				schema as N.ArrayNode<any>,
+				request,
+				path,
+				uniqueNodes,
+				deps,
+				variables,
+				cache
+			)
 		case 'NonEmptyArray':
-			return writeToNonEmptyArrayNode(data, schema as N.NonEmptyArrayNode<any>, request, variables, cache)
+			return writeToNonEmptyArrayNode(
+				data,
+				schema as N.NonEmptyArrayNode<any>,
+				request,
+				path,
+				uniqueNodes,
+				deps,
+				variables,
+				cache
+			)
 		case 'Option':
-			return writeToOptionNode(data, schema as N.OptionNode<any>, request, variables, cache)
-		case 'Map':
-			return writeToMapNode(data, schema as N.MapNode<any, any>, request, variables, cache)
+			return writeToOptionNode(
+				data,
+				schema as N.OptionNode<any>,
+				request,
+				path,
+				uniqueNodes,
+				deps,
+				variables,
+				cache
+			)
 		case 'Sum':
-			return writeToSumNode(data, schema as N.SumNode<any>, request, variables, cache)
+			return writeToSumNode(data, schema as N.SumNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'Mutation':
-			return cacheWriteResultMonoid.empty
+			return constVoid
 	}
 }
 
 function writeToEntity(data: any, cache: Ref<Option<any>>) {
-	return () => {
-		const currentValue = cache.value
-		const newValue = some(data)
-		cache.value = newValue
+	const currentValue = cache.value
+	const newValue = some(data)
+	cache.value = newValue
 
-		return () => {
-			if (cache.value === newValue) {
-				cache.value = currentValue
-			}
+	return () => {
+		if (cache.value === newValue) {
+			cache.value = currentValue
 		}
 	}
 }
 
 function writeToTypeNode(
 	data: any,
-	schema: N.TypeNode<any, any, any, any, any, any, any, any>,
-	request: N.TypeNode<any, any, any, any, any, any, any, any>,
-	variables: object,
+	schema: N.TypeNode<any, any>,
+	request: N.TypeNode<any, any>,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
 	entry: any
 ) {
-	return () => {
-		let evict = constVoid
-		for (const k in data) {
-			evict = concatEvict(
-				evict,
-				write(
-					data[k],
+	const evictions: Evict[] = []
+	for (const k in data) {
+		const keyPath = snoc(path, k)
+		evictions.push(
+			write(
+				data[k],
+				schema.members[k],
+				request.members[k],
+				keyPath,
+				uniqueNodes,
+				deps,
+				variables,
+				useMemberCacheEntry(
 					schema.members[k],
-					request.members[k],
+					keyPath,
+					uniqueNodes,
 					variables,
-					getTypeNodeMemberCacheEntry(k, schema, request, variables, entry, data)
-				)()
+					entry[k],
+					newEntry => {entry[k] = newEntry},
+					data[k]
+				)
 			)
-		}
-		return evict
+		)
 	}
+	return sequenceArrayIO(evictions)
 }
 
 function writeToArrayNode(
 	data: any[],
 	schema: N.ArrayNode<any>,
 	request: N.ArrayNode<any>,
-	variables: object,
-	entry: Ref<any[]>
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
+	entry: any[]
 ) {
-	return () => {
-		const currentValue = entry.value
-		const newValue = makeBy(data.length, (i) =>
-			useStaticCacheEntry(schema.wrapped, request.wrapped, variables, data[i])
-		)
-		data.forEach((val, index) => {
-			write(val, schema.wrapped, request.wrapped, variables, newValue[index])()
+	const evictions: Evict[] = []
+	const newLength = data.length
+	const oldLength = entry.length
+	if (newLength > oldLength) {
+		evictions.push(() => {
+			if (entry.length === newLength) {
+				entry.splice(oldLength, newLength - oldLength)
+			}
 		})
-		entry.value = newValue
-		return () => {
-			if (entry.value === newValue) entry.value = currentValue
-		}
+	} else {
+		const deletedValues = entry.splice(newLength, oldLength - newLength)
+		evictions.push(() => {
+			if (entry.length === newLength) {
+				for (let i = newLength; i < oldLength; i++) {
+					entry[i] = deletedValues[i - newLength]
+				}
+			}
+		})
 	}
+
+	data.forEach((val, index) => {
+		const indexPath = snoc(path, index)
+		const indexEntry = useMemberCacheEntry(
+			schema.item,
+			indexPath,
+			uniqueNodes,
+			variables,
+			entry[index] ?? useCacheEntry(schema.item, indexPath, uniqueNodes, variables, data[index]),
+			constVoid,
+			data[index]
+		)
+		entry[index] = indexEntry
+		evictions.push(
+			write(val, schema.item, request.item, snoc(path, index), uniqueNodes, deps, variables, indexEntry)
+		)
+	})
+	return sequenceArrayIO(evictions)
 }
 
 function writeToNonEmptyArrayNode(
 	data: NonEmptyArray<any>,
 	schema: N.NonEmptyArrayNode<any>,
 	request: N.NonEmptyArrayNode<any>,
-	variables: object,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
 	entry: Ref<Option<NonEmptyArray<any>>>
 ) {
+	const currentValue = entry.value
+	if (isSome(currentValue)) {
+		return writeToArrayNode(
+			data,
+			schema as any,
+			request as any,
+			path,
+			uniqueNodes,
+			deps,
+			variables,
+			currentValue.value
+		)
+	}
+	const newValue = (some(shallowReactive([])) as unknown) as Some<NonEmptyArray<any>>
+	writeToArrayNode(data, schema as any, request as any, path, uniqueNodes, deps, variables, newValue.value)
+	entry.value = newValue
 	return () => {
-		const currentValue = entry.value
-		const newValue = some(
-			makeBy(data.length, (i) => useStaticCacheEntry(schema.wrapped, request.wrapped, variables, data[i]))
-		) as Some<NonEmptyArray<any>>
-		data.forEach((val, index) => write(val, schema.wrapped, request.wrapped, variables, newValue.value[index])())
-		entry.value = newValue
-		return () => {
-			if (entry.value === newValue) {
-				entry.value = currentValue
-			}
+		if (entry.value === newValue) {
+			entry.value = currentValue
 		}
 	}
 }
@@ -448,63 +577,55 @@ function writeToOptionNode(
 	data: Option<any>,
 	schema: N.OptionNode<any>,
 	request: N.OptionNode<any>,
-	variables: object,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
 	cache: Ref<Option<any>>
 ) {
-	return () => {
-		const currentValue = cache.value
-		if (isSome(data)) {
-			if (isNone(currentValue)) {
-				cache.value = some(useStaticCacheEntry(schema.wrapped, request.wrapped, variables, data))
-				write(data.value, schema.wrapped, request.wrapped, variables, (cache as any).value.value)()
-				return () => {
-					cache.value = currentValue
-				}
-			}
-			return write(data.value, schema.wrapped, request.wrapped, variables, (cache as any).value.value)()
-		} else {
-			cache.value = none
+	const currentValue = cache.value
+	if (isSome(data)) {
+		if (isNone(currentValue)) {
+			const newPath = snoc(path, 'some')
+			cache.value = some(useCacheEntry(schema.item, newPath, uniqueNodes, variables, data))
+			write(
+				data.value,
+				schema.item,
+				request.item,
+				newPath,
+				uniqueNodes,
+				deps,
+				variables,
+				(cache as any).value.value
+			)
 			return () => {
 				cache.value = currentValue
 			}
 		}
-	}
-}
-
-function writeToMapNode(
-	data: Map<any, any>,
-	schema: N.MapNode<any, any>,
-	request: N.MapNode<any, any>,
-	variables: object,
-	cache: Ref<Map<any, any>>
-) {
-	return () => {
-		const cacheValue = cache.value
-		let evict = constVoid
-		for (const [k, v] of data.entries()) {
-			if (cacheValue.has(k)) {
-				if (v === null || v === undefined) {
-					const currentValue = cacheValue.get(k)
-					cacheValue.delete(k)
-					evict = concatEvict(evict, () => {
-						if (!cacheValue.has(k)) {
-							cacheValue.set(k, currentValue)
-						}
-					})
-				} else {
-					evict = concatEvict(
-						evict,
-						write(v, schema.wrapped, request.wrapped, variables, cacheValue.get(k))()
-					)
-				}
-			} else {
-				const newCacheEntry = useStaticCacheEntry(schema.wrapped, request.wrapped, variables, v)
-				cacheValue.set(k, newCacheEntry)
-				write(v, schema.wrapped, request.wrapped, variables, newCacheEntry)()
-				evict = concatEvict(evict, () => cacheValue.delete(k))
-			}
+		const newPath = snoc(path, 'some')
+		return write(
+			data.value,
+			schema.item,
+			request.item,
+			newPath,
+			uniqueNodes,
+			deps,
+			variables,
+			useMemberCacheEntry(
+				schema.item,
+				newPath,
+				uniqueNodes,
+				variables,
+				currentValue.value.value,
+				(newEntry) => { cache.value = some(newEntry) },
+				data.value
+			)
+		)
+	} else {
+		cache.value = none
+		return () => {
+			cache.value = currentValue
 		}
-		return evict
 	}
 }
 
@@ -512,66 +633,174 @@ function writeToSumNode(
 	data: any,
 	schema: N.SumNode<any>,
 	request: N.SumNode<any, any>,
-	variables: object,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	deps: CacheDependencies,
+	variables: Record<string, unknown>,
 	cache: Ref<Option<[string, any]>>
 ) {
-	return () => {
-		if (isNone(cache.value) || (data.__typename && cache.value.value[0] !== data.__typename)) {
-			cache.value = some([
-				data.__typename,
-				useStaticCacheEntry(
-					schema.membersRecord[data.__typename],
-					request.membersRecord[data.__typename],
-					variables,
-					data
-				)
-			] as any)
+	if (
+		(isNone(cache.value) && data.__typename) ||
+		(isSome(cache.value) && data.__typename && cache.value.value[0] !== data.__typename)
+	) {
+		const currentValue = cache.value
+		const __typename = data.__typename as string
+		const newNode = useTypeNodeCacheEntry(
+			(schema.membersRecord as any)[__typename],
+			path,
+			uniqueNodes,
+			variables,
+			data
+		)
+		cache.value = some([__typename, newNode])
+		writeToTypeNode(
+			data,
+			(schema.membersRecord as any)[__typename],
+			(request.membersRecord as any)[__typename],
+			path,
+			uniqueNodes,
+			deps,
+			variables,
+			newNode
+		)
+		return () => {
+			if (isSome(cache.value) && cache.value.value[0] === __typename && cache.value.value[1] === newNode) {
+				cache.value = currentValue
+			}
 		}
-		const __typename = data.__typename || (cache as any).value.value[0]
-		if (!!__typename) {
-			return writeToTypeNode(
-				data,
-				schema.membersRecord[__typename],
-				request.membersRecord[__typename],
-				variables,
-				(cache as any).value.value[1]
-			)()
-		} else {
-			return constVoid
+	}
+	if (isSome(cache.value) && (data.__typename === undefined || data.__typename === cache.value.value[0])) {
+		const __typename = cache.value.value[0]
+		return writeToTypeNode(
+			data,
+			(schema.membersRecord as any)[__typename],
+			(request.membersRecord as any)[__typename],
+			path,
+			uniqueNodes,
+			deps,
+			variables,
+			cache.value.value[1]
+		)
+	}
+	return absurd as Evict
+}
+
+function useMemberCacheEntry(
+	schema: N.Node,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	variables: Record<string, any>,
+	currentEntry: any,
+	updateEntry: (newEntry: any) => void,
+	data?: any
+) {
+	if ((schema.tag === 'Type') && schema.__customCache !== undefined) {
+		// @ts-ignore
+		const id = schema.__customCache.toId(path, variables, data) as string
+		if (id) {
+			const memberCustomCache = useCustomCache(uniqueNodes, schema, path, id, variables, data)
+			if (memberCustomCache !== currentEntry) {
+				updateEntry(memberCustomCache)
+				return memberCustomCache
+			}
 		}
+		return currentEntry
+	}
+	if (isEmptyObject(schema.variables)) {
+		return currentEntry
+	}
+	const encodedVariables = encode(schema, variables)
+	let memberCache = currentEntry.get(encodedVariables)
+	if (!memberCache) {
+		memberCache = useCacheEntry(schema, path, uniqueNodes, variables)
+		currentEntry.set(encodedVariables, memberCache)
+	}
+	return memberCache
+}
+
+function useCustomCache(
+	uniqueNodes: Map<string, any>,
+	member: N.Node,
+	path: N.Path,
+	id: string,
+	variables: Record<string, unknown>,
+	data?: any
+) {
+	const entry = uniqueNodes.get(id)
+	if (entry) {
+		return entry
+	} else {
+		const newEntry = useCacheEntry(member, path, uniqueNodes, variables, data)
+		uniqueNodes.set(id, newEntry)
+		return newEntry
 	}
 }
 
-function useStaticCacheEntry(schemaNode: N.Node, requestNode: N.Node, variables: object, data?: any) {
-	if (!!schemaNode?.__cache__?.useCustomCache) {
-		const customCacheEntry = schemaNode.__cache__.useCustomCache(schemaNode, requestNode, variables, data)
-		return isSome(customCacheEntry) ? customCacheEntry.value : useDefaultCacheEntry(schemaNode)
-	} else {
-		return useDefaultCacheEntry(schemaNode)
+function useTypeNodeCacheEntry(
+	schema: N.TypeNode<any, any>,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	variables: Record<string, unknown>,
+	data?: any
+) {
+	const x: any = {}
+	for (const k in schema.members) {
+		const member: N.Node = schema.members[k]
+		const newPath = snoc(path, k)
+		if ((member.tag === 'Type') && member.__customCache !== undefined) {
+			// @ts-ignore
+			const id = member.__customCache.toId(newPath, variables, data) as string
+			if (id) {
+				x[k] = useCustomCache(uniqueNodes, member, newPath, id, variables, data)
+			} else {
+				x[k] = useCacheEntry(member, newPath, uniqueNodes, variables, data)
+			}
+		} else if (!isEmptyObject(member.variables)) {
+			x[k] = new Map()
+		} else {
+			x[k] = useCacheEntry(member, newPath, uniqueNodes, variables, data)
+		}
 	}
+	return shallowReactive(x)
+}
+
+const ENCODERS = new WeakMap<N.Node, any>()
+
+function useEncoder(node: N.Node) {
+	let encoder = ENCODERS.get(node)
+	if (encoder) {
+		return encoder
+	}
+	encoder = N.useMergedVariablesModel(node)
+	ENCODERS.set(node, encoder)
+	return encoder
 }
 
 function encode(node: N.Node, data: any): string {
 	try {
-		return JSON.stringify(node.variablesModel.encode(data))
+		return JSON.stringify(useEncoder(node).encode(data))
 	} catch {
 		return 'unknown'
 	}
 }
 
-function useDefaultCacheEntry<T extends N.Node>(node: T): N.TypeOfCacheEntry<T> {
-	if (isEntityNode(node)) {
+function useCacheEntry<T extends N.Node>(
+	node: T,
+	path: N.Path,
+	uniqueNodes: Map<string, any>,
+	variables: Record<string, unknown>,
+	data?: any
+): N.TypeOfCacheEntry<T> {
+	if (isPrimitiveNode(node) || !!node.__isEntity) {
 		return shallowRef<Option<N.TypeOf<T>>>(none) as N.TypeOfCacheEntry<T>
 	}
 	switch (node.tag) {
 		case 'Type':
-			return Object.create(null) as N.TypeOfCacheEntry<T>
+			return useTypeNodeCacheEntry(node as any, path, uniqueNodes, variables, data) as N.TypeOfCacheEntry<T>
 		case 'Array':
-			return shallowRef([]) as N.TypeOfCacheEntry<T>
-		case 'Map':
-			return shallowRef(shallowReactive(new Map())) as N.TypeOfCacheEntry<T>
+			return shallowReactive([]) as N.TypeOfCacheEntry<T>
 		case 'Mutation':
-			return useDefaultCacheEntry((node as any).result) as N.TypeOfCacheEntry<T>
+			return useCacheEntry((node as any).result, path, uniqueNodes, variables, data) as N.TypeOfCacheEntry<T>
 		default:
 			return shallowRef<Option<N.TypeOf<T>>>(none) as N.TypeOfCacheEntry<T>
 	}
