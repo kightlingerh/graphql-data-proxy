@@ -4,7 +4,6 @@ import { ArrayNode, array } from './Array'
 import { BooleanNode, boolean, staticBoolean } from './Boolean'
 import { FloatNode, float, staticFloat } from './Float'
 import { IntNode, int, staticInt } from './Int'
-import { MapNode, map } from './Map'
 import { MutationNode, mutation } from './Mutation'
 import { NonEmptyArrayNode, nonEmptyArray } from './NonEmptyArray'
 import { OptionNode, option } from './Option'
@@ -26,7 +25,6 @@ export type Node =
 	| BooleanNode<any, any>
 	| FloatNode<any, any>
 	| IntNode<any, any>
-	| MapNode<any, any, any, any, any, any, any, any>
 	| MutationNode<any, any, any>
 	| NonEmptyArrayNode<any, any, any>
 	| OptionNode<any, any, any>
@@ -46,7 +44,6 @@ export const node = {
 	staticFloat,
 	int,
 	staticInt,
-	map,
 	mutation,
 	nonEmptyArray,
 	option,
@@ -71,7 +68,6 @@ function mergeVariables(node: Node, variables: Record<string, Node>[]) {
 		case 'Array':
 		case 'NonEmptyArray':
 		case 'Option':
-		case 'Map':
 			mergeVariables(node.item, variables)
 			break
 		case 'Mutation':

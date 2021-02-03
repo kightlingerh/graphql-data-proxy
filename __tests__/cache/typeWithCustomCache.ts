@@ -26,7 +26,7 @@ const PersonNode = N.type(
 
 const SchemaNode = N.schema('TypeWithCustomCache', {
 	user: PersonNode,
-	people: N.map(N.staticString, PersonNode)
+	people: N.array(PersonNode)
 })
 
 interface SchemaData extends N.TypeOf<typeof SchemaNode> {}
@@ -48,12 +48,12 @@ const updated: N.TypeOf<typeof PersonNode> = {
 
 const writeData: N.TypeOfPartial<typeof SchemaNode> = {
 	user: person,
-	people: new Map([['1', update]])
+	people: [update]
 }
 
 const readData: SchemaData = {
 	user: updated,
-	people: new Map([['1', updated]])
+	people: [updated]
 }
 
 describe('type with custom cache', () => {

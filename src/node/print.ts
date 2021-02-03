@@ -60,11 +60,6 @@ function printVariableName(node: Node, isOptional: boolean = false): string {
 		case 'Array':
 		case 'NonEmptyArray':
 			return `[${printVariableName(node.item, isOptionNode(node.item))}]${optionalString}`
-		case 'Map':
-			return `Map[${printVariableName(node.key)}, ${printVariableName(
-				node.item,
-				isOptionNode(node.item)
-			)}]${optionalString}`
 		case 'Option':
 			return printVariableName(node.item, true)
 		case 'Boolean':
@@ -117,7 +112,7 @@ function printNode(node: Node): string {
 			return printTypeNodeMembers(node.members)
 		case 'Sum':
 			return printSumNodeMembers(node.members)
-		case 'Map':
+
 		case 'Option':
 		case 'NonEmptyArray':
 		case 'Array':
