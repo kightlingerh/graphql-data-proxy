@@ -25,10 +25,7 @@ export function isPrimitiveNode(node: N.Node): node is PrimitiveNode {
 	return PrimitiveTags.has(node.tag)
 }
 
-export type WrappedNode =
-	| N.ArrayNode<any, any, any>
-	| N.NonEmptyArrayNode<any, any, any>
-	| N.OptionNode<any, any, any>
+export type WrappedNode = N.ArrayNode<any, any, any> | N.NonEmptyArrayNode<any, any, any> | N.OptionNode<any, any, any>
 
 const WrappedNodeTags = new Set<N.NodeTag>(['Array', 'NonEmptyArray', 'Option'])
 

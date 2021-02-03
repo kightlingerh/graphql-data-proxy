@@ -103,17 +103,17 @@ describe('type with entity', () => {
 
 		assert.deepStrictEqual(ref.value, some(person))
 	}),
-	it('has reactive refs', () => {
-		const { write, employer } = useCache()
+		it('has reactive refs', () => {
+			const { write, employer } = useCache()
 
-		assert.deepStrictEqual(employer.value, none)
+			assert.deepStrictEqual(employer.value, none)
 
-		write(person)
+			write(person)
 
-		assert.deepStrictEqual(employer.value, some(person.employer))
+			assert.deepStrictEqual(employer.value, some(person.employer))
 
-		write(update)
+			write(update)
 
-		assert.deepStrictEqual(employer.value, some(updated.employer))
-	})
+			assert.deepStrictEqual(employer.value, some(updated.employer))
+		})
 })

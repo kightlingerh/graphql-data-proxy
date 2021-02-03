@@ -3,7 +3,7 @@ import { left, right } from 'fp-ts/lib/Either'
 import { absurd, constVoid, Endomorphism, pipe } from 'fp-ts/lib/function'
 import { IO, sequenceArray as sequenceArrayIO } from 'fp-ts/lib/IO'
 import { NonEmptyArray, of } from 'fp-ts/lib/NonEmptyArray'
-import {isNone, isSome, none, Option, some, map as mapO, Some, chain} from 'fp-ts/lib/Option'
+import { isNone, isSome, none, Option, some, map as mapO, Some, chain } from 'fp-ts/lib/Option'
 import { Reader } from 'fp-ts/lib/Reader'
 import { TaskEither } from 'fp-ts/lib/TaskEither'
 import { Tree } from 'fp-ts/lib/Tree'
@@ -122,14 +122,9 @@ function toEntriesTypeNode(
 			uniqueNodes,
 			deps,
 			variables,
-			useMemberCacheEntry(
-				schema.members[k],
-				keyPath,
-				uniqueNodes,
-				variables,
-				entry[k],
-				newEntry => {entry[k] = newEntry},
-			)
+			useMemberCacheEntry(schema.members[k], keyPath, uniqueNodes, variables, entry[k], (newEntry) => {
+				entry[k] = newEntry
+			})
 		)
 	}
 	return x
@@ -262,7 +257,7 @@ function readTypeNode(
 ): Option<any> {
 	const x: any = {}
 	for (const k in request.members) {
-		const keyPath = snoc(path, k);
+		const keyPath = snoc(path, k)
 		const result = read(
 			schema.members[k],
 			request.members[k],
@@ -270,14 +265,9 @@ function readTypeNode(
 			uniqueNodes,
 			deps,
 			variables,
-			useMemberCacheEntry(
-				schema.members[k],
-				keyPath,
-				uniqueNodes,
-				variables,
-				entry[k],
-				newEntry => {entry[k] = newEntry},
-			)
+			useMemberCacheEntry(schema.members[k], keyPath, uniqueNodes, variables, entry[k], (newEntry) => {
+				entry[k] = newEntry
+			})
 		)
 		if (isNone(result)) {
 			return none
@@ -343,10 +333,12 @@ function readOptionNode(
 	variables: Record<string, unknown>,
 	cache: Ref<Option<any>>
 ) {
-	return some(pipe(
-		cache.value,
-		chain((entry) => read(schema.item, request.item, snoc(path, 'some'), uniqueNodes, deps, variables, entry))
-	))
+	return some(
+		pipe(
+			cache.value,
+			chain((entry) => read(schema.item, request.item, snoc(path, 'some'), uniqueNodes, deps, variables, entry))
+		)
+	)
 }
 
 function readSumNode(
@@ -482,7 +474,9 @@ function writeToTypeNode(
 					uniqueNodes,
 					variables,
 					entry[k],
-					newEntry => {entry[k] = newEntry},
+					(newEntry) => {
+						entry[k] = newEntry
+					},
 					data[k]
 				)
 			)
@@ -617,7 +611,9 @@ function writeToOptionNode(
 				uniqueNodes,
 				variables,
 				currentValue.value.value,
-				(newEntry) => { cache.value = some(newEntry) },
+				(newEntry) => {
+					cache.value = some(newEntry)
+				},
 				data.value
 			)
 		)
@@ -694,7 +690,7 @@ function useMemberCacheEntry(
 	updateEntry: (newEntry: any) => void,
 	data?: any
 ) {
-	if ((schema.tag === 'Type') && schema.__customCache !== undefined) {
+	if (schema.tag === 'Type' && schema.__customCache !== undefined) {
 		// @ts-ignore
 		const id = schema.__customCache.toId(path, variables, data) as string
 		if (id) {
@@ -747,7 +743,7 @@ function useTypeNodeCacheEntry(
 	for (const k in schema.members) {
 		const member: N.Node = schema.members[k]
 		const newPath = snoc(path, k)
-		if ((member.tag === 'Type') && member.__customCache !== undefined) {
+		if (member.tag === 'Type' && member.__customCache !== undefined) {
 			// @ts-ignore
 			const id = member.__customCache.toId(newPath, variables, data) as string
 			if (id) {
