@@ -134,7 +134,7 @@ export const fromMap = <IK extends string | number, IA, K, A>(
 export const map = <K, A>(
 	k: D.Decoder<unknown, K>,
 	a: D.Decoder<unknown, A>
-): D.Decoder<Record<string | number, unknown>, Map<K, A>> => pipe(UnknownRecord, D.compose(fromMap(k, a)))
+): D.Decoder<Record<string, unknown>, Map<K, A>> => fromMap(k, a)
 
 const toSet = <T>(values: Array<T>) => new Set(values)
 

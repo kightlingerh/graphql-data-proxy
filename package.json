@@ -1,7 +1,7 @@
 {
   "name": "graphql-data-proxy",
   "version": "0.0.0",
-  "description": "code first graphql client",
+  "description": "code first, type safe graphql client",
   "files": [
     "lib",
     "es5"
