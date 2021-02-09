@@ -3,7 +3,7 @@ import { left, right } from 'fp-ts/lib/Either'
 import { absurd, constVoid, Endomorphism, pipe } from 'fp-ts/lib/function'
 import { IO, sequenceArray as sequenceArrayIO } from 'fp-ts/lib/IO'
 import { NonEmptyArray, of } from 'fp-ts/lib/NonEmptyArray'
-import {isNone, isSome, none, Option, some, map as mapO, Some, chain} from 'fp-ts/lib/Option'
+import { isNone, isSome, none, Option, some, map as mapO, Some, chain } from 'fp-ts/lib/Option'
 import { Reader } from 'fp-ts/lib/Reader'
 import { TaskEither } from 'fp-ts/lib/TaskEither'
 import { Tree } from 'fp-ts/lib/Tree'
@@ -289,7 +289,7 @@ function readTypeNode(
 ): Option<any> {
 	const x: any = {}
 	for (const k in request.members) {
-		const keyPath = snoc(path, k);
+		const keyPath = snoc(path, k)
 		const result = read(
 			schema.members[k],
 			request.members[k],
@@ -363,10 +363,12 @@ function readOptionNode(
 	variables: Record<string, unknown>,
 	cache: Ref<Option<any>>
 ) {
-	return some(pipe(
-		cache.value,
-		chain((entry) => read(schema.item, request.item, snoc(path, 'some'), uniqueNodes, deps, variables, entry))
-	))
+	return some(
+		pipe(
+			cache.value,
+			chain((entry) => read(schema.item, request.item, snoc(path, 'some'), uniqueNodes, deps, variables, entry))
+		)
+	)
 }
 
 function readMapNode(
