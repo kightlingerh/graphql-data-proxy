@@ -6,6 +6,6 @@ export function isEmptyString(x: any) {
 	return x === ''
 }
 
-export const isDev = !!process && process?.env?.NODE_ENV !== 'production'
+export const isDev = true
 
-export const disableValidation = !!process && process?.env?.DISABLE_VALIDATION !== undefined
+export const disableValidation = false
