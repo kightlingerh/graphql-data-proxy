@@ -233,15 +233,6 @@ export function sum<T extends string>(
 	return (members) => s(members) as any
 }
 
-export function union<MS extends readonly [Model<any, any, any>, ...Array<Model<any, any, any>>]>(
-	...members: MS
-): Model<D.InputOf<MS[keyof MS]>, EN.OutputOf<MS[keyof MS]>, TypeOf<MS[keyof MS]>> {
-	return {
-		is: G.union(...members).is,
-		encode: EN.un
-	}
-}
-
 export function fromTuple<MS extends ReadonlyArray<Model<any, any, any>>>(
 	...members: MS
 ): Model<
