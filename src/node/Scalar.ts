@@ -46,11 +46,6 @@ export interface DynamicScalarNodeConfig<Variables extends NodeVariables, IsLoca
 
 const SCALAR_TAG = 'Scalar'
 
-export function scalar<Name extends string, Input, Output, Data, IsLocal extends boolean = false>(
-	name: Name,
-	model: Model<Input, Output, Data>,
-	config?: StaticScalarNodeConfig<IsLocal>
-): ScalarNode<Name, Input, Output, Data, {}, IsLocal>
 export function scalar<
 	Name extends string,
 	Input,
@@ -58,11 +53,16 @@ export function scalar<
 	Data,
 	V extends NodeVariables,
 	IsLocal extends boolean = false
->(
+	>(
 	name: Name,
 	model: Model<Input, Output, Data>,
 	config: DynamicScalarNodeConfig<V, IsLocal>
 ): ScalarNode<Name, Input, Output, Data, V, IsLocal>
+export function scalar<Name extends string, Input, Output, Data, IsLocal extends boolean = false>(
+	name: Name,
+	model: Model<Input, Output, Data>,
+	config?: StaticScalarNodeConfig<IsLocal>
+): ScalarNode<Name, Input, Output, Data, {}, IsLocal>
 export function scalar<
 	Name extends string,
 	Input,

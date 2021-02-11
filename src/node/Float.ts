@@ -31,10 +31,11 @@ export interface DynamicFloatNodeConfig<Variables extends NodeVariables, IsLocal
 
 const FLOAT_TAG = 'Float'
 
-export function float<IsLocal extends boolean = false>(config?: StaticFloatNodeConfig<IsLocal>): FloatNode<{}, IsLocal>
 export function float<V extends NodeVariables, IsLocal extends boolean = false>(
 	config: DynamicFloatNodeConfig<V, IsLocal>
 ): FloatNode<V, IsLocal>
+
+export function float<IsLocal extends boolean = false>(config?: StaticFloatNodeConfig<IsLocal>): FloatNode<{}, IsLocal>
 export function float<V extends NodeVariables = {}, IsLocal extends boolean = false>(
 	config?: StaticFloatNodeConfig<IsLocal> | DynamicFloatNodeConfig<V, IsLocal>
 ): FloatNode<V, IsLocal> {

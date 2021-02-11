@@ -30,12 +30,12 @@ export interface DynamicBooleanNodeConfig<Variables extends NodeVariables, IsLoc
 
 const BOOLEAN_TAG = 'Boolean'
 
-export function boolean<IsLocal extends boolean = false>(
-	config?: StaticBooleanNodeConfig<IsLocal>
-): BooleanNode<{}, IsLocal>
 export function boolean<V extends NodeVariables, IsLocal extends boolean = false>(
 	config: DynamicBooleanNodeConfig<V, IsLocal>
 ): BooleanNode<V, IsLocal>
+export function boolean<IsLocal extends boolean = false>(
+	config?: StaticBooleanNodeConfig<IsLocal>
+): BooleanNode<{}, IsLocal>
 export function boolean<V extends NodeVariables = {}, IsLocal extends boolean = false>(
 	config?: StaticBooleanNodeConfig<IsLocal> | DynamicBooleanNodeConfig<V, IsLocal>
 ): BooleanNode<V, IsLocal> {

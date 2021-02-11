@@ -1,7 +1,8 @@
 module.exports = {
     preset: 'ts-jest',
     globals: {
-        __DEV__: true
+        __DEV__: true,
+        __DISABLE_VALIDATION__: false
     },
     testEnvironment: 'node',
     // collectCoverage: true,

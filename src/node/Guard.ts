@@ -2,11 +2,11 @@ import * as G from '../model/Guard';
 import { Node } from './Node';
 import { TypeOf, TypeOfPartial } from './shared';
 
-export function useStrictNodeGuard<N extends Node>(node: Node): G.Guard<unknown, TypeOf<N>> {
+export function useStrictNodeGuard<N extends Node>(node: N): G.Guard<unknown, TypeOf<N>> {
 	return useNodeGuard(node, true);
 }
 
-export function usePartialNodeEq<N extends Node>(node: Node): G.Guard<unknown, TypeOfPartial<N>> {
+export function usePartialNodeGuard<N extends Node>(node: N): G.Guard<unknown, TypeOfPartial<N>> {
 	return useNodeGuard(node, false);
 }
 

@@ -31,10 +31,10 @@ export interface DynamicIntNodeConfig<Variables extends NodeVariables, IsLocal e
 
 const INT_TAG = 'Int'
 
-export function int<IsLocal extends boolean = false>(config?: StaticIntNodeConfig<IsLocal>): IntNode<{}, IsLocal>
 export function int<V extends NodeVariables, IsLocal extends boolean = false>(
 	config: DynamicIntNodeConfig<V, IsLocal>
 ): IntNode<V, IsLocal>
+export function int<IsLocal extends boolean = false>(config?: StaticIntNodeConfig<IsLocal>): IntNode<{}, IsLocal>
 export function int<V extends NodeVariables = {}, IsLocal extends boolean = false>(
 	config?: StaticIntNodeConfig<IsLocal> | DynamicIntNodeConfig<V, IsLocal>
 ): IntNode<V, IsLocal> {

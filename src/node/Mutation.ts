@@ -52,19 +52,19 @@ export interface DynamicMutationNodeConfig<
 
 const MUTATION_TAG = 'Mutation'
 
-export function mutation<Result extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
-	result: Result,
-	config?: StaticMutationNodeConfig<IsLocal, IsEntity>
-): MutationNode<Result, {}, IsLocal, IsEntity>
 export function mutation<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(
+	>(
 	result: Item,
 	config: DynamicMutationNodeConfig<Variables, IsLocal, IsEntity>
 ): MutationNode<Item, Variables, IsLocal, IsEntity>
+export function mutation<Result extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
+	result: Result,
+	config?: StaticMutationNodeConfig<IsLocal, IsEntity>
+): MutationNode<Result, {}, IsLocal, IsEntity>
 export function mutation<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables = {},

@@ -45,7 +45,7 @@ export type TypeOf<T> = T extends { readonly __strictData?: infer A } ? Exclude<
 
 export type TypeOfStrictInput<T> = T extends { readonly __strictInput?: infer I } ? Exclude<I, undefined> : never
 
-export type TypeOfStrictOutput<T> = T extends { readonly __strictOutput: infer O } ? Exclude<O, undefined> : never
+export type TypeOfStrictOutput<T> = T extends { readonly __strictOutput?: infer O } ? Exclude<O, undefined> : never
 
 export type TypeOfPartial<T> = T extends { readonly __partialData?: infer A } ? Exclude<A, undefined> : never
 
@@ -53,8 +53,8 @@ export type TypeOfPartialInput<T> = T extends { readonly __partialInput?: infer 
 
 export type TypeOfPartialOutput<T> = T extends { readonly __partialOutput?: infer O } ? Exclude<O, undefined> : never
 
-export type ExtractVariablesDefinition<T> = T extends { readonly variables: Record<string, AnyBaseNode> }
-	? T['variables']
+export type ExtractVariablesDefinition<T> = T extends { readonly variables: infer V }
+	? V
 	: never
 
 type IsNonEmptyObject<T> = keyof T extends never ? true : false
@@ -67,6 +67,14 @@ export type CacheNode<T> = IsNonEmptyObject<ExtractVariablesDefinition<T>> exten
 
 export type ExtractNodeDefinitionType<T> = T extends Record<string, AnyBaseNode>
 	? { [K in keyof T]: TypeOf<T[K]> }
+	: never
+
+export type ExtractNodeDefinitionOutput<T> = T extends Record<string, AnyBaseNode>
+	? { [K in keyof T]: TypeOfStrictOutput<T[K]> }
+	: never
+
+export type ExtractNodeDefinitionInput<T> = T extends Record<string, AnyBaseNode>
+	? { [K in keyof T]: TypeOfStrictInput<T[K]> }
 	: never
 
 export type TypeOfVariables<T> = ExtractNodeDefinitionType<ExtractVariablesDefinition<T>>

@@ -6,6 +6,8 @@ import * as EN from 'io-ts/Encoder'
 import { Float, Int } from './Guard'
 export * from 'io-ts/Encoder'
 
+export const literal = EN.id
+
 export const string = EN.id<string>()
 
 export const boolean = EN.id<boolean>()
@@ -31,7 +33,7 @@ export const either = <OL, OR, L, R>(
 	encode: foldE<L, R, OL | OR>((l as EN.Encoder<OL | OR, L>).encode, (r as EN.Encoder<OL | OR, R>).encode)
 })
 
-export const map = <O, OK, OA, K, A>(fromPairs: (pairs: Array<[OK, OA]>) => O) => (
+export const map = <O, OK, OA, K = OK, A = OA>(fromPairs: (pairs: Array<[OK, OA]>) => O) => (
 	k: EN.Encoder<OK, K>,
 	a: EN.Encoder<OA, A>
 ): EN.Encoder<O, Map<K, A>> => ({

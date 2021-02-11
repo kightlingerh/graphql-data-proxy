@@ -134,6 +134,19 @@ export interface DynamicTypeNodeConfig<
 
 export const TYPE_TAG = 'Type'
 
+
+export function type<
+	Typename extends string,
+	MS extends Record<string, AnyBaseNode>,
+	Variables extends NodeVariables,
+	IsLocal extends boolean = false,
+	IncludeTypename extends boolean = false,
+	IsEntity extends boolean = false
+	>(
+	__typename: Typename,
+	ms: MS,
+	config: DynamicTypeNodeConfig<MS, Variables, IsLocal, IncludeTypename, IsEntity>
+): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>
 export function type<
 	Typename extends string,
 	MS extends Record<string, AnyBaseNode>,
@@ -145,18 +158,6 @@ export function type<
 	ms: MS,
 	config?: StaticTypeNodeConfig<MS, IsLocal, IncludeTypename, IsEntity>
 ): TypeNode<Typename, MS, {}, IsLocal, IncludeTypename, IsEntity>
-export function type<
-	Typename extends string,
-	MS extends Record<string, AnyBaseNode>,
-	Variables extends NodeVariables,
-	IsLocal extends boolean = false,
-	IncludeTypename extends boolean = false,
-	IsEntity extends boolean = false
->(
-	__typename: Typename,
-	ms: MS,
-	config: DynamicTypeNodeConfig<MS, Variables, IsLocal, IncludeTypename, IsEntity>
-): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>
 export function type<
 	Typename extends string,
 	MS extends Record<string, AnyBaseNode>,

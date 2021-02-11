@@ -8,8 +8,19 @@ import { Reader } from 'fp-ts/lib/Reader'
 import { TaskEither } from 'fp-ts/lib/TaskEither'
 import { Tree } from 'fp-ts/lib/Tree'
 import { computed, shallowReactive, shallowRef } from 'vue'
-import * as N from '../node'
+import {
+	Node,
+	TypeOf,
+	TypeOfMergedVariables,
+	TypeOfPartial,
+	SchemaNode,
+	TypeOfRefs,
+	Path,
+	TypeNode,
+	ArrayNode, NonEmptyArrayNode, OptionNode, MapNode, SumNode, TypeOfCacheEntry
+} from '../node';
 import { Ref } from '../node'
+import { useNodeMergedVariablesEncoder } from '../node/Variables';
 import { isEmptyObject } from '../shared'
 import { isPrimitiveNode, traverseMapWithKey } from './shared'
 import { validate } from './validate'
@@ -36,18 +47,18 @@ export interface CacheWriteResult extends IO<Evict> {}
 
 export interface Evict extends IO<void> {}
 
-export interface Cache<R extends N.SchemaNode<any, any>> {
-	read: Reader<N.TypeOfMergedVariables<R>, IO<Option<N.TypeOf<R>>>>
-	write: Reader<N.TypeOfMergedVariables<R>, Reader<N.TypeOfPartial<R>, CacheWriteResult>>
-	toEntries: Reader<N.TypeOfMergedVariables<R>, IO<N.TypeOfRefs<R>>>
+export interface Cache<R extends SchemaNode<any, any>> {
+	read: Reader<TypeOfMergedVariables<R>, IO<Option<TypeOf<R>>>>
+	write: Reader<TypeOfMergedVariables<R>, Reader<TypeOfPartial<R>, CacheWriteResult>>
+	toEntries: Reader<TypeOfMergedVariables<R>, IO<TypeOfRefs<R>>>
 }
 
 export function make(deps: CacheDependencies) {
-	return <S extends N.SchemaNode<any, any>>(schema: S) => {
+	return <S extends SchemaNode<any, any>>(schema: S) => {
 		const rootPath = of(deps.id ?? 'root')
 		const uniqueNodes = new Map<string, any>()
 		const cache: object = useTypeNodeCacheEntry(schema, rootPath, uniqueNodes, {})
-		return <R extends N.SchemaNode<any, any>>(request: R) => {
+		return <R extends SchemaNode<any, any>>(request: R) => {
 			const errors = validate(schema, request)
 			if (isNonEmpty(errors)) {
 				return left<CacheError, Cache<R>>(errors)
@@ -65,9 +76,9 @@ export function make(deps: CacheDependencies) {
 }
 
 function toEntries(
-	schema: N.Node,
-	request: N.Node,
-	path: N.Path,
+	schema: Node,
+	request: Node,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -81,12 +92,12 @@ function toEntries(
 	}
 	switch (request.tag) {
 		case 'Type':
-			return toEntriesTypeNode(schema as N.TypeNode<any, any>, request, path, uniqueNodes, deps, variables, cache)
+			return toEntriesTypeNode(schema as TypeNode<any, any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'Array':
-			return toEntriesArrayNode(schema as N.ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return toEntriesArrayNode(schema as ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'NonEmptyArray':
 			return toEntriesNonEmptyArrayNode(
-				schema as N.NonEmptyArrayNode<any>,
+				schema as NonEmptyArrayNode<any>,
 				request,
 				path,
 				uniqueNodes,
@@ -95,10 +106,10 @@ function toEntries(
 				cache
 			)
 		case 'Option':
-			return toEntriesOptionNode(schema as N.OptionNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return toEntriesOptionNode(schema as OptionNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'Map':
 			return toEntriesMapNode(
-				schema as N.MapNode<any, any, any, any, any, any>,
+				schema as MapNode<any, any, any, any, any, any>,
 				request,
 				path,
 				uniqueNodes,
@@ -107,16 +118,16 @@ function toEntries(
 				cache
 			)
 		case 'Sum':
-			return toEntriesSumNode(schema as N.SumNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return toEntriesSumNode(schema as SumNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		default:
 			return cache
 	}
 }
 
 function toEntriesTypeNode(
-	schema: N.TypeNode<any, any>,
-	request: N.TypeNode<any, any>,
-	path: N.Path,
+	schema: TypeNode<any, any>,
+	request: TypeNode<any, any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -139,9 +150,9 @@ function toEntriesTypeNode(
 }
 
 function toEntriesArrayNode(
-	schema: N.ArrayNode<any>,
-	request: N.ArrayNode<any>,
-	path: N.Path,
+	schema: ArrayNode<any>,
+	request: ArrayNode<any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -151,9 +162,9 @@ function toEntriesArrayNode(
 }
 
 function toEntriesNonEmptyArrayNode(
-	schema: N.NonEmptyArrayNode<any>,
-	request: N.NonEmptyArrayNode<any>,
-	path: N.Path,
+	schema: NonEmptyArrayNode<any>,
+	request: NonEmptyArrayNode<any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -165,7 +176,7 @@ function toEntriesNonEmptyArrayNode(
 				toEntries(
 					schema.item,
 					request.item,
-					path.concat(['some', index]) as N.Path,
+					path.concat(['some', index]) as Path,
 					uniqueNodes,
 					deps,
 					variables,
@@ -177,9 +188,9 @@ function toEntriesNonEmptyArrayNode(
 }
 
 function toEntriesOptionNode(
-	schema: N.OptionNode<any>,
-	request: N.OptionNode<any>,
-	path: N.Path,
+	schema: OptionNode<any>,
+	request: OptionNode<any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -193,9 +204,9 @@ function toEntriesOptionNode(
 }
 
 function toEntriesMapNode(
-	schema: N.MapNode<any, any, any, any, any, any>,
-	request: N.MapNode<any, any, any, any, any, any>,
-	path: N.Path,
+	schema: MapNode<any, any, any, any, any, any>,
+	request: MapNode<any, any, any, any, any, any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -207,9 +218,9 @@ function toEntriesMapNode(
 }
 
 function toEntriesSumNode(
-	schema: N.SumNode<any>,
-	request: N.SumNode<any>,
-	path: N.Path,
+	schema: SumNode<any>,
+	request: SumNode<any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -231,9 +242,9 @@ function toEntriesSumNode(
 }
 
 function read(
-	schema: N.Node,
-	request: N.Node,
-	path: N.Path,
+	schema: Node,
+	request: Node,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -244,12 +255,12 @@ function read(
 	}
 	switch (request.tag) {
 		case 'Type':
-			return readTypeNode(schema as N.TypeNode<any, any>, request, path, uniqueNodes, deps, variables, cache)
+			return readTypeNode(schema as TypeNode<any, any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'Array':
-			return readArrayNode(schema as N.ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return readArrayNode(schema as ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'NonEmptyArray':
 			return readNonEmptyArrayNode(
-				schema as N.NonEmptyArrayNode<any>,
+				schema as NonEmptyArrayNode<any>,
 				request,
 				path,
 				uniqueNodes,
@@ -258,10 +269,10 @@ function read(
 				cache
 			)
 		case 'Option':
-			return readOptionNode(schema as N.OptionNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return readOptionNode(schema as OptionNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'Map':
 			return readMapNode(
-				schema as N.MapNode<any, any, any, any, any, any>,
+				schema as MapNode<any, any, any, any, any, any>,
 				request,
 				path,
 				uniqueNodes,
@@ -270,7 +281,7 @@ function read(
 				cache
 			)
 		case 'Sum':
-			return readSumNode(schema as N.SumNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return readSumNode(schema as SumNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'Mutation':
 			return none
 		default:
@@ -279,9 +290,9 @@ function read(
 }
 
 function readTypeNode(
-	schema: N.TypeNode<any, any>,
-	request: N.TypeNode<any, any>,
-	path: N.Path,
+	schema: TypeNode<any, any>,
+	request: TypeNode<any, any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -308,9 +319,9 @@ function readTypeNode(
 }
 
 function readArrayNode(
-	schema: N.ArrayNode<any>,
-	request: N.ArrayNode<any>,
-	path: N.Path,
+	schema: ArrayNode<any>,
+	request: ArrayNode<any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -331,9 +342,9 @@ function readArrayNode(
 }
 
 function readNonEmptyArrayNode(
-	schema: N.NonEmptyArrayNode<any>,
-	request: N.NonEmptyArrayNode<any>,
-	path: N.Path,
+	schema: NonEmptyArrayNode<any>,
+	request: NonEmptyArrayNode<any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -355,9 +366,9 @@ function readNonEmptyArrayNode(
 }
 
 function readOptionNode(
-	schema: N.OptionNode<any>,
-	request: N.OptionNode<any>,
-	path: N.Path,
+	schema: OptionNode<any>,
+	request: OptionNode<any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -372,9 +383,9 @@ function readOptionNode(
 }
 
 function readMapNode(
-	schema: N.MapNode<any, any, any, any, any, any>,
-	request: N.MapNode<any, any, any, any, any, any>,
-	path: N.Path,
+	schema: MapNode<any, any, any, any, any, any>,
+	request: MapNode<any, any, any, any, any, any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -398,9 +409,9 @@ function readMapNode(
 }
 
 function readSumNode(
-	schema: N.SumNode<any>,
-	request: N.SumNode<any>,
-	path: N.Path,
+	schema: SumNode<any>,
+	request: SumNode<any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -421,9 +432,9 @@ function readSumNode(
 
 function write(
 	data: any,
-	schema: N.Node,
-	request: N.Node,
-	path: N.Path,
+	schema: Node,
+	request: Node,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -442,7 +453,7 @@ function write(
 		case 'Type':
 			return writeToTypeNode(
 				data,
-				schema as N.TypeNode<any, any>,
+				schema as TypeNode<any, any>,
 				request,
 				path,
 				uniqueNodes,
@@ -453,7 +464,7 @@ function write(
 		case 'Array':
 			return writeToArrayNode(
 				data,
-				schema as N.ArrayNode<any>,
+				schema as ArrayNode<any>,
 				request,
 				path,
 				uniqueNodes,
@@ -464,7 +475,7 @@ function write(
 		case 'NonEmptyArray':
 			return writeToNonEmptyArrayNode(
 				data,
-				schema as N.NonEmptyArrayNode<any>,
+				schema as NonEmptyArrayNode<any>,
 				request,
 				path,
 				uniqueNodes,
@@ -475,7 +486,7 @@ function write(
 		case 'Option':
 			return writeToOptionNode(
 				data,
-				schema as N.OptionNode<any>,
+				schema as OptionNode<any>,
 				request,
 				path,
 				uniqueNodes,
@@ -486,7 +497,7 @@ function write(
 		case 'Map':
 			return writeToMapNode(
 				data,
-				schema as N.MapNode<any, any, any, any, any, any>,
+				schema as MapNode<any, any, any, any, any, any>,
 				request,
 				path,
 				uniqueNodes,
@@ -495,7 +506,7 @@ function write(
 				cache
 			)
 		case 'Sum':
-			return writeToSumNode(data, schema as N.SumNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return writeToSumNode(data, schema as SumNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'Mutation':
 			return constVoid
 	}
@@ -515,9 +526,9 @@ function writeToEntity(data: any, cache: Ref<Option<any>>) {
 
 function writeToTypeNode(
 	data: any,
-	schema: N.TypeNode<any, any>,
-	request: N.TypeNode<any, any>,
-	path: N.Path,
+	schema: TypeNode<any, any>,
+	request: TypeNode<any, any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -544,9 +555,9 @@ function writeToTypeNode(
 
 function writeToArrayNode(
 	data: any[],
-	schema: N.ArrayNode<any>,
-	request: N.ArrayNode<any>,
-	path: N.Path,
+	schema: ArrayNode<any>,
+	request: ArrayNode<any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -587,9 +598,9 @@ function writeToArrayNode(
 
 function writeToNonEmptyArrayNode(
 	data: NonEmptyArray<any>,
-	schema: N.NonEmptyArrayNode<any>,
-	request: N.NonEmptyArrayNode<any>,
-	path: N.Path,
+	schema: NonEmptyArrayNode<any>,
+	request: NonEmptyArrayNode<any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -620,9 +631,9 @@ function writeToNonEmptyArrayNode(
 
 function writeToOptionNode(
 	data: Option<any>,
-	schema: N.OptionNode<any>,
-	request: N.OptionNode<any>,
-	path: N.Path,
+	schema: OptionNode<any>,
+	request: OptionNode<any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -666,9 +677,9 @@ function writeToOptionNode(
 
 function writeToMapNode(
 	data: Map<any, any>,
-	schema: N.MapNode<any, any, any, any, any, any>,
-	request: N.MapNode<any, any, any, any, any, any>,
-	path: N.Path,
+	schema: MapNode<any, any, any, any, any, any>,
+	request: MapNode<any, any, any, any, any, any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -728,9 +739,9 @@ function writeToMapNode(
 
 function writeToSumNode(
 	data: any,
-	schema: N.SumNode<any>,
-	request: N.SumNode<any, any>,
-	path: N.Path,
+	schema: SumNode<any>,
+	request: SumNode<any, any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
@@ -784,14 +795,14 @@ function writeToSumNode(
 
 function useMapNodeKeyCacheEntry(
 	key: string,
-	schema: N.MapNode<any, any, any, any, any, any>,
-	path: N.Path,
+	schema: MapNode<any, any, any, any, any, any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	variables: Record<string, unknown>,
 	entry: Map<any, any>,
 	data?: any
 ) {
-	const itemNode: N.Node = schema.item
+	const itemNode: Node = schema.item
 	if ((itemNode.tag === 'Map' || itemNode.tag === 'Type') && itemNode.__customCache !== undefined) {
 		// @ts-ignore
 		const id = itemNode.__customCache.toId(path, variables, data)
@@ -813,14 +824,14 @@ function useMapNodeKeyCacheEntry(
 
 function useTypeNodeMemberCacheEntry(
 	member: string,
-	schema: N.TypeNode<any, any>,
-	path: N.Path,
+	schema: TypeNode<any, any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	variables: Record<string, unknown>,
 	entry: any,
 	data?: any
 ) {
-	const memberNode: N.Node = schema.members[member]
+	const memberNode: Node = schema.members[member]
 	if ((memberNode.tag === 'Map' || memberNode.tag === 'Type') && memberNode.__customCache !== undefined) {
 		// @ts-ignore
 		const id = memberNode.__customCache.toId(path, variables, data)
@@ -846,8 +857,8 @@ function useTypeNodeMemberCacheEntry(
 
 function useCustomCache(
 	uniqueNodes: Map<string, any>,
-	member: N.Node,
-	path: N.Path,
+	member: Node,
+	path: Path,
 	id: string,
 	variables: Record<string, unknown>,
 	data?: any
@@ -863,15 +874,15 @@ function useCustomCache(
 }
 
 function useTypeNodeCacheEntry(
-	schema: N.TypeNode<any, any>,
-	path: N.Path,
+	schema: TypeNode<any, any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	variables: Record<string, unknown>,
 	data?: any
 ) {
 	const x: any = {}
 	for (const k in schema.members) {
-		const member: N.Node = schema.members[k]
+		const member: Node = schema.members[k]
 		const newPath = snoc(path, k)
 		if ((member.tag === 'Map' || member.tag === 'Type') && member.__customCache !== undefined) {
 			// @ts-ignore
@@ -891,8 +902,8 @@ function useTypeNodeCacheEntry(
 }
 
 function useMapNodeCacheEntry(
-	schema: N.MapNode<any, any, any, any, any, any>,
-	path: N.Path,
+	schema: MapNode<any, any, any, any, any, any>,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	variables: Record<string, unknown>,
 	data?: any
@@ -913,19 +924,19 @@ function useMapNodeCacheEntry(
 	return shallowReactive(new Map())
 }
 
-const ENCODERS = new WeakMap<N.Node, any>()
+const ENCODERS = new WeakMap<Node, any>()
 
-function useEncoder(node: N.Node) {
+function useEncoder(node: Node) {
 	let encoder = ENCODERS.get(node)
 	if (encoder) {
 		return encoder
 	}
-	encoder = N.useMergedVariablesModel(node)
+	encoder = useNodeMergedVariablesEncoder(node)
 	ENCODERS.set(node, encoder)
 	return encoder
 }
 
-function encode(node: N.Node, data: any): string {
+function encode(node: Node, data: any): string {
 	try {
 		return JSON.stringify(useEncoder(node).encode(data))
 	} catch {
@@ -933,26 +944,26 @@ function encode(node: N.Node, data: any): string {
 	}
 }
 
-function useCacheEntry<T extends N.Node>(
+function useCacheEntry<T extends Node>(
 	node: T,
-	path: N.Path,
+	path: Path,
 	uniqueNodes: Map<string, any>,
 	variables: Record<string, unknown>,
 	data?: any
-): N.TypeOfCacheEntry<T> {
+): TypeOfCacheEntry<T> {
 	if (isPrimitiveNode(node) || !!node.__isEntity) {
-		return shallowRef<Option<N.TypeOf<T>>>(none) as N.TypeOfCacheEntry<T>
+		return shallowRef<Option<TypeOf<T>>>(none) as TypeOfCacheEntry<T>
 	}
 	switch (node.tag) {
 		case 'Type':
-			return useTypeNodeCacheEntry(node as any, path, uniqueNodes, variables, data) as N.TypeOfCacheEntry<T>
+			return useTypeNodeCacheEntry(node as any, path, uniqueNodes, variables, data) as TypeOfCacheEntry<T>
 		case 'Array':
-			return shallowReactive([]) as N.TypeOfCacheEntry<T>
+			return shallowReactive([]) as TypeOfCacheEntry<T>
 		case 'Map':
 			return useMapNodeCacheEntry(node as any, path, uniqueNodes, variables, data)
 		case 'Mutation':
-			return useCacheEntry((node as any).result, path, uniqueNodes, variables, data) as N.TypeOfCacheEntry<T>
+			return useCacheEntry((node as any).result, path, uniqueNodes, variables, data) as TypeOfCacheEntry<T>
 		default:
-			return shallowRef<Option<N.TypeOf<T>>>(none) as N.TypeOfCacheEntry<T>
+			return shallowRef<Option<TypeOf<T>>>(none) as TypeOfCacheEntry<T>
 	}
 }

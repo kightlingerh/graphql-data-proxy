@@ -57,18 +57,18 @@ const NON_EMPTY_ARRAY_TAG = 'NonEmptyArray'
 
 export function nonEmptyArray<
 	Item extends AnyBaseNode,
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(item: Item, config?: StaticNonEmptyArrayNodeConfig<IsLocal, IsEntity>): NonEmptyArrayNode<Item, {}, IsLocal, IsEntity>
-export function nonEmptyArray<
-	Item extends AnyBaseNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(
+	>(
 	item: Item,
 	config: DynamicNonEmptyArrayNodeConfig<Variables, IsLocal, IsEntity>
 ): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity>
+export function nonEmptyArray<
+	Item extends AnyBaseNode,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(item: Item, config?: StaticNonEmptyArrayNodeConfig<IsLocal, IsEntity>): NonEmptyArrayNode<Item, {}, IsLocal, IsEntity>
 export function nonEmptyArray<
 	Item extends AnyBaseNode,
 	Variables extends NodeVariables = {},

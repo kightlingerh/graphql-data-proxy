@@ -1,6 +1,10 @@
 export * from './Array'
 export * from './Boolean'
+export * from './Decoder';
+export * from './Encoder';
+export * from './Eq';
 export * from './Float'
+export * from './Guard';
 export * from './Int'
 export * from './Map'
 export * from './Mutation'
@@ -15,5 +19,4 @@ export * from './show'
 export * from './String'
 export * from './Sum'
 export * from './Type'
-export { useNodeMergedVariables } from './Variables';
-export { mergeVariables } from './Variables';
+export * from './Variables'

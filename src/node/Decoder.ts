@@ -2,11 +2,11 @@ import * as D from '../model/Decoder';
 import { Node } from './Node';
 import { TypeOf, TypeOfPartial, TypeOfPartialInput, TypeOfStrictInput } from './shared';
 
-export function useStrictNodeDecoder<N extends Node>(node: Node): D.Decoder<TypeOfStrictInput<N>, TypeOf<N>> {
+export function useStrictNodeDecoder<N extends Node>(node: N): D.Decoder<TypeOfStrictInput<N>, TypeOf<N>> {
 	return useNodeDecoder(node, true);
 }
 
-export function usePartialNodeDecoder<N extends Node>(node: Node): D.Decoder<TypeOfPartialInput<N>, TypeOfPartial<N>> {
+export function usePartialNodeDecoder<N extends Node>(node: N): D.Decoder<TypeOfPartialInput<N>, TypeOfPartial<N>> {
 	return useNodeDecoder(node, false);
 }
 

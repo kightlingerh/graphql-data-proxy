@@ -119,16 +119,16 @@ function addTypenameToMembers<MS extends ReadonlyArray<SumTypeNode>>(members: MS
 
 export function sum<
 	MS extends ReadonlyArray<SumTypeNode>,
+	Variables extends NodeVariables,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+	>(ms: MS, config: DynamicSumNodeConfig<Variables, IsLocal, IsEntity>): SumNode<MS, Variables, IsLocal, IsEntity>
+export function sum<
+	MS extends ReadonlyArray<SumTypeNode>,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >(ms: MS, config?: StaticSumNodeConfig<IsLocal, IsEntity>): SumNode<MS, {}, IsLocal, IsEntity>
 
-export function sum<
-	MS extends ReadonlyArray<SumTypeNode>,
-	Variables extends NodeVariables,
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(ms: MS, config: DynamicSumNodeConfig<Variables, IsLocal, IsEntity>): SumNode<MS, Variables, IsLocal, IsEntity>
 export function sum<
 	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables = {},

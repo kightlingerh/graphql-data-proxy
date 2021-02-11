@@ -2,11 +2,11 @@ import * as EQ from '../model/Eq';
 import { Node } from './Node';
 import { TypeOf, TypeOfPartial } from './shared';
 
-export function useStrictNodeEq<N extends Node>(node: Node): EQ.Eq<TypeOf<N>> {
+export function useStrictNodeEq<N extends Node>(node: N): EQ.Eq<TypeOf<N>> {
 	return useNodeEq(node, true);
 }
 
-export function usePartialNodeEq<N extends Node>(node: Node): EQ.Eq<TypeOfPartial<N>> {
+export function usePartialNodeEq<N extends Node>(node: N): EQ.Eq<TypeOfPartial<N>> {
 	return useNodeEq(node, false);
 }
 

@@ -30,12 +30,12 @@ export interface StaticStringNodeConfig<IsLocal extends boolean> extends StaticN
 export interface DynamicStringNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
 	extends DynamicNodeConfig<Variables, IsLocal> {}
 
-export function string<IsLocal extends boolean = false>(
-	config?: StaticStringNodeConfig<IsLocal>
-): StringNode<{}, IsLocal>
 export function string<V extends NodeVariables, IsLocal extends boolean = false>(
 	config: DynamicStringNodeConfig<V, IsLocal>
 ): StringNode<V, IsLocal>
+export function string<IsLocal extends boolean = false>(
+	config?: StaticStringNodeConfig<IsLocal>
+): StringNode<{}, IsLocal>
 export function string<V extends NodeVariables = {}, IsLocal extends boolean = false>(
 	config?: StaticStringNodeConfig<IsLocal> | DynamicStringNodeConfig<V, IsLocal>
 ): StringNode<V, IsLocal> {

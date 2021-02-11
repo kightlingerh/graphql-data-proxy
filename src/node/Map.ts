@@ -86,13 +86,14 @@ export function map<
 	PartialOutput,
 	Key extends AnyBaseNode,
 	Item extends AnyBaseNode,
+	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(
+	>(
 	key: Key,
 	item: Item,
-	config?: StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
-): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, {}, IsLocal, IsEntity>
+	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
+): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, Variables, IsLocal, IsEntity>
 export function map<
 	StrictInput,
 	StrictOutput,
@@ -100,14 +101,13 @@ export function map<
 	PartialOutput,
 	Key extends AnyBaseNode,
 	Item extends AnyBaseNode,
-	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >(
 	key: Key,
 	item: Item,
-	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
-): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, Variables, IsLocal, IsEntity>
+	config?: StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
+): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, {}, IsLocal, IsEntity>
 export function map<
 	StrictInput,
 	StrictOutput,
