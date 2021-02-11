@@ -1,4 +1,3 @@
-import { fromMap } from '../model'
 import {
 	BaseNode,
 	DynamicNodeConfig,
@@ -11,7 +10,6 @@ import {
 	StaticNodeConfig,
 	TypeOf,
 	TypeOfPartial,
-	HAS_TRANSFORMATIONS,
 	TypeOfCacheEntry,
 	ModifyIfEntity,
 	TypeOfRefs,
@@ -131,11 +129,10 @@ export function map<
 		tag: MAP_TAG,
 		item,
 		key,
-		strict: fromMap(key.strict as any, item.strict) as any,
-		partial: fromMap(key.partial as any, item.partial) as any,
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		name: config?.name,
-		__hasTransformations: HAS_TRANSFORMATIONS,
+		__hasDecodingTransformations: true,
+		__hasEncodingTransformations: true,
 		__customCache: config?.useCustomCache,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal

@@ -1,9 +1,10 @@
 import { isEmptyObject, isEmptyString } from '../shared/index'
-import { Node, useMergedVariables } from './Node'
+import { Node} from './Node'
 import { OptionNode } from './Option'
 import { SchemaNode } from './Schema'
 import { NodeVariables } from './shared'
 import { TypeNode } from './Type'
+import { useNodeMergedVariables } from './Variables';
 
 const OPEN_BRACKET = '{'
 const CLOSE_BRACKET = '}'
@@ -133,7 +134,7 @@ export function print<N extends string, T extends { [K in keyof T]: Node }>(
 	operationName: string
 ): string {
 	const tokens = [operation, OPEN_SPACE, operationName]
-	const mergedVariables = useMergedVariables(schema)
+	const mergedVariables = useNodeMergedVariables(schema)
 	if (!isEmptyObject(mergedVariables)) {
 		tokens.push(printVariables(mergedVariables, true))
 	}

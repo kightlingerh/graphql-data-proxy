@@ -1,15 +1,12 @@
 import { Option } from 'fp-ts/lib/Option'
-import { string as stringModel } from '../model/Model'
 import {
 	BaseNode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ModifyOutputIfLocal,
-	NO_TRANSFORMATIONS,
 	NodeVariables,
 	Ref,
-	StaticNodeConfig,
-	useLocalModel
+	StaticNodeConfig
 } from './shared'
 
 const STRING_TAG = 'String'
@@ -42,15 +39,13 @@ export function string<V extends NodeVariables, IsLocal extends boolean = false>
 export function string<V extends NodeVariables = {}, IsLocal extends boolean = false>(
 	config?: StaticStringNodeConfig<IsLocal> | DynamicStringNodeConfig<V, IsLocal>
 ): StringNode<V, IsLocal> {
-	const model = config?.isLocal ? useLocalModel(stringModel) : (stringModel as any)
 	return {
 		tag: STRING_TAG,
-		strict: model,
-		partial: model,
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: NO_TRANSFORMATIONS,
+		__hasDecodingTransformations: false,
+		__hasEncodingTransformations: false,
 		__isLocal: config?.isLocal
 	}
 }
 
-export const staticString = string()
+export const staticString = /*#__PURE__*/ string()

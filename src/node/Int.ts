@@ -1,16 +1,13 @@
 import { Option } from 'fp-ts/lib/Option'
 import { Int } from '../model/Guard'
-import { int as intModel } from '../model/Model'
 import {
 	BaseNode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ModifyOutputIfLocal,
-	NO_TRANSFORMATIONS,
 	NodeVariables,
 	Ref,
-	StaticNodeConfig,
-	useLocalModel
+	StaticNodeConfig
 } from './shared'
 
 export interface IntNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false>
@@ -41,15 +38,13 @@ export function int<V extends NodeVariables, IsLocal extends boolean = false>(
 export function int<V extends NodeVariables = {}, IsLocal extends boolean = false>(
 	config?: StaticIntNodeConfig<IsLocal> | DynamicIntNodeConfig<V, IsLocal>
 ): IntNode<V, IsLocal> {
-	const model = config?.isLocal ? useLocalModel(intModel) : (intModel as any)
 	return {
 		tag: INT_TAG,
-		strict: model,
-		partial: model,
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: NO_TRANSFORMATIONS,
+		__hasEncodingTransformations: false,
+		__hasDecodingTransformations: false,
 		__isLocal: config?.isLocal
 	}
 }
 
-export const staticInt = int()
+export const staticInt = /*#__PURE__*/ int()

@@ -4,7 +4,6 @@ import {
 	EMPTY_VARIABLES,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	useAdjustedModel,
 	ModifyOutputIfLocal,
 	AnyBaseNode,
 	NodeVariables,
@@ -78,20 +77,9 @@ export function mutation<
 	return {
 		tag: MUTATION_TAG,
 		result,
-		strict: useAdjustedModel(
-			result.strict,
-			!!config?.isLocal,
-			result.__hasTransformations.encoding,
-			result.__hasTransformations.decoding
-		),
-		partial: useAdjustedModel(
-			result.partial,
-			!!config?.isLocal,
-			result.__hasTransformations.encoding,
-			result.__hasTransformations.decoding
-		),
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: result.__hasTransformations,
+		__hasEncodingTransformations: result.__hasEncodingTransformations,
+		__hasDecodingTransformations: result.__hasDecodingTransformations,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}

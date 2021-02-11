@@ -15,3 +15,5 @@ export * from './show'
 export * from './String'
 export * from './Sum'
 export * from './Type'
+export { useNodeMergedVariables } from './Variables';
+export { mergeVariables } from './Variables';

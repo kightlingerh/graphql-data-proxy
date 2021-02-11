@@ -1,12 +1,10 @@
 import { Option } from 'fp-ts/lib/Option'
-import { fromSum, Model } from '../model/Model'
 import {
 	BaseNode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	useAdjustedModel,
 	hasDecodingTransformations,
 	hasEncodingTransformations,
 	Intersection,
@@ -100,35 +98,12 @@ export interface DynamicSumNodeConfig<
 
 const SUM_TAG = 'Sum'
 
-function useSumMemberModelRecord(members: ReadonlyArray<SumTypeNode>, isStrict: boolean) {
-	const x: any = {}
-	members.forEach((member) => {
-		x[member.__typename] = isStrict ? member.strict : member.partial
-	})
-	return x
-}
-
 function useSumMemberRecord(members: ReadonlyArray<SumTypeNode>) {
 	const x: any = {}
 	members.forEach((member) => {
 		x[member.__typename] = member
 	})
 	return x
-}
-
-function useSumMemberModel(
-	isStrict: boolean,
-	members: ReadonlyArray<SumTypeNode>,
-	isLocal: boolean,
-	useIdEncoder: boolean,
-	useIdDecoder: boolean
-): Model<any, any, any> {
-	return useAdjustedModel(
-		fromSum('__typename')(useSumMemberModelRecord(members, isStrict)),
-		isLocal,
-		useIdEncoder,
-		useIdDecoder
-	)
 }
 
 function addTypenameToMembers<MS extends ReadonlyArray<SumTypeNode>>(members: MS) {
@@ -162,19 +137,13 @@ export function sum<
 >(ms: MS, config?: StaticSumNodeConfig<IsLocal, IsEntity> | DynamicSumNodeConfig<Variables, IsLocal, IsEntity>): any {
 	const newMembers = addTypenameToMembers(ms)
 	const membersRecord = useSumMemberRecord(newMembers)
-	const useIdDecoder = !hasDecodingTransformations(membersRecord)
-	const useIdEncoder = !hasEncodingTransformations(membersRecord)
 	return {
 		tag: SUM_TAG,
 		members: newMembers,
 		membersRecord,
-		strict: useSumMemberModel(true, newMembers, !!config?.isLocal, useIdEncoder, useIdDecoder),
-		partial: useSumMemberModel(false, newMembers, !!config?.isLocal, useIdEncoder, useIdDecoder),
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: {
-			encoding: !useIdEncoder,
-			decoding: !useIdDecoder
-		},
+		__hasDecodingTransformations: hasDecodingTransformations(membersRecord),
+		__hasEncodingTransformations: hasEncodingTransformations(membersRecord),
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}

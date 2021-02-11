@@ -1,16 +1,13 @@
 import { Option } from 'fp-ts/lib/Option'
 import { Float } from '../model/Guard'
-import { float as floatModel } from '../model/Model'
 import {
 	BaseNode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ModifyOutputIfLocal,
-	NO_TRANSFORMATIONS,
 	NodeVariables,
 	Ref,
-	StaticNodeConfig,
-	useLocalModel
+	StaticNodeConfig
 } from './shared'
 
 export interface FloatNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false>
@@ -41,15 +38,13 @@ export function float<V extends NodeVariables, IsLocal extends boolean = false>(
 export function float<V extends NodeVariables = {}, IsLocal extends boolean = false>(
 	config?: StaticFloatNodeConfig<IsLocal> | DynamicFloatNodeConfig<V, IsLocal>
 ): FloatNode<V, IsLocal> {
-	const model = config?.isLocal ? useLocalModel(floatModel) : (floatModel as any)
 	return {
 		tag: FLOAT_TAG,
-		strict: model,
-		partial: model,
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: NO_TRANSFORMATIONS,
+		__hasDecodingTransformations: false,
+		__hasEncodingTransformations: false,
 		__isLocal: config?.isLocal
 	}
 }
 
-export const staticFloat = float()
+export const staticFloat = /*#__PURE__*/ float()

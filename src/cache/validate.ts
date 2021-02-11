@@ -114,7 +114,7 @@ function validateScalarNode<
 	if (x.name !== y.name) {
 		errors.push(make(`scalar nodes are not the same, schema has ${x.name}, while request has ${y.name}`))
 	}
-	if (x.strict !== y.strict) {
+	if (x.encode !== y.encode) {
 		errors.push(make(`Scalar Node: ${x.name} in the schema has a different model than Scalar Node:${y.name}`))
 	}
 	return errors

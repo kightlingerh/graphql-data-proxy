@@ -1,12 +1,10 @@
 import { Option } from 'fp-ts/lib/Option'
-import { fromOption as fromOptionModel } from '../model/Model'
 import {
 	BaseNode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	useAdjustedModel,
 	ModifyOutputIfLocal,
 	AnyBaseNode,
 	NodeVariables,
@@ -17,7 +15,6 @@ import {
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
-	HAS_TRANSFORMATIONS,
 	TypeOfCacheEntry,
 	Ref,
 	ModifyIfEntity,
@@ -57,10 +54,6 @@ export interface DynamicOptionNodeConfig<
 
 const OPTION_TAG = 'Option'
 
-function useOptionModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
-	return useAdjustedModel(fromOptionModel(isStrict ? item.strict : item.partial), isLocal, false, false)
-}
-
 export function option<Item extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
 	item: Item,
 	config?: StaticOptionNodeConfig<IsLocal, IsEntity>
@@ -83,10 +76,9 @@ export function option<
 	return {
 		tag: OPTION_TAG,
 		item,
-		strict: useOptionModel(item, !!config?.isLocal, true),
-		partial: useOptionModel(item, !!config?.isLocal, false),
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: HAS_TRANSFORMATIONS,
+		__hasDecodingTransformations: true,
+		__hasEncodingTransformations: true,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}

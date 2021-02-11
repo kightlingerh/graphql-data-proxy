@@ -28,7 +28,7 @@ export interface ScalarNode<
 		Data,
 		Ref<Option<Data>>,
 		Variables
-	> {
+	>, Model<Input, Output, Data> {
 	readonly tag: 'Scalar'
 	readonly name: Name
 }
@@ -77,15 +77,12 @@ export function scalar<
 ): ScalarNode<Name, Input, Output, Data, V, IsLocal> {
 	const m = config?.isLocal ? useLocalModel(model) : (model as any)
 	return {
+		...m,
 		tag: SCALAR_TAG,
 		name,
-		strict: m,
-		partial: m,
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: {
-			encoding: config?.hasEncodingTransformations ?? true,
-			decoding: config?.hasDecodingTransformations ?? true
-		},
+		__hasEncodingTransformations: config?.hasEncodingTransformations ?? true,
+		__hasDecodingTransformations: config?.hasDecodingTransformations ?? true,
 		__isLocal: config?.isLocal
 	}
 }

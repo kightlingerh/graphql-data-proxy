@@ -1,11 +1,9 @@
-import { fromArray } from '../model'
 import {
 	BaseNode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	useAdjustedModel,
 	ModifyOutputIfLocal,
 	AnyBaseNode,
 	NodeVariables,
@@ -54,15 +52,6 @@ export interface DynamicArrayNodeConfig<
 
 const ARRAY_TAG = 'Array'
 
-function useArrayModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
-	return useAdjustedModel(
-		fromArray(isStrict ? item.strict : item.partial),
-		isLocal,
-		!item.__hasTransformations.encoding,
-		!item.__hasTransformations.decoding
-	)
-}
-
 export function array<Item extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
 	item: Item,
 	config?: StaticArrayNodeConfig<IsLocal, IsEntity>
@@ -88,10 +77,9 @@ export function array<
 	return {
 		tag: ARRAY_TAG,
 		item,
-		strict: useArrayModel(item, !!config?.isLocal, true),
-		partial: useArrayModel(item, !!config?.isLocal, false),
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: item.__hasTransformations,
+		__hasDecodingTransformations: item.__hasDecodingTransformations,
+		__hasEncodingTransformations: item.__hasEncodingTransformations,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}

@@ -1,13 +1,11 @@
 import { Option } from 'fp-ts/lib/Option'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
-import * as M from '../model/Model'
 import {
 	BaseNode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	useAdjustedModel,
 	ModifyOutputIfLocal,
 	AnyBaseNode,
 	NodeVariables,
@@ -18,7 +16,6 @@ import {
 	TypeOfPartialOutput,
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
-	HAS_TRANSFORMATIONS,
 	Ref,
 	TypeOfCacheEntry,
 	ModifyIfEntity,
@@ -58,10 +55,6 @@ export interface DynamicNonEmptyArrayNodeConfig<
 
 const NON_EMPTY_ARRAY_TAG = 'NonEmptyArray'
 
-function getNonEmptyArrayModel<Item extends AnyBaseNode>(item: Item, isLocal: boolean, isStrict: boolean) {
-	return useAdjustedModel(M.fromNonEmptyArray(isStrict ? item.strict : item.partial), isLocal, false, false)
-}
-
 export function nonEmptyArray<
 	Item extends AnyBaseNode,
 	IsLocal extends boolean = false,
@@ -90,10 +83,9 @@ export function nonEmptyArray<
 	return {
 		tag: NON_EMPTY_ARRAY_TAG,
 		item,
-		strict: getNonEmptyArrayModel(item, !!config?.isLocal, true),
-		partial: getNonEmptyArrayModel(item, !!config?.isLocal, false),
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: HAS_TRANSFORMATIONS,
+		__hasEncodingTransformations: true,
+		__hasDecodingTransformations: true,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}

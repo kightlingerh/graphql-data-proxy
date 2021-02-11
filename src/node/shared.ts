@@ -21,15 +21,19 @@ export interface BaseNode<
 	Refs = CacheEntry
 > {
 	readonly tag: string
-	readonly strict: M.Model<StrictInput, StrictOutput, StrictData>
-	readonly partial: M.Model<PartialInput, PartialOutput, PartialData>
+	// readonly strict: M.Model<StrictInput, StrictOutput, StrictData>
+	// readonly partial: M.Model<PartialInput, PartialOutput, PartialData>
 	readonly variables: Variables
 
 	// for internal use
-	readonly __hasTransformations: {
-		readonly decoding: boolean
-		readonly encoding: boolean
-	}
+	readonly __hasDecodingTransformations: boolean
+	readonly __hasEncodingTransformations: boolean
+	readonly __strictInput?: StrictInput;
+	readonly __strictOutput?: StrictOutput;
+	readonly __strictData?: StrictData;
+	readonly __partialInput?: PartialInput;
+	readonly __partialOutput?: PartialOutput;
+	readonly __partialData?: PartialData;
 	readonly __refs?: Refs
 	readonly __subVariables?: SubVariables
 	readonly __isLocal?: boolean
@@ -37,17 +41,17 @@ export interface BaseNode<
 	readonly __cacheEntry?: CacheEntry
 }
 
-export type TypeOf<T> = T extends { readonly strict: M.Model<any, any, infer A> } ? A : never
+export type TypeOf<T> = T extends { readonly __strictData?: infer A } ? Exclude<A, undefined> : never
 
-export type TypeOfStrictInput<T> = T extends { readonly strict: M.Model<infer I, any, any> } ? I : never
+export type TypeOfStrictInput<T> = T extends { readonly __strictInput?: infer I } ? Exclude<I, undefined> : never
 
-export type TypeOfStrictOutput<T> = T extends { readonly strict: M.Model<any, infer O, any> } ? O : never
+export type TypeOfStrictOutput<T> = T extends { readonly __strictOutput: infer O } ? Exclude<O, undefined> : never
 
-export type TypeOfPartial<T> = T extends { readonly partial: M.Model<any, any, infer A> } ? A : never
+export type TypeOfPartial<T> = T extends { readonly __partialData?: infer A } ? Exclude<A, undefined> : never
 
-export type TypeOfPartialInput<T> = T extends { readonly partial: M.Model<infer I, any, any> } ? I : never
+export type TypeOfPartialInput<T> = T extends { readonly __partialInput?: infer I } ? Exclude<I, undefined> : never
 
-export type TypeOfPartialOutput<T> = T extends { readonly partial: M.Model<any, infer O, any> } ? O : never
+export type TypeOfPartialOutput<T> = T extends { readonly __partialOutput?: infer O } ? Exclude<O, undefined> : never
 
 export type ExtractVariablesDefinition<T> = T extends { readonly variables: Record<string, AnyBaseNode> }
 	? T['variables']
@@ -85,6 +89,10 @@ export type ModifyOutputIfLocal<IsLocal, Output> = IsLocal extends true ? undefi
 
 export type ModifyIfEntity<IsEntity, Data, CacheEntry> = IsEntity extends true ? Ref<Option<Data>> : CacheEntry
 
+export type Values<T> = T[keyof T]
+
+export type Intersection<T> = (T extends unknown ? (x: T) => 0 : never) extends (x: infer R) => 0 ? R : never
+
 export interface StaticNodeConfig<IsLocal extends boolean = false, IsEntity extends boolean = false> {
 	readonly variables?: Record<string, AnyBaseNode>
 	readonly isLocal?: IsLocal
@@ -113,38 +121,6 @@ export interface CustomCache<PartialData, Variables> {
 
 export const EMPTY_VARIABLES: any = {}
 
-export const EMPTY_VARIABLES_MODEL = M.type({})
-
-export function extractStrictModels<MS extends Record<string, AnyBaseNode>>(
-	members: MS
-): { [K in keyof MS]: MS[K]['strict'] } {
-	const x: any = Object.create(null)
-	for (const key in members) {
-		x[key as keyof MS] = members[key as keyof MS].strict
-	}
-	return x
-}
-
-export function extractPartialModels<MS extends Record<string, AnyBaseNode>>(
-	members: MS
-): { [K in keyof MS]: MS[K]['partial'] } {
-	const x: any = Object.create(null)
-	for (const key in members) {
-		x[key as keyof MS] = members[key as keyof MS].partial
-	}
-	return x
-}
-
-export const NO_TRANSFORMATIONS = {
-	decoding: false,
-	encoding: false
-}
-
-export const HAS_TRANSFORMATIONS = {
-	decoding: true,
-	encoding: true
-}
-
 export function useLocalModel<I, O, A>(model: M.Model<I, O, A>): M.Model<I, undefined, A> {
 	return {
 		...model,
@@ -152,9 +128,6 @@ export function useLocalModel<I, O, A>(model: M.Model<I, O, A>): M.Model<I, unde
 	}
 }
 
-export type Values<T> = T[keyof T]
-
-export type Intersection<T> = (T extends unknown ? (x: T) => 0 : never) extends (x: infer R) => 0 ? R : never
 
 export function useAdjustedModel(
 	model: M.Model<any, any, any>,
@@ -182,7 +155,7 @@ export function useAdjustedModel(
 
 export function hasEncodingTransformations(ms: Record<string, AnyBaseNode>): boolean {
 	for (const k in ms) {
-		if (ms[k]?.__hasTransformations?.encoding) {
+		if (ms[k]?.__hasEncodingTransformations) {
 			return true
 		}
 	}
@@ -191,7 +164,7 @@ export function hasEncodingTransformations(ms: Record<string, AnyBaseNode>): boo
 
 export function hasDecodingTransformations(ms: Record<string, AnyBaseNode>): boolean {
 	for (const k in ms) {
-		if (ms[k]?.__hasTransformations?.decoding) {
+		if (ms[k]?.__hasDecodingTransformations) {
 			return true
 		}
 	}

@@ -1,15 +1,12 @@
-import { literal, Model, fromType, fromPartial, eqById as eqByIdModel, useEncoder } from '../model/Model'
+import { literal } from '../model/Model'
 import { scalar, ScalarNode } from './Scalar'
 import {
 	BaseNode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
-	extractPartialModels,
-	extractStrictModels,
 	ExtractNodeDefinitionType,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	useAdjustedModel,
 	hasDecodingTransformations,
 	hasEncodingTransformations,
 	Intersection,
@@ -137,21 +134,6 @@ export interface DynamicTypeNodeConfig<
 
 export const TYPE_TAG = 'Type'
 
-function useTypeMemberModel(
-	strict: boolean,
-	members: Record<string, AnyBaseNode>,
-	isLocal: boolean,
-	useIdEncoder: boolean,
-	useIdDecoder: boolean
-): Model<any, any, any> {
-	return useAdjustedModel(
-		strict ? fromType(extractStrictModels(members)) : fromPartial(extractPartialModels(members)),
-		isLocal,
-		useIdEncoder,
-		useIdDecoder
-	)
-}
-
 export function type<
 	Typename extends string,
 	MS extends Record<string, AnyBaseNode>,
@@ -190,19 +172,13 @@ export function type<
 		| DynamicTypeNodeConfig<MS, Variables, IsLocal, IncludeTypename, IsEntity>
 ): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity> {
 	const members = config?.includeTypename ? { ...ms, __typename: scalar(__typename, literal(__typename)) } : ms
-	const useIdDecoder = !hasDecodingTransformations(ms)
-	const useIdEncoder = !hasEncodingTransformations(ms)
 	return {
 		tag: TYPE_TAG,
 		__typename,
 		members,
-		strict: useTypeMemberModel(true, members, !!config?.isLocal, useIdEncoder, useIdDecoder),
-		partial: useTypeMemberModel(false, members, !!config?.isLocal, useIdEncoder, useIdDecoder),
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasTransformations: {
-			encoding: !useIdEncoder,
-			decoding: !useIdDecoder
-		},
+		__hasEncodingTransformations: hasEncodingTransformations(members),
+		__hasDecodingTransformations: hasDecodingTransformations(members),
 		__customCache: config?.useCustomCache,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
@@ -231,34 +207,6 @@ export function omitFromType<T extends TypeNode<any, any, any, any, any>, P exte
 		}
 	}
 	return type(node.__typename, n, node.variables) as any
-}
-
-export function eqById<T extends TypeNode<any, Record<'id', AnyBaseNode>, any, any, any>>(node: T): T {
-	return {
-		...node,
-		strict: eqByIdModel(node.strict as any)
-	}
-}
-
-export function encodeById<
-	Typename extends string,
-	MS extends {
-		id: AnyBaseNode
-		[K: string]: AnyBaseNode
-	},
-	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false,
-	IncludeTypename extends boolean = false,
-	IsEntity extends boolean = false
->(
-	node: TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>
-): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity> {
-	return {
-		...node,
-		strict: useEncoder(node.strict as any)({
-			encode: (a) => node.members.id.strict.encode((a as any).id)
-		})
-	}
 }
 
 export function markTypeAsEntity<T extends BaseTypeNode<any, any, any, any, any>>(
