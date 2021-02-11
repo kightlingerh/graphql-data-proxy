@@ -43,7 +43,7 @@ export interface MapNode<
 	readonly tag: 'Map'
 	readonly key: Key
 	readonly item: Item
-	readonly name?: string
+	readonly __typename: string
 	readonly __customCache?: CustomCache<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>
@@ -56,7 +56,6 @@ export interface StaticMapNodeConfig<
 	IsLocal extends boolean,
 	IsEntity extends boolean
 > extends StaticNodeConfig<IsLocal, IsEntity> {
-	readonly name?: string
 	readonly useCustomCache?: CustomCache<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>>
@@ -70,7 +69,6 @@ export interface DynamicMapNodeConfig<
 	IsLocal extends boolean,
 	IsEntity extends boolean
 > extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {
-	readonly name?: string
 	readonly useCustomCache?: CustomCache<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>
@@ -90,6 +88,7 @@ export function map<
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >(
+	name: string,
 	key: Key,
 	item: Item,
 	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>
@@ -104,6 +103,7 @@ export function map<
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >(
+	name: string,
 	key: Key,
 	item: Item,
 	config?: StaticMapNodeConfig<Key, Item, IsLocal, IsEntity>
@@ -119,6 +119,7 @@ export function map<
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >(
+	name: string,
 	key: Key,
 	item: Item,
 	config?:
@@ -127,10 +128,10 @@ export function map<
 ): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, Variables, IsLocal, IsEntity> {
 	return {
 		tag: MAP_TAG,
+		__typename: name,
 		item,
 		key,
 		variables: config?.variables ?? EMPTY_VARIABLES,
-		name: config?.name,
 		__hasDecodingTransformations: true,
 		__hasEncodingTransformations: true,
 		__customCache: config?.useCustomCache,

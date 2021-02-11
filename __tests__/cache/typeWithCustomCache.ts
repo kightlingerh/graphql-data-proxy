@@ -26,7 +26,7 @@ const PersonNode = N.type(
 
 const SchemaNode = N.schema('TypeWithCustomCache', {
 	user: PersonNode,
-	people: N.map(N.staticString, PersonNode)
+	people: N.map('PeopleMap', N.staticString, PersonNode)
 })
 
 interface SchemaData extends N.TypeOf<typeof SchemaNode> {}

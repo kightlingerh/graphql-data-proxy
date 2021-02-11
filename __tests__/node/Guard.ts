@@ -64,7 +64,7 @@ describe('guard', () => {
 			)
 		}),
 		it('properly guards map', () => {
-			const mapNodeGuard = N.useStrictNodeGuard(N.map(N.staticString, N.staticInt))
+			const mapNodeGuard = N.useStrictNodeGuard(N.map('Test', N.staticString, N.staticInt))
 			const mapGuard = G.map(G.string, G.int)
 			fc.assert(
 				fc.property(fc.array(fc.tuple(fc.string(), fc.integer())), (entries) => {

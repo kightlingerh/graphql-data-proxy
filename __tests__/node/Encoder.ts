@@ -1,5 +1,6 @@
 import * as fc from 'fast-check'
 import * as assert from 'assert'
+import { identity } from 'fp-ts/lib/function';
 import { fromArray } from 'fp-ts/NonEmptyArray'
 import { fromNullable } from 'fp-ts/Option'
 import * as E from '../../src/model/Encoder'
@@ -72,8 +73,8 @@ describe('encoder', () => {
 			)
 		}),
 		it('properly encodes map', () => {
-			const mapNodeEncoder = N.useNodeEncoder(N.map(N.staticString, N.staticInt))
-			const mapEncoder = E.map<Record<string, number>, string, number>(Object.fromEntries)(E.string, E.int)
+			const mapNodeEncoder = N.useNodeEncoder(N.map('Test', N.staticString, N.staticInt))
+			const mapEncoder = E.map<Record<string, number>, string, number>(identity as any)(E.string, E.int)
 			fc.assert(
 				fc.property(fc.array(fc.tuple(fc.string(), fc.integer())), (entries) => {
 					const m = new Map(entries)

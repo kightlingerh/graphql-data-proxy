@@ -10,7 +10,7 @@ import { Ref } from '../../src/node'
 import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
 
-const schema = N.schema('Map', { a: N.map(N.staticString, N.staticInt) })
+const schema = N.schema('Map', { a: N.map('Test', N.staticString, N.staticInt) })
 
 function useCache() {
 	const cache = make({})(schema)(schema)

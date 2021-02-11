@@ -10,12 +10,12 @@ import { make } from '../../src/cache/Cache'
 const toId = (path: N.Path) => path[path.length - 2]
 
 const PersonNode = N.type('Person', {
-	allFriends: N.map(N.staticString, N.staticString, {
+	allFriends: N.map('AllFriends', N.staticString, N.staticString, {
 		useCustomCache: {
 			toId
 		}
 	}),
-	friends: N.map(N.staticString, N.staticString, {
+	friends: N.map('AllFriends', N.staticString, N.staticString, {
 		variables: {
 			friendIds: N.nonEmptyArray(N.staticString)
 		},
@@ -33,12 +33,12 @@ const PeopleId = constant('people')
 // for a person, we want the friends and allFriends entries to point to the same map within each Person
 
 const SchemaNode = N.schema('MapWithCustomCache', {
-	allPeople: N.map(N.staticString, PersonNode, {
+	allPeople: N.map('AllPeople', N.staticString, PersonNode, {
 		useCustomCache: {
 			toId: PeopleId
 		}
 	}),
-	people: N.map(N.staticString, PersonNode, {
+	people: N.map('People', N.staticString, PersonNode, {
 		variables: {
 			peopleIds: N.nonEmptyArray(N.staticString)
 		},

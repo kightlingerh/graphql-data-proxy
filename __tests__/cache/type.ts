@@ -8,11 +8,11 @@ import { computed, shallowRef } from 'vue'
 import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
 
-const schema = N.schema('Type', {
+const schema = N.type('Person', {
 	age: N.staticInt,
 	weight: N.staticInt,
 	name: N.staticString
-})
+},{ includeTypename: true })
 
 interface Person extends N.TypeOf<typeof schema> {}
 
@@ -69,6 +69,7 @@ function useCache() {
 }
 
 const person: Person = {
+	__typename: 'Person',
 	age: 29,
 	weight: 145,
 	name: 'Harry'

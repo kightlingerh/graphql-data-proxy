@@ -96,8 +96,8 @@ function validateWrappedNode<SchemaNode extends WrappedNode, RequestNode extends
 		return [
 			make(
 				`invalid request within ${x.tag}<${
-					isMapNode(x) ? `${x.key.name || x.key.__typename || x.key.tag}, ` : ''
-				}${x.item.name || x.item.__typename || x.item.tag}>`,
+					isMapNode(x) ? `${x.key.__typename || x.key.__typename || x.key.tag}, ` : ''
+				}${x.item.__typename || x.item.__typename || x.item.tag}>`,
 				errors
 			)
 		]

@@ -1,5 +1,6 @@
 import * as fc from 'fast-check'
 import * as assert from 'assert'
+import { identity } from 'fp-ts/lib/function';
 import * as D from '../../src/model/Decoder'
 import * as N from '../../src/node'
 
@@ -67,12 +68,11 @@ describe('decoder', () => {
 			)
 		}),
 		it('properly decodes map', () => {
-			const mapNodeDecoder = N.useStrictNodeDecoder(N.map(N.staticString, N.staticInt))
-			const mapDecoder = D.fromMap(Object.entries)(D.string, D.int)
+			const mapNodeDecoder = N.useStrictNodeDecoder(N.map('Test', N.staticString, N.staticInt))
+			const mapDecoder = D.fromMap<Array<[string, number]>, string, number, string, number>(identity as any)(D.string, D.int)
 			fc.assert(
 				fc.property(fc.array(fc.tuple(fc.string(), fc.integer())), (entries) => {
-					const rec = Object.fromEntries(entries)
-					assert.deepStrictEqual(mapNodeDecoder.decode(rec), mapDecoder.decode(rec))
+					assert.deepStrictEqual(mapNodeDecoder.decode(entries), mapDecoder.decode(entries))
 				})
 			)
 		}),

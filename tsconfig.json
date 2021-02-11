@@ -17,6 +17,6 @@
     "lib": ["ESNext", "ESNext.BigInt", "dom"],
     "downlevelIteration": true
   },
-  "include": ["src, __tests__"],
+  "include": ["src/**/*.ts", "__tests__/**/*.ts"],
   "exclude": ["node_modules"]
 }

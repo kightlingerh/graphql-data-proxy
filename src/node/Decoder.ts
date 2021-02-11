@@ -1,3 +1,4 @@
+import { identity } from 'fp-ts/lib/function';
 import * as D from '../model/Decoder'
 import { Node } from './Node'
 import { TypeOf, TypeOfPartial, TypeOfPartialInput, TypeOfStrictInput } from './shared'
@@ -32,7 +33,7 @@ function useNodeDecoder(node: Node, isStrict: boolean): any {
 		case 'NonEmptyArray':
 			return D.nonEmptyArray(useNodeDecoder(node.item, isStrict))
 		case 'Map':
-			return D.fromMap(Object.entries)(useNodeDecoder(node.key, isStrict), useNodeDecoder(node.item, isStrict))
+			return D.fromMap(identity as any)(useNodeDecoder(node.key, isStrict), useNodeDecoder(node.item, isStrict))
 		case 'Type':
 			const typeEncoders: any = {}
 			for (const [key, value] of Object.entries(node.members)) {

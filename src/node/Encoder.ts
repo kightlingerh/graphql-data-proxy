@@ -1,3 +1,4 @@
+import { identity } from 'fp-ts/lib/function';
 import * as E from '../model/Encoder'
 import { Node } from './Node'
 import { TypeOf, TypeOfStrictOutput } from './shared'
@@ -24,7 +25,7 @@ export function useNodeEncoder<N extends Node>(node: N): E.Encoder<TypeOfStrictO
 		case 'NonEmptyArray':
 			return E.nonEmptyArray(useNodeEncoder((node as any).item)) as any
 		case 'Map':
-			return E.map(Object.fromEntries)(
+			return E.map(identity as any)(
 				useNodeEncoder((node as any).key),
 				useNodeEncoder((node as any).item)
 			) as any
