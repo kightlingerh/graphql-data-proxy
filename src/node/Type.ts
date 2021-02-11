@@ -134,7 +134,6 @@ export interface DynamicTypeNodeConfig<
 
 export const TYPE_TAG = 'Type'
 
-
 export function type<
 	Typename extends string,
 	MS extends Record<string, AnyBaseNode>,
@@ -142,7 +141,7 @@ export function type<
 	IsLocal extends boolean = false,
 	IncludeTypename extends boolean = false,
 	IsEntity extends boolean = false
-	>(
+>(
 	__typename: Typename,
 	ms: MS,
 	config: DynamicTypeNodeConfig<MS, Variables, IsLocal, IncludeTypename, IsEntity>

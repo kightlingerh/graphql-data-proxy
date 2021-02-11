@@ -151,19 +151,15 @@ export const either = <L, R>(l: TaskDecoder<unknown, L>, r: TaskDecoder<unknown,
 
 const mergeErrors = getSemigroup<string>().concat;
 
-export const fromMap = <IK extends string | number, IA, K, A>(
+export const fromMap = <I, IK, IA, K, A>(toPairs: (input: I) => Array<[IK, IA]>) => (
 	k: TaskDecoder<IK, K>,
 	a: TaskDecoder<IA, A>
-): TaskDecoder<Record<IK, IA>, Map<K, A>> => {
+): TaskDecoder<I, Map<K, A>> => {
 	return {
 		decode: (i) => {
 			return async () => {
-				const record = await UnknownRecord.decode(i)();
-				if (isLeft(record)) {
-					return record;
-				}
 				const pairs: Promise<[Either<DecodeError, K>, Either<DecodeError, A>]>[] = [];
-				for (const [key, value] of Object.entries(record.right as Record<IK, IA>)) {
+				for (const [key, value] of toPairs(i)) {
 					pairs.push(Promise.all([k.decode(key as IK)(), a.decode(value as IA)()]));
 				}
 				const awaitedPairs = await Promise.all(pairs);
@@ -192,10 +188,10 @@ export const fromMap = <IK extends string | number, IA, K, A>(
 	};
 };
 
-export const map = <K, A>(
+export const map = <K, A>(toPairs: (input: unknown) => Array<[unknown, unknown]>) => (
 	k: TaskDecoder<unknown, K>,
 	a: TaskDecoder<unknown, A>
-): TaskDecoder<Record<string | number, unknown>, Map<K, A>> => pipe(UnknownRecord, compose(fromMap(k, a)));
+): TaskDecoder<unknown, Map<K, A>> => fromMap<unknown, unknown, unknown, K, A>(toPairs)(k, a);
 
 const toSet = <T>(values: Array<T>) => new Set(values);
 

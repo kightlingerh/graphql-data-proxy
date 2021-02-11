@@ -1,10 +1,10 @@
 import { isEmptyObject, isEmptyString } from '../shared/index'
-import { Node} from './Node'
+import { Node } from './Node'
 import { OptionNode } from './Option'
 import { SchemaNode } from './Schema'
 import { NodeVariables } from './shared'
 import { TypeNode } from './Type'
-import { useNodeMergedVariables } from './Variables';
+import { useNodeMergedVariables } from './Variables'
 
 const OPEN_BRACKET = '{'
 const CLOSE_BRACKET = '}'

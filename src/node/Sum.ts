@@ -122,7 +122,7 @@ export function sum<
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
-	>(ms: MS, config: DynamicSumNodeConfig<Variables, IsLocal, IsEntity>): SumNode<MS, Variables, IsLocal, IsEntity>
+>(ms: MS, config: DynamicSumNodeConfig<Variables, IsLocal, IsEntity>): SumNode<MS, Variables, IsLocal, IsEntity>
 export function sum<
 	MS extends ReadonlyArray<SumTypeNode>,
 	IsLocal extends boolean = false,

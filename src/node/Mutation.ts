@@ -57,7 +57,7 @@ export function mutation<
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
-	>(
+>(
 	result: Item,
 	config: DynamicMutationNodeConfig<Variables, IsLocal, IsEntity>
 ): MutationNode<Item, Variables, IsLocal, IsEntity>

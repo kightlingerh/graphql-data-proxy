@@ -28,12 +28,12 @@ export interface BaseNode<
 	// for internal use
 	readonly __hasDecodingTransformations: boolean
 	readonly __hasEncodingTransformations: boolean
-	readonly __strictInput?: StrictInput;
-	readonly __strictOutput?: StrictOutput;
-	readonly __strictData?: StrictData;
-	readonly __partialInput?: PartialInput;
-	readonly __partialOutput?: PartialOutput;
-	readonly __partialData?: PartialData;
+	readonly __strictInput?: StrictInput
+	readonly __strictOutput?: StrictOutput
+	readonly __strictData?: StrictData
+	readonly __partialInput?: PartialInput
+	readonly __partialOutput?: PartialOutput
+	readonly __partialData?: PartialData
 	readonly __refs?: Refs
 	readonly __subVariables?: SubVariables
 	readonly __isLocal?: boolean
@@ -53,9 +53,7 @@ export type TypeOfPartialInput<T> = T extends { readonly __partialInput?: infer 
 
 export type TypeOfPartialOutput<T> = T extends { readonly __partialOutput?: infer O } ? Exclude<O, undefined> : never
 
-export type ExtractVariablesDefinition<T> = T extends { readonly variables: infer V }
-	? V
-	: never
+export type ExtractVariablesDefinition<T> = T extends { readonly variables: infer V } ? V : never
 
 type IsNonEmptyObject<T> = keyof T extends never ? true : false
 
@@ -135,7 +133,6 @@ export function useLocalModel<I, O, A>(model: M.Model<I, O, A>): M.Model<I, unde
 		encode: constUndefined
 	}
 }
-
 
 export function useAdjustedModel(
 	model: M.Model<any, any, any>,

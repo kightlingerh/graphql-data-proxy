@@ -89,7 +89,7 @@ export function map<
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
-	>(
+>(
 	key: Key,
 	item: Item,
 	config: DynamicMapNodeConfig<Key, Item, Variables, IsLocal, IsEntity>

@@ -1,16 +1,16 @@
-import { ArrayNode } from './Array';
-import { BooleanNode } from './Boolean';
-import { FloatNode } from './Float';
-import { IntNode } from './Int';
-import { MapNode } from './Map';
-import { MutationNode } from './Mutation';
-import { NonEmptyArrayNode } from './NonEmptyArray';
-import { OptionNode } from './Option';
-import { ScalarNode } from './Scalar';
-import { SchemaNode } from './Schema';
-import { StringNode } from './String';
-import { SumNode } from './Sum';
-import { TypeNode } from './Type';
+import { ArrayNode } from './Array'
+import { BooleanNode } from './Boolean'
+import { FloatNode } from './Float'
+import { IntNode } from './Int'
+import { MapNode } from './Map'
+import { MutationNode } from './Mutation'
+import { NonEmptyArrayNode } from './NonEmptyArray'
+import { OptionNode } from './Option'
+import { ScalarNode } from './Scalar'
+import { SchemaNode } from './Schema'
+import { StringNode } from './String'
+import { SumNode } from './Sum'
+import { TypeNode } from './Type'
 
 export type Node =
 	| ArrayNode<any, any, any>
@@ -28,4 +28,3 @@ export type Node =
 	| TypeNode<any, any, any, any>
 
 export type NodeTag = Node['tag']
-

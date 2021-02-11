@@ -60,7 +60,7 @@ export function nonEmptyArray<
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
-	>(
+>(
 	item: Item,
 	config: DynamicNonEmptyArrayNodeConfig<Variables, IsLocal, IsEntity>
 ): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity>

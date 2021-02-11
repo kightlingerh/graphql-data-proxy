@@ -20,15 +20,16 @@ export interface ScalarNode<
 	IsLocal extends boolean = false
 >
 	extends BaseNode<
-		Input,
-		ModifyOutputIfLocal<IsLocal, Output>,
-		Data,
-		Input,
-		ModifyOutputIfLocal<IsLocal, Output>,
-		Data,
-		Ref<Option<Data>>,
-		Variables
-	>, Model<Input, Output, Data> {
+			Input,
+			ModifyOutputIfLocal<IsLocal, Output>,
+			Data,
+			Input,
+			ModifyOutputIfLocal<IsLocal, Output>,
+			Data,
+			Ref<Option<Data>>,
+			Variables
+		>,
+		Model<Input, Output, Data> {
 	readonly tag: 'Scalar'
 	readonly name: Name
 }
@@ -53,7 +54,7 @@ export function scalar<
 	Data,
 	V extends NodeVariables,
 	IsLocal extends boolean = false
-	>(
+>(
 	name: Name,
 	model: Model<Input, Output, Data>,
 	config: DynamicScalarNodeConfig<V, IsLocal>

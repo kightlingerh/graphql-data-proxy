@@ -95,19 +95,15 @@ export const fromEither = <IL, IR, L, R>(
 
 export const either = <L, R>(l: D.Decoder<unknown, L>, r: D.Decoder<unknown, R>) => fromEither(l, r)
 
-export const fromMap = <IK extends string | number, IA, K, A>(
+export const fromMap = <I, IK, IA, K, A>(toPairs: (input: I) => Array<[IK, IA]>) => (
 	k: D.Decoder<IK, K>,
 	a: D.Decoder<IA, A>
-): D.Decoder<Record<IK, IA>, Map<K, A>> => {
+): D.Decoder<I, Map<K, A>> => {
 	return {
 		decode: (i) => {
-			const record = UnknownRecord.decode(i)
-			if (E.isLeft(record)) {
-				return record
-			}
 			const decodedMap = new Map<K, A>()
 			const errors: D.DecodeError[] = []
-			for (const [key, value] of Object.entries(record.right as Record<IK, IA>)) {
+			for (const [key, value] of toPairs(i)) {
 				const decodedKey = k.decode(key as IK)
 				const decodedValue = a.decode(value as IA)
 				if (isEmpty(errors) && E.isRight(decodedKey) && E.isRight(decodedValue)) {
@@ -130,10 +126,10 @@ export const fromMap = <IK extends string | number, IA, K, A>(
 	}
 }
 
-export const map = <K, A>(
+export const map = <K, A>(toPairs: (input: unknown) => Array<[unknown, unknown]>) => (
 	k: D.Decoder<unknown, K>,
 	a: D.Decoder<unknown, A>
-): D.Decoder<Record<string, unknown>, Map<K, A>> => fromMap(k, a)
+): D.Decoder<unknown, Map<K, A>> => fromMap<unknown, unknown, unknown, K, A>(toPairs)(k, a)
 
 const toSet = <T>(values: Array<T>) => new Set(values)
 

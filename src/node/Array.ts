@@ -57,7 +57,7 @@ export function array<
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
-	>(
+>(
 	item: Item,
 	config: DynamicArrayNodeConfig<Variables, IsLocal, IsEntity>
 ): ArrayNode<Item, Variables, IsLocal, IsEntity>

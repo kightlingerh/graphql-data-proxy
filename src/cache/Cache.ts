@@ -17,10 +17,15 @@ import {
 	TypeOfRefs,
 	Path,
 	TypeNode,
-	ArrayNode, NonEmptyArrayNode, OptionNode, MapNode, SumNode, TypeOfCacheEntry
-} from '../node';
+	ArrayNode,
+	NonEmptyArrayNode,
+	OptionNode,
+	MapNode,
+	SumNode,
+	TypeOfCacheEntry
+} from '../node'
 import { Ref } from '../node'
-import { useNodeMergedVariablesEncoder } from '../node/Variables';
+import { useNodeMergedVariablesEncoder } from '../node/Variables'
 import { isEmptyObject } from '../shared'
 import { isPrimitiveNode, traverseMapWithKey } from './shared'
 import { validate } from './validate'
@@ -462,16 +467,7 @@ function write(
 				cache
 			)
 		case 'Array':
-			return writeToArrayNode(
-				data,
-				schema as ArrayNode<any>,
-				request,
-				path,
-				uniqueNodes,
-				deps,
-				variables,
-				cache
-			)
+			return writeToArrayNode(data, schema as ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache)
 		case 'NonEmptyArray':
 			return writeToNonEmptyArrayNode(
 				data,
