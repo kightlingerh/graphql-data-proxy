@@ -64,18 +64,20 @@ export function make(deps: CacheDependencies) {
 		const uniqueNodes = new Map<string, any>()
 		const cache: object = useTypeNodeCacheEntry(schema, rootPath, uniqueNodes, {})
 		return <R extends SchemaNode<any, any>>(request: R) => {
-			const errors = validate(schema, request)
-			if (isNonEmpty(errors)) {
-				return left<CacheError, Cache<R>>(errors)
-			} else {
-				return right<CacheError, Cache<R>>({
-					read: (variables) => () => read(schema, request, rootPath, uniqueNodes, deps, variables, cache),
-					write: (variables) => (data) => () =>
-						write(data, schema, request, rootPath, uniqueNodes, deps, variables, cache),
-					toEntries: (variables) => () =>
-						toEntries(schema, request, rootPath, uniqueNodes, deps, variables, cache)
-				})
+			if (__DEV__) {
+				const errors = validate(schema, request)
+				if (isNonEmpty(errors)) {
+					return left<CacheError, Cache<R>>(errors)
+				}
 			}
+			return right<CacheError, Cache<R>>({
+				read: (variables) => () => read(schema, request, rootPath, uniqueNodes, deps, variables, cache),
+				write: (variables) => (data) => () =>
+					write(data, schema, request, rootPath, uniqueNodes, deps, variables, cache),
+				toEntries: (variables) => () =>
+					toEntries(schema, request, rootPath, uniqueNodes, deps, variables, cache)
+			})
+
 		}
 	}
 }
