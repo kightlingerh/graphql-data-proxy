@@ -3,7 +3,6 @@ import * as E from 'fp-ts/Either'
 import { pipe, Refinement } from 'fp-ts/function'
 import { fold, NonEmptyArray } from 'fp-ts/NonEmptyArray'
 import { none, Option, some } from 'fp-ts/Option'
-import { disableValidation } from '../shared'
 import * as D from 'io-ts/Decoder'
 import * as DE from './DecodeError'
 import * as G from './Guard'
@@ -13,7 +12,7 @@ export * from 'io-ts/Decoder'
 
 export const fromRefinement = <I, A extends I>(refinement: Refinement<I, A>, expected: string): D.Decoder<I, A> => ({
 	decode: (i) => {
-		if (disableValidation) {
+		if (__DISABLE_VALIDATION__) {
 			return D.success(i as A)
 		} else {
 			return refinement(i) ? D.success(i) : D.failure(i, expected)
@@ -33,7 +32,7 @@ export const string: D.Decoder<string, string> =
 
 const numberFromString: D.Decoder<number | string, number> = {
 	decode: (i) => {
-		if (disableValidation) {
+		if (__DISABLE_VALIDATION__) {
 			return G.number.is(i) ? E.right(i) : (E.right(parseFloat(i)) as E.Either<D.DecodeError, number>)
 		}
 		if (G.number.is(i)) {

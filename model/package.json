@@ -1,0 +1,10 @@
+{
+  "main": "../es5/model/index.js",
+  "module": "../lib/model/index.js",
+  "typings": "../lib/model/index.d.ts",
+  "sideEffects": false,
+  "peerDependencies": {
+    "fp-ts": "^2.9.3",
+    "io-ts": "^2.2.13"
+  }
+}

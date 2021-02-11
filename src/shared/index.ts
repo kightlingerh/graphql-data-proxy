@@ -5,7 +5,3 @@ export function isEmptyObject(obj: object): obj is {} {
 export function isEmptyString(x: any) {
 	return x === ''
 }
-
-export const isDev = true
-
-export const disableValidation = false

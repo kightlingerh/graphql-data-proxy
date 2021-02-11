@@ -1,0 +1,11 @@
+{
+  "main": "../es5/cache/index.js",
+  "module": "../lib/cache/index.js",
+  "typings": "../lib/cache/index.d.ts",
+  "sideEffects": false,
+  "peerDependencies": {
+    "fp-ts": "^2.9.3",
+    "io-ts": "^2.2.13",
+    "vue": "^3.0.5"
+  }
+}

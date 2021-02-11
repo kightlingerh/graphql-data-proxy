@@ -3,7 +3,6 @@ import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
 import { Ref as R } from 'vue'
 import * as M from '../model/Model'
-import { disableValidation, isDev } from '../shared'
 
 export type AnyBaseNode = BaseNode<any, any, any, any, any, any, any, any, any>
 
@@ -166,7 +165,7 @@ export function useAdjustedModel(
 	if (isLocal) {
 		return useLocalModel(model)
 	}
-	if (isDev || !disableValidation) {
+	if (__DEV__ || !__DISABLE_VALIDATION__) {
 		return model
 	}
 	if (useIdEncoder && useIdDecoder) {
