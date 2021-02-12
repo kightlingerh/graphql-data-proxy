@@ -10,7 +10,7 @@
     "noFallthroughCasesInSwitch": true,
     "noEmitOnError": false,
     "strict": true,
-    "target": "ES5",
+    "target": "ES6",
     "moduleResolution": "node",
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true,
