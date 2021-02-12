@@ -1,4 +1,6 @@
 import { literal } from '../model/Model'
+import { Encoder } from '../model/Encoder'
+import { Eq } from '../model/Eq'
 import { scalar, ScalarNode } from './Scalar'
 import {
 	BaseNode,
@@ -74,17 +76,28 @@ export interface BaseTypeNode<
 	IsEntity extends boolean = false
 >
 	extends BaseNode<
-		ExtractTypeNodeStrictInputFromMembers<MS>,
-		ModifyOutputIfLocal<IsLocal, ExtractTypeNodeStrictOutputFromMembers<MS>>,
-		ExtractTypeNodeStrictDataFromMembers<MS>,
-		ExtractTypeNodePartialInputFromMembers<MS>,
-		ModifyOutputIfLocal<IsLocal, ExtractTypeNodePartialOutputFromMembers<MS>>,
-		ExtractTypeNodePartialDataFromMembers<MS>,
-		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>,
-		Variables,
-		ExtractTypeNodeSubVariablesFromMembers<MS>,
-		ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeRefsFromMembers<MS>>
-	> {
+			ExtractTypeNodeStrictInputFromMembers<MS>,
+			ModifyOutputIfLocal<IsLocal, ExtractTypeNodeStrictOutputFromMembers<MS>>,
+			ExtractTypeNodeStrictDataFromMembers<MS>,
+			ExtractTypeNodePartialInputFromMembers<MS>,
+			ModifyOutputIfLocal<IsLocal, ExtractTypeNodePartialOutputFromMembers<MS>>,
+			ExtractTypeNodePartialDataFromMembers<MS>,
+			ModifyIfEntity<
+				IsEntity,
+				ExtractTypeNodeStrictDataFromMembers<MS>,
+				ExtractTypeNodeCacheEntryFromMembers<MS>
+			>,
+			Variables,
+			ExtractTypeNodeSubVariablesFromMembers<MS>,
+			ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeRefsFromMembers<MS>>
+		>,
+		Partial<
+			Encoder<
+				ModifyOutputIfLocal<IsLocal, ExtractTypeNodeStrictOutputFromMembers<MS>>,
+				ExtractTypeNodeStrictDataFromMembers<MS>
+			>
+		>,
+		Partial<Eq<ExtractTypeNodeStrictDataFromMembers<MS>>> {
 	readonly __typename: Typename
 	readonly tag: 'Type'
 	readonly members: MS
@@ -228,7 +241,7 @@ export function encodeById<
 	IsLocal extends boolean = false,
 	IncludeTypename extends boolean = false,
 	IsEntity extends boolean = false
-	>(
+>(
 	node: TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>
 ): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity> {
 	return {
@@ -247,7 +260,7 @@ export function eqById<
 	IsLocal extends boolean = false,
 	IncludeTypename extends boolean = false,
 	IsEntity extends boolean = false
-	>(
+>(
 	node: TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>
 ): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity> {
 	return {
@@ -255,4 +268,3 @@ export function eqById<
 		equals: (a: any, b: any) => a.id === b.id // this is currently unsafe but will work for literal types
 	}
 }
-

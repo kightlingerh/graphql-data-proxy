@@ -3,9 +3,6 @@ import { Node } from './Node'
 import { TypeOf, TypeOfStrictOutput } from './shared'
 
 export function useNodeEncoder<N extends Node>(node: N): E.Encoder<TypeOfStrictOutput<N>, TypeOf<N>> {
-	if (node.encode !== undefined) {
-		return { encode: node.encode } as any;
-	}
 	if (!node.__hasEncodingTransformations) {
 		return E.id() as E.Encoder<TypeOfStrictOutput<N>, TypeOf<N>>
 	}
@@ -32,6 +29,10 @@ export function useNodeEncoder<N extends Node>(node: N): E.Encoder<TypeOfStrictO
 				useNodeEncoder((node as any).item)
 			) as any
 		case 'Type':
+			if ((node as any).equals) {
+				return node as any
+				1
+			}
 			const typeEncoders: any = {}
 			for (const [key, value] of Object.entries((node as any).members)) {
 				typeEncoders[key] = useNodeEncoder(value as Node)

@@ -2,8 +2,6 @@ import { constUndefined } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
 import { Ref as R } from 'vue'
-import { Eq } from '../model/Eq';
-import { Encoder } from '../model/Encoder';
 import * as M from '../model/Model'
 
 export type AnyBaseNode = BaseNode<any, any, any, any, any, any, any, any, any>
@@ -21,7 +19,7 @@ export interface BaseNode<
 	Variables extends NodeVariables = {},
 	SubVariables extends NodeVariables = {},
 	Refs = CacheEntry
-> extends Partial<Encoder<StrictInput, StrictData>>, Partial<Eq<StrictData>> {
+> {
 	readonly tag: string
 	// readonly strict: M.Model<StrictInput, StrictOutput, StrictData>
 	// readonly partial: M.Model<PartialInput, PartialOutput, PartialData>
