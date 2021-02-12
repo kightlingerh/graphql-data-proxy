@@ -3,6 +3,9 @@ import { Node } from './Node'
 import { TypeOf, TypeOfStrictOutput } from './shared'
 
 export function useNodeEncoder<N extends Node>(node: N): E.Encoder<TypeOfStrictOutput<N>, TypeOf<N>> {
+	if (node.encode !== undefined) {
+		return { encode: node.encode } as any;
+	}
 	if (!node.__hasEncodingTransformations) {
 		return E.id() as E.Encoder<TypeOfStrictOutput<N>, TypeOf<N>>
 	}

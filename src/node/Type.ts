@@ -217,3 +217,42 @@ export function markTypeAsEntity<T extends BaseTypeNode<any, any, any, any, any>
 		__isEntity: true
 	} as any
 }
+
+export function encodeById<
+	Typename extends string,
+	MS extends {
+		id: AnyBaseNode
+		[K: string]: AnyBaseNode
+	},
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false,
+	IncludeTypename extends boolean = false,
+	IsEntity extends boolean = false
+	>(
+	node: TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>
+): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity> {
+	return {
+		...node,
+		encode: (i: any) => i.id // this is currently unsafe but will work for literal types
+	}
+}
+
+export function eqById<
+	Typename extends string,
+	MS extends {
+		id: AnyBaseNode
+		[K: string]: AnyBaseNode
+	},
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false,
+	IncludeTypename extends boolean = false,
+	IsEntity extends boolean = false
+	>(
+	node: TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity>
+): TypeNode<Typename, MS, Variables, IsLocal, IncludeTypename, IsEntity> {
+	return {
+		...node,
+		equals: (a: any, b: any) => a.id === b.id // this is currently unsafe but will work for literal types
+	}
+}
+

@@ -11,6 +11,9 @@ export function usePartialNodeEq<N extends Node>(node: N): EQ.Eq<TypeOfPartial<N
 }
 
 function useNodeEq(node: Node, isStrict: boolean): any {
+	if (node.equals !== undefined) {
+		return { equals: node.equals }
+	}
 	switch (node.tag) {
 		case 'String':
 			return EQ.string
