@@ -130,7 +130,7 @@ export function fromMap<IK extends string | number, IA, O, OK, OA, K, A>(
 	return {
 		equals: EQ.map(key, item).equals,
 		is: G.map(key, item).is,
-		decode: D.fromMap<IK, IA, K, A>(key, item).decode,
+		decode: D.fromMap<Record<string | number, IA>, IK, IA, K, A>(Object.entries as any)(key, item).decode,
 		encode: EN.map<O, OK, OA, K, A>(Object.fromEntries)(key, item).encode
 	}
 }
