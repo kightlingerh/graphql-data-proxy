@@ -29,7 +29,7 @@ export function useNodeEncoder<N extends Node>(node: N): E.Encoder<TypeOfStrictO
 				useNodeEncoder((node as any).item)
 			) as any
 		case 'Type':
-			if ((node as any).encoder) {
+			if ((node as any).encode) {
 				return node as any
 			}
 			const typeEncoders: any = {}
