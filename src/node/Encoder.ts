@@ -29,9 +29,8 @@ export function useNodeEncoder<N extends Node>(node: N): E.Encoder<TypeOfStrictO
 				useNodeEncoder((node as any).item)
 			) as any
 		case 'Type':
-			if ((node as any).equals) {
+			if ((node as any).encoder) {
 				return node as any
-				1
 			}
 			const typeEncoders: any = {}
 			for (const [key, value] of Object.entries((node as any).members)) {
