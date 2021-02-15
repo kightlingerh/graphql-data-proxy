@@ -5,6 +5,7 @@ import { isNonEmpty } from 'fp-ts/lib/Array'
 import { pipe } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { none, Option, some } from 'fp-ts/lib/Option'
+import { getSemigroup } from 'io-ts/lib/DecodeError';
 import {
 	TaskDecoder,
 	error,
@@ -30,7 +31,6 @@ import {
 	lazy,
 	literal
 } from 'io-ts/lib/TaskDecoder'
-import { getSemigroup } from './DecodeError'
 import {
 	number as numberGuard,
 	string as stringGuard,
