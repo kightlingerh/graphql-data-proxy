@@ -65,7 +65,7 @@ export function make(deps: CacheDependencies) {
 		const cache: object = useTypeNodeCacheEntry(schema, rootPath, uniqueNodes, {})
 
 		if (__DEV__) {
-			console.log(cache)
+			console.log('cache', cache)
 		}
 
 		return <R extends SchemaNode<any, any>>(request: R) => {
