@@ -6,7 +6,7 @@
     "lib",
     "es5"
   ],
-  "main": "es5/index.js",
+  "main": "es6/index.js",
   "module": "lib/index.js",
   "typings": "lib/index.d.ts",
   "author": "Harry Kightlinger <kightlingerh@gmail.com>",
@@ -16,7 +16,7 @@
   "scripts": {
     "prepare": "yarn build",
     "clean": "rimraf lib es5",
-    "build": "yarn run clean && yarn run prettier-write && tsc --p tsconfig.json && tsc --p tsconfig.es6.json",
+    "build": "yarn run clean && tsc --p tsconfig.json && tsc --p tsconfig.es6.json",
     "prettier": "prettier --no-semi --single-quote --print-width 120 --parser typescript --list-different \"{src,__tests__}/**/*.ts\"",
     "prettier-write": "prettier --no-semi --single-quote --print-width 120 --parser typescript --write \"{src,__tests__}/**/*.ts\"",
     "test": "yarn jest"
