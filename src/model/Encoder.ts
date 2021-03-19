@@ -2,10 +2,10 @@ import { Either, fold as foldE } from 'fp-ts/lib/Either'
 import { constNull, Lazy } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { fold, Option } from 'fp-ts/lib/Option'
-import { Encoder, OutputOf, id, array, type, partial, sum, lazy, nullable, tuple, record, TypeOf } from 'io-ts/lib/Encoder'
+import { Encoder, OutputOf, id, array, type, partial, sum, lazy, nullable, tuple, record, TypeOf, intersect } from 'io-ts/lib/Encoder'
 import { Float, Int } from './Guard'
 
-export { id, Encoder, array, type, partial, sum, lazy, nullable, OutputOf, tuple, record, TypeOf }
+export { id, Encoder, array, type, partial, sum, lazy, nullable, OutputOf, tuple, record, TypeOf, intersect }
 
 export const literal = id
 
