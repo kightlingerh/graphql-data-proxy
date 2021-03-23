@@ -91,10 +91,10 @@ export abstract class BaseNode<
 	readonly [_PartialData]!: PD;
 	readonly [_Ref]!: R;
 
-	constructor(
-		vars: V = EMPTY_VARIABLES
+	protected constructor(
+		vars?: V
 	) {
-		this[_Variables] = vars;
+		this[_Variables] = vars ?? EMPTY_VARIABLES;
 	}
 }
 

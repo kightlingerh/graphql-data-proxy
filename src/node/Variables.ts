@@ -5,6 +5,7 @@ import { useStrictNodeEq } from './Eq';
 import { useStrictNodeGuard } from './Guard';
 import { Node } from './Node';
 import {
+	_Variables,
 	ExtractMergedVariablesDefinition,
 	ExtractNodeDefinitionInput,
 	ExtractNodeDefinitionOutput,
@@ -20,8 +21,8 @@ import { Eq, type as eqType } from '../model/Eq';
 import { Guard, type as guardType } from '../model/Guard';
 
 function mergeVariables(node: Node, variables: Record<string, Node>[]) {
-	if (!isEmptyObject(node.variables)) {
-		variables.push(node.variables);
+	if (!isEmptyObject(node[_Variables])) {
+		variables.push(node[_Variables]);
 	}
 	switch (node.tag) {
 		case 'Type':
