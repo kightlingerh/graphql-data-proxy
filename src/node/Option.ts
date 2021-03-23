@@ -16,14 +16,9 @@ import {
 	ModifyIfEntity,
 	TypeOfRefs,
 	BaseNode,
-	NodeOptions,
+	PrimitiveNodeOptions,
 	_HasDecodingTransformations
 } from './shared';
-
-export type OptionNodeOptions<Item extends AnyNode, Variables extends NodeVariables = {}> = NodeOptions<
-	Option<TypeOfPartial<Item>>,
-	Variables
->;
 
 export class OptionNode<
 	Item extends AnyNode,
@@ -45,7 +40,7 @@ export class OptionNode<
 	readonly tag = 'Option';
 	readonly [_HasDecodingTransformations]: true;
 	readonly [_HasDecodingTransformations]: true;
-	constructor(readonly item: Item, options?: OptionNodeOptions<Item, Variables>) {
+	constructor(readonly item: Item, options?: PrimitiveNodeOptions<Variables>) {
 		super(options);
 	}
 }
@@ -55,7 +50,7 @@ export function option<
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(item: Item, options?: OptionNodeOptions<Item, Variables>): OptionNode<Item, Variables, IsLocal, IsEntity> {
+>(item: Item, options?: PrimitiveNodeOptions<Variables>): OptionNode<Item, Variables, IsLocal, IsEntity> {
 	return new OptionNode(item, options);
 }
 

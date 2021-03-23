@@ -1,6 +1,5 @@
 import {
 	BaseNode,
-	NodeOptions,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	ModifyOutputIfLocal,
@@ -12,14 +11,14 @@ import {
 	ModifyIfEntity,
 	TypeOfRefs,
 	_HasDecodingTransformations,
-	_HasEncodingTransformations
+	_HasEncodingTransformations,
+	NodeOptions
 } from './shared';
 
-export type MapNodeOptions<
-	Key extends AnyNode,
-	Item extends AnyNode,
-	Variables extends NodeVariables = {}
-> = NodeOptions<Map<TypeOf<Key>, TypeOfPartial<Item>>, Variables> & { readonly __typename?: string };
+export interface MapNodeOptions<Key extends AnyNode, Item extends AnyNode, Variables extends NodeVariables = {}>
+	extends NodeOptions<Map<TypeOf<Key>, TypeOfPartial<Item>>, Variables> {
+	readonly __typename?: string;
+}
 
 export class MapNode<
 	StrictInput,

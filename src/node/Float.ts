@@ -4,13 +4,12 @@ import {
 	ModifyOutputIfLocal,
 	NodeVariables,
 	Ref,
-	NodeOptions,
+	PrimitiveNodeOptions,
 	BaseNode,
 	_HasDecodingTransformations,
 	_HasEncodingTransformations
 } from './shared';
 
-export type FloatNodeOptions<Variables extends NodeVariables = {}> = NodeOptions<number, Variables>;
 
 export class FloatNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<
 	number,
@@ -25,10 +24,13 @@ export class FloatNode<Variables extends NodeVariables = {}, IsLocal extends boo
 	readonly tag = 'Float';
 	readonly [_HasDecodingTransformations] = false;
 	readonly [_HasEncodingTransformations] = false;
+	constructor(options?: PrimitiveNodeOptions<Variables>) {
+		super(options);
+	}
 }
 
 export function float<V extends NodeVariables = {}, IsLocal extends boolean = false>(
-	options?: FloatNodeOptions<V>
+	options?: PrimitiveNodeOptions<V>
 ): FloatNode<V, IsLocal> {
 	return new FloatNode<V, IsLocal>(options);
 }

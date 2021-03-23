@@ -40,17 +40,17 @@ export const _IsEntity = '_IE';
 
 export const _ToId = '_TI';
 
-interface _NodeOptions<PD, V extends NodeVariables> {
+export interface PrimitiveNodeOptions<V extends NodeVariables> {
 	readonly print?: Lazy<string>;
 	readonly isLocal?: boolean;
 	readonly isEntity?: boolean;
-	readonly toId?: ToId<PD, V>;
-	readonly variables: V;
+	readonly variables?: V;
 }
 
-export type NodeOptions<PD, V extends NodeVariables = {}> = IsNonEmptyObject<V> extends true
-	? _NodeOptions<PD, V>
-	: Omit<_NodeOptions<PD, V>, 'variables'> & { variables?: {} };
+export interface NodeOptions<PD, V extends NodeVariables = {}> extends PrimitiveNodeOptions<V> {
+	readonly toId?: ToId<PD, V>
+}
+
 
 export interface INode<
 	SDI,
@@ -64,7 +64,7 @@ export interface INode<
 	SV extends NodeVariables = {},
 	R = CE
 > {
-	readonly options: NodeOptions<PD, V>;
+	readonly options: PrimitiveNodeOptions<V>;
 	readonly [_SubVariables]: SV;
 
 	// for internal use
@@ -103,7 +103,7 @@ export abstract class BaseNode<
 	readonly [_PartialData]!: PD;
 	readonly [_Ref]!: R;
 
-	constructor(readonly options: NodeOptions<PD, V> = {} as NodeOptions<PD, V>) {
+	constructor(readonly options: PrimitiveNodeOptions<V> = {} as PrimitiveNodeOptions<V>) {
 		this[_Variables] = options.variables ?? EMPTY_VARIABLES;
 	}
 }
@@ -128,11 +128,11 @@ export type TypeOfRefs<T> = [T] extends [{ [_Ref]: infer R }] ? R : never;
 
 export type TypeOfCacheEntry<T> = [T] extends [{ [_CacheEntry]: infer CE }] ? CE : never;
 
-type IsNonEmptyObject<T> = keyof T extends never ? true : false;
+type IsNonEmptyObject<T> = [keyof T] extends [never] ? true : false;
 
 export type EncodedVariables = string;
 
-export type CacheNode<T> = IsNonEmptyObject<ExtractVariablesDefinition<T>> extends true
+export type CacheNode<T> = [IsNonEmptyObject<ExtractVariablesDefinition<T>>] extends [true]
 	? Map<EncodedVariables, TypeOfCacheEntry<T>>
 	: TypeOfCacheEntry<T>;
 
@@ -178,13 +178,13 @@ export type Intersection<T> = (T extends unknown ? (x: T) => 0 : never) extends 
 
 export type NodeVariables = Record<string, AnyNode>;
 
-export type ExtractIsLocal<T> = [T] extends [{ options: NodeOptions<any, any> }]
+export type ExtractIsLocal<T> = [T] extends [{ options: PrimitiveNodeOptions<any> }]
 	? [T['options']['isLocal']] extends [boolean]
 		? T['options']['isLocal']
 		: false
 	: never;
 
-export type ExtractIsEntity<T> = [T] extends [{ options: NodeOptions<any, any> }]
+export type ExtractIsEntity<T> = [T] extends [{ options: PrimitiveNodeOptions<any> }]
 	? [T['options']['isEntity']] extends [boolean]
 		? T['options']['isEntity']
 		: false

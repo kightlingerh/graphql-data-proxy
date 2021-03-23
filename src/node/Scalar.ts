@@ -1,11 +1,20 @@
 import { Option } from 'fp-ts/lib/Option';
 import { Model } from '../model/Model';
-import { ModifyOutputIfLocal, NodeVariables, Ref, useLocalModel, NodeOptions, BaseNode } from './shared';
+import {
+	ModifyOutputIfLocal,
+	NodeVariables,
+	Ref,
+	useLocalModel,
+	PrimitiveNodeOptions,
+	BaseNode,
+	_HasDecodingTransformations,
+	_HasEncodingTransformations
+} from './shared';
 
-export type ScalarNodeOptions<Data, Variables extends NodeVariables = {}> = NodeOptions<Data, Variables> & {
-	readonly hasEncodingTransformations?: boolean;
+export interface ScalarNodeOptions<Variables extends NodeVariables = {}> extends PrimitiveNodeOptions<Variables> {
 	readonly hasDecodingTransformations?: boolean;
-};
+	readonly hasEncodingTransformations?: boolean;
+}
 
 export class ScalarNode<
 	Name extends string,
@@ -31,13 +40,17 @@ export class ScalarNode<
 	readonly decode: Model<Input, IsLocal extends true ? undefined : Input, Data>['decode'];
 	readonly equals: Model<Input, IsLocal extends true ? undefined : Input, Data>['equals'];
 	readonly is: Model<Input, IsLocal extends true ? undefined : Input, Data>['is'];
-	constructor(readonly name: Name, model: Model<Input, Output, Data>, options?: ScalarNodeOptions<Data, Variables>) {
+	readonly [_HasDecodingTransformations]: boolean;
+	readonly [_HasEncodingTransformations]: boolean;
+	constructor(readonly name: Name, model: Model<Input, Output, Data>, options?: ScalarNodeOptions<Variables>) {
 		super(options);
 		const m = options?.isLocal ? useLocalModel(model) : model;
 		this.encode = m.encode as any;
 		this.decode = m.decode;
 		this.equals = m.equals;
 		this.is = m.is;
+		this[_HasDecodingTransformations] = options?.hasDecodingTransformations ?? false;
+		this[_HasEncodingTransformations] = options?.hasEncodingTransformations ?? false;
 	}
 }
 
@@ -46,12 +59,12 @@ export function scalar<
 	Input,
 	Output,
 	Data,
-	V extends NodeVariables,
+	Variables extends NodeVariables,
 	IsLocal extends boolean = false
 >(
 	name: Name,
 	model: Model<Input, Output, Data>,
-	options?: ScalarNodeOptions<Data, V>
-): ScalarNode<Name, Input, Output, Data, V, IsLocal> {
+	options?: ScalarNodeOptions<Variables>
+): ScalarNode<Name, Input, Output, Data, Variables, IsLocal> {
 	return new ScalarNode(name, model, options);
 }

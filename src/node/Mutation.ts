@@ -5,7 +5,6 @@ import {
 	ModifyOutputIfLocal,
 	AnyNode,
 	NodeVariables,
-	NodeOptions,
 	TypeOf,
 	TypeOfPartial,
 	TypeOfPartialInput,
@@ -16,13 +15,9 @@ import {
 	ModifyIfEntity,
 	TypeOfRefs,
 	_HasEncodingTransformations,
-	_HasDecodingTransformations
+	_HasDecodingTransformations,
+	PrimitiveNodeOptions
 } from './shared';
-
-export type MutationNodeOptions<Result extends AnyNode, Variables extends NodeVariables = {}> = NodeOptions<
-	TypeOfPartial<Result>,
-	Variables
->;
 
 export class MutationNode<
 	Result extends AnyNode,
@@ -44,7 +39,7 @@ export class MutationNode<
 	readonly tag = 'Mutation';
 	readonly [_HasDecodingTransformations]: boolean;
 	readonly [_HasEncodingTransformations]: boolean;
-	constructor(readonly result: Result, options?: MutationNodeOptions<Result, Variables>) {
+	constructor(readonly result: Result, options?: PrimitiveNodeOptions<Variables>) {
 		super(options);
 		this[_HasDecodingTransformations] = result[_HasDecodingTransformations];
 		this[_HasEncodingTransformations] = result[_HasEncodingTransformations];
@@ -56,6 +51,6 @@ export function mutation<
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(result: Item, options?: MutationNodeOptions<Item, Variables>): MutationNode<Item, Variables, IsLocal, IsEntity> {
+>(result: Item, options?: PrimitiveNodeOptions<Variables>): MutationNode<Item, Variables, IsLocal, IsEntity> {
 	return new MutationNode(result, options);
 }

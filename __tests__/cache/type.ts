@@ -8,7 +8,7 @@ import { computed, shallowRef } from 'vue'
 import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
 
-const schema = N.schema('Type', {
+const schema = N.type('Type', {
 	age: N.staticInt,
 	weight: N.staticInt,
 	name: N.staticString

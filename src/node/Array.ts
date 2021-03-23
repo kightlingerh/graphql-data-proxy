@@ -14,15 +14,9 @@ import {
 	ModifyIfEntity,
 	TypeOfRefs,
 	BaseNode,
-	NodeOptions,
 	_HasDecodingTransformations,
-	_HasEncodingTransformations
+	_HasEncodingTransformations, PrimitiveNodeOptions
 } from './shared';
-
-export type ArrayNodeOptions<Item extends AnyNode, Variables extends NodeVariables = {}> = NodeOptions<
-	Array<TypeOfPartial<Item>>,
-	Variables
->;
 
 export class ArrayNode<
 	Item extends AnyNode,
@@ -44,7 +38,7 @@ export class ArrayNode<
 	readonly tag = 'Array';
 	readonly [_HasDecodingTransformations]: boolean;
 	readonly [_HasEncodingTransformations]: boolean;
-	constructor(readonly item: Item, options?: ArrayNodeOptions<Item, Variables>) {
+	constructor(readonly item: Item, options?: PrimitiveNodeOptions<Variables>) {
 		super(options);
 		this[_HasDecodingTransformations] = item[_HasDecodingTransformations];
 		this[_HasDecodingTransformations] = item[_HasEncodingTransformations];
@@ -56,7 +50,7 @@ export function array<
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(item: Item, options?: ArrayNodeOptions<Item, Variables>): ArrayNode<Item, Variables, IsLocal, IsEntity> {
+>(item: Item, options?: PrimitiveNodeOptions<Variables>): ArrayNode<Item, Variables, IsLocal, IsEntity> {
 	return new ArrayNode<Item, Variables, IsLocal, IsEntity>(item, options);
 }
 

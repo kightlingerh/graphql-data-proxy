@@ -3,13 +3,11 @@ import {
 	ModifyOutputIfLocal,
 	NodeVariables,
 	Ref,
-	NodeOptions,
+	PrimitiveNodeOptions,
 	BaseNode,
 	_HasDecodingTransformations,
 	_HasEncodingTransformations
 } from './shared';
-
-export type StringNodeOptions<Variables extends NodeVariables = {}> = NodeOptions<string, Variables>;
 
 export class StringNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<
 	string,
@@ -24,14 +22,14 @@ export class StringNode<Variables extends NodeVariables = {}, IsLocal extends bo
 	readonly tag = 'String';
 	readonly [_HasDecodingTransformations] = false;
 	readonly [_HasEncodingTransformations] = false;
-	constructor(options?: StringNodeOptions<Variables>) {
+	constructor(options?: PrimitiveNodeOptions<Variables>) {
 		super(options);
 	}
 }
 
-export function string<V extends NodeVariables = {}, IsLocal extends boolean = false>(
-	options?: StringNodeOptions<V>
-): StringNode<V, IsLocal> {
+export function string<Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
+	options?: PrimitiveNodeOptions<Variables>
+): StringNode<Variables, IsLocal> {
 	return new StringNode(options);
 }
 

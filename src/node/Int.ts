@@ -5,12 +5,10 @@ import {
 	ModifyOutputIfLocal,
 	NodeVariables,
 	Ref,
-	NodeOptions,
+	PrimitiveNodeOptions,
 	_HasEncodingTransformations,
 	_HasDecodingTransformations
 } from './shared';
-
-export type IntNodeOptions<Variables extends NodeVariables = {}> = NodeOptions<number, Variables>;
 
 export class IntNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<
 	number,
@@ -25,10 +23,13 @@ export class IntNode<Variables extends NodeVariables = {}, IsLocal extends boole
 	readonly tag = 'Int';
 	readonly [_HasEncodingTransformations] = false;
 	readonly [_HasDecodingTransformations] = false;
+	constructor(options?: PrimitiveNodeOptions<Variables>) {
+		super(options);
+	}
 }
 
 export function int<V extends NodeVariables = {}, IsLocal extends boolean = false>(
-	options?: IntNodeOptions<V>
+	options?: PrimitiveNodeOptions<V>
 ): IntNode<V, IsLocal> {
 	return new IntNode<V, IsLocal>(options);
 }

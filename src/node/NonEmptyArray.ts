@@ -1,7 +1,6 @@
 import { Option } from 'fp-ts/lib/Option';
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray';
 import {
-	NodeOptions,
 	BaseNode,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
@@ -17,13 +16,9 @@ import {
 	Ref,
 	TypeOfCacheEntry,
 	ModifyIfEntity,
-	TypeOfRefs
+	TypeOfRefs,
+	PrimitiveNodeOptions
 } from './shared';
-
-export type NonEmptyArrayNodeOptions<Item extends AnyNode, Variables extends NodeVariables = {}> = NodeOptions<
-	NonEmptyArray<TypeOfPartial<Item>>,
-	Variables
->;
 
 export class NonEmptyArrayNode<
 	Item extends AnyNode,
@@ -43,7 +38,7 @@ export class NonEmptyArrayNode<
 	ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfRefs<Item>>>>>
 > {
 	readonly tag = 'NonEmptyArray';
-	constructor(readonly item: Item, options?: NonEmptyArrayNodeOptions<Item, Variables>) {
+	constructor(readonly item: Item, options?: PrimitiveNodeOptions<Variables>) {
 		super(options);
 	}
 }
@@ -55,7 +50,7 @@ export function nonEmptyArray<
 	IsEntity extends boolean = false
 >(
 	item: Item,
-	options?: NonEmptyArrayNodeOptions<Item, Variables>
+	options?: PrimitiveNodeOptions<Variables>
 ): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity> {
 	return new NonEmptyArrayNode(item, options);
 }

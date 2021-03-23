@@ -1,6 +1,7 @@
 import { literal } from '../model/Model';
 import { scalar, ScalarNode } from './Scalar';
 import {
+	BaseNode,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	hasDecodingTransformations,
@@ -20,12 +21,11 @@ import {
 	ModifyIfEntity,
 	TypeOfRefs,
 	NodeOptions,
-	BaseNode,
 	_HasEncodingTransformations,
 	_HasDecodingTransformations
 } from './shared';
 
-export type ExtractTypeName<T> = [T] extends [{ __typename: infer A }] ? A : never;
+export type ExtractTypeName<T> = [T] extends [{ __typename: string }] ? T['__typename'] : never;
 
 export type ExtractTypeNodeStrictDataFromMembers<MS extends Record<string, AnyNode>> = {
 	[K in keyof MS]: TypeOf<MS[K]>;
@@ -62,24 +62,58 @@ export type ExtractTypeNodeSubVariablesFromMembers<MS extends Record<string, Any
 	>
 >;
 
+export const _IncludeTypename = '_IT';
+
+export type ExtractIncludeTypename<T> = [T] extends [{ [_IncludeTypename]: infer A }] ? A : never;
+
 export interface TypenameNode<Name extends string> extends ScalarNode<Name, string, string, Name> {}
 
-type TypeNodeMembers<
-	Typename extends string,
-	MS extends Record<string, AnyNode>,
-	IncludeTypename extends boolean
-> = IncludeTypename extends true ? MS & { readonly __typename: TypenameNode<Typename> } : MS;
+export interface BaseTypeNodeOptions<MS extends Record<string, AnyNode>, Variables extends NodeVariables = {}>
+	extends NodeOptions<ExtractTypeNodePartialDataFromMembers<MS>, Variables> {
+	includeTypename?: boolean;
+}
 
-export type TypeNodeOptions<
+export interface IncludeTypenameTypeNodeOptions<
+	MS extends Record<string, AnyNode>,
+	Variables extends NodeVariables = {}
+> extends BaseTypeNodeOptions<MS, Variables> {
+	includeTypename: true;
+}
+
+export interface ExcludeTypenameTypeNodeOptions<
+	MS extends Record<string, AnyNode>,
+	Variables extends NodeVariables = {}
+> extends BaseTypeNodeOptions<MS, Variables> {
+	includeTypename?: false;
+}
+
+class BaseTypeNode<
 	Typename extends string,
 	MS extends Record<string, AnyNode>,
 	Variables extends NodeVariables = {},
-	IncludeTypename extends boolean = false
-> = IncludeTypename extends true
-	? NodeOptions<ExtractTypeNodePartialDataFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>, Variables> & {
-			includeTypename: true;
-	  }
-	: NodeOptions<ExtractTypeNodePartialDataFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>, Variables>;
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+> extends BaseNode<
+	ExtractTypeNodeStrictInputFromMembers<MS>,
+	ModifyOutputIfLocal<IsLocal, ExtractTypeNodeStrictOutputFromMembers<MS>>,
+	ExtractTypeNodeStrictDataFromMembers<MS>,
+	ExtractTypeNodePartialInputFromMembers<MS>,
+	ModifyOutputIfLocal<IsLocal, ExtractTypeNodePartialOutputFromMembers<MS>>,
+	ExtractTypeNodePartialDataFromMembers<MS>,
+	ModifyIfEntity<IsEntity, ExtractTypeNodeStrictDataFromMembers<MS>, ExtractTypeNodeCacheEntryFromMembers<MS>>,
+	Variables,
+	ExtractTypeNodeSubVariablesFromMembers<MS>,
+	ExtractTypeNodeRefsFromMembers<MS>
+> {
+	readonly tag = 'Type';
+	constructor(
+		readonly __typename: Typename,
+		readonly members: MS,
+		options?: BaseTypeNodeOptions<MS, Variables>
+	) {
+		super(options);
+	}
+}
 
 export class TypeNode<
 	Typename extends string,
@@ -88,53 +122,37 @@ export class TypeNode<
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false,
 	IncludeTypename extends boolean = false
-> extends BaseNode<
-	ExtractTypeNodeStrictInputFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>,
-	ModifyOutputIfLocal<
-		IsLocal,
-		ExtractTypeNodeStrictOutputFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>
-	>,
-	ExtractTypeNodeStrictDataFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>,
-	ExtractTypeNodePartialInputFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>,
-	ModifyOutputIfLocal<
-		IsLocal,
-		ExtractTypeNodePartialOutputFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>
-	>,
-	ExtractTypeNodePartialDataFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>,
-	ModifyIfEntity<
-		IsEntity,
-		ExtractTypeNodeStrictDataFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>,
-		ExtractTypeNodeCacheEntryFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>
-	>,
+> extends BaseTypeNode<
+	Typename,
+	[IncludeTypename] extends [true] ? MS & { __typename: TypenameNode<Typename> } : MS,
 	Variables,
-	ExtractTypeNodeSubVariablesFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>,
-	ModifyIfEntity<
-		IsEntity,
-		ExtractTypeNodeStrictDataFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>,
-		ExtractTypeNodeRefsFromMembers<TypeNodeMembers<Typename, MS, IncludeTypename>>
-	>
+	IsLocal,
+	IsEntity
 > {
-	readonly tag = 'Type';
-	readonly members: TypeNodeMembers<Typename, MS, IncludeTypename>;
+	readonly [_IncludeTypename]!: IncludeTypename;
 	readonly [_HasEncodingTransformations]: boolean;
 	readonly [_HasDecodingTransformations]: boolean;
 	constructor(
-		readonly __typename: Typename,
+		__typename: Typename,
 		members: MS,
-		options: IncludeTypename extends true ? TypeNodeOptions<Typename, MS, Variables, IncludeTypename> : undefined
+		options?: BaseTypeNodeOptions<
+			[IncludeTypename] extends [true] ? MS & { __typename: TypenameNode<Typename> } : MS,
+			Variables
+		>
 	) {
-		super(options);
-		this.members = options?.includeTypename
-			? {
-					...members,
-					__typename: scalar(__typename, literal(__typename), {
-						hasDecodingTransformations: false,
-						hasEncodingTransformations: false
-					})
-			  }
-			: (members as any);
-		this[_HasEncodingTransformations] = hasEncodingTransformations(this.members);
-		this[_HasDecodingTransformations] = hasDecodingTransformations(this.members);
+		const newMembers =
+			options?.includeTypename === true && !members.hasOwnProperty('__typename')
+				? {
+						...members,
+						__typename: scalar(__typename, literal(__typename), {
+							hasDecodingTransformations: false,
+							hasEncodingTransformations: false
+						})
+				  }
+				: members;
+		super(__typename, newMembers as any, options as any);
+		this[_HasDecodingTransformations] = hasDecodingTransformations(newMembers);
+		this[_HasEncodingTransformations] = hasEncodingTransformations(newMembers);
 	}
 }
 
@@ -147,8 +165,9 @@ export function type<
 >(
 	__typename: Typename,
 	members: MS,
-	options: TypeNodeOptions<Typename, MS, Variables, true>
+	options: IncludeTypenameTypeNodeOptions<MS & { __typename: TypenameNode<Typename> }, Variables>
 ): TypeNode<Typename, MS, Variables, IsLocal, IsEntity, true>;
+
 export function type<
 	Typename extends string,
 	MS extends Record<string, AnyNode>,
@@ -158,7 +177,7 @@ export function type<
 >(
 	__typename: Typename,
 	members: MS,
-	options?: TypeNodeOptions<Typename, MS, Variables>
+	options?: ExcludeTypenameTypeNodeOptions<MS, Variables>
 ): TypeNode<Typename, MS, Variables, IsLocal, IsEntity>;
 export function type<
 	Typename extends string,
@@ -170,15 +189,18 @@ export function type<
 >(
 	__typename: Typename,
 	members: MS,
-	options?: TypeNodeOptions<Typename, MS, Variables, IncludeTypename>
+	options?: BaseTypeNodeOptions<
+		[IncludeTypename] extends [true] ? MS & { __typename: TypenameNode<Typename> } : MS,
+		Variables
+	>
 ): TypeNode<Typename, MS, Variables, IsLocal, IsEntity, IncludeTypename> {
-	return new TypeNode(__typename, members, options as any);
+	return new TypeNode(__typename, members, options);
 }
 
 export function pickFromType<T extends TypeNode<any, any, any, any, any, any>, P extends keyof T['members']>(
 	node: T,
 	keys: P[]
-): TypeNode<T['__typename'], Pick<T['members'], P>, T['variables']> {
+): TypeNode<ExtractTypeName<T>, Pick<T['members'], P>, T['variables']> {
 	const n: any = {};
 	keys.forEach((k) => {
 		n[k] = node.members[k];
@@ -189,17 +211,17 @@ export function pickFromType<T extends TypeNode<any, any, any, any, any, any>, P
 export function omitFromType<T extends TypeNode<any, any, any, any, any, any>, P extends keyof T['members']>(
 	node: T,
 	keys: P[]
-): TypeNode<T['__typename'], Omit<T['members'], P>, T['variables']> {
+): TypeNode<ExtractTypeName<T>, Omit<T['members'], P>, T['variables']> {
 	const n: any = {};
-	for (const k in node.members) {
-		if (!keys.includes(k as P)) {
+	keys.forEach((k) => {
+		if (!keys.includes(k)) {
 			n[k] = node.members[k];
 		}
-	}
+	});
 	return type(node.__typename, n, node.variables) as any;
 }
 
-export function markTypeAsEntity<
+export function markAsEntity<
 	Typename extends string,
 	MS extends Record<string, AnyNode>,
 	Variables extends NodeVariables = {},
@@ -207,7 +229,7 @@ export function markTypeAsEntity<
 	IsEntity extends boolean = false,
 	IncludeTypename extends boolean = false
 >(
-	node: TypeNode<Typename, MS, Variables, IsLocal, IsEntity, IncludeTypename>
+	node: BaseTypeNode<Typename, MS, Variables, IsLocal, IsEntity>
 ): TypeNode<Typename, MS, Variables, IsLocal, true, IncludeTypename> {
-	return type(node.__typename, node.members, { ...node.options, isEntity: true });
+	return new TypeNode(node.__typename, node.members, { ...node.options, isEntity: true });
 }
