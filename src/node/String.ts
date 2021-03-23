@@ -5,8 +5,6 @@ import {
 	Ref,
 	PrimitiveNodeOptions,
 	BaseNode,
-	_HasDecodingTransformations,
-	_HasEncodingTransformations
 } from './shared';
 
 export class StringNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<
@@ -20,15 +18,13 @@ export class StringNode<Variables extends NodeVariables = {}, IsLocal extends bo
 	Variables
 > {
 	readonly tag = 'String';
-	readonly [_HasDecodingTransformations] = false;
-	readonly [_HasEncodingTransformations] = false;
-	constructor(options?: PrimitiveNodeOptions<Variables>) {
-		super(options);
+	constructor(readonly options?: PrimitiveNodeOptions<Variables, IsLocal>) {
+		super(options?.variables);
 	}
 }
 
 export function string<Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
-	options?: PrimitiveNodeOptions<Variables>
+	options?: PrimitiveNodeOptions<Variables, IsLocal>
 ): StringNode<Variables, IsLocal> {
 	return new StringNode(options);
 }

@@ -2,7 +2,6 @@ import {
 	BaseNode,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
-	ModifyOutputIfLocal,
 	AnyNode,
 	NodeVariables,
 	TypeOf,
@@ -12,45 +11,34 @@ import {
 	TypeOfStrictInput,
 	TypeOfStrictOutput,
 	TypeOfCacheEntry,
-	ModifyIfEntity,
 	TypeOfRefs,
-	_HasEncodingTransformations,
-	_HasDecodingTransformations,
 	PrimitiveNodeOptions
 } from './shared';
 
 export class MutationNode<
 	Result extends AnyNode,
-	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
+	Variables extends NodeVariables = {}
 > extends BaseNode<
 	TypeOfStrictInput<Result>,
-	ModifyOutputIfLocal<IsLocal, TypeOfStrictOutput<Result>>,
+	TypeOfStrictOutput<Result>,
 	TypeOf<Result>,
 	TypeOfPartialInput<Result>,
-	ModifyOutputIfLocal<IsLocal, TypeOfPartialOutput<Result>>,
+	TypeOfPartialOutput<Result>,
 	TypeOfPartial<Result>,
-	ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
+	TypeOfCacheEntry<Result>,
 	Variables,
 	ExtractSubVariablesDefinition<Result> & ExtractVariablesDefinition<Result>,
-	ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfRefs<Result>>
+	TypeOfRefs<Result>
 > {
 	readonly tag = 'Mutation';
-	readonly [_HasDecodingTransformations]: boolean;
-	readonly [_HasEncodingTransformations]: boolean;
-	constructor(readonly result: Result, options?: PrimitiveNodeOptions<Variables>) {
-		super(options);
-		this[_HasDecodingTransformations] = result[_HasDecodingTransformations];
-		this[_HasEncodingTransformations] = result[_HasEncodingTransformations];
+	constructor(readonly result: Result, readonly options?: PrimitiveNodeOptions<Variables, false>) {
+		super(options?.variables);
 	}
 }
 
 export function mutation<
 	Item extends AnyNode,
-	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(result: Item, options?: PrimitiveNodeOptions<Variables>): MutationNode<Item, Variables, IsLocal, IsEntity> {
+	Variables extends NodeVariables = {}
+>(result: Item, options?: PrimitiveNodeOptions<Variables, false>): MutationNode<Item, Variables> {
 	return new MutationNode(result, options);
 }

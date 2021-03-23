@@ -11,17 +11,13 @@ const toId = (path: N.Path) => path[path.length - 2]
 
 const PersonNode = N.type('Person', {
 	allFriends: N.map(N.staticString, N.staticString, {
-		useCustomCache: {
-			toId
-		}
+		toId
 	}),
 	friends: N.map(N.staticString, N.staticString, {
 		variables: {
 			friendIds: N.nonEmptyArray(N.staticString)
 		},
-		useCustomCache: {
-			toId
-		}
+		toId
 	})
 })
 
@@ -34,17 +30,13 @@ const PeopleId = constant('people')
 
 const SchemaNode = N.schema('MapWithCustomCache', {
 	allPeople: N.map(N.staticString, PersonNode, {
-		useCustomCache: {
-			toId: PeopleId
-		}
+		toId: PeopleId
 	}),
 	people: N.map(N.staticString, PersonNode, {
 		variables: {
 			peopleIds: N.nonEmptyArray(N.staticString)
 		},
-		useCustomCache: {
-			toId: PeopleId
-		}
+		toId: PeopleId
 	})
 })
 

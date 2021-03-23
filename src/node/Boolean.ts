@@ -5,8 +5,6 @@ import {
 	Ref,
 	BaseNode,
 	PrimitiveNodeOptions,
-	_HasEncodingTransformations,
-	_HasDecodingTransformations
 } from './shared';
 
 export class BooleanNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<
@@ -20,17 +18,15 @@ export class BooleanNode<Variables extends NodeVariables = {}, IsLocal extends b
 	Variables
 > {
 	readonly tag = 'Boolean';
-	readonly [_HasEncodingTransformations] = false;
-	readonly [_HasDecodingTransformations] = false;
-	constructor(options?: PrimitiveNodeOptions<Variables>) {
-		super(options);
+	constructor(readonly options?: PrimitiveNodeOptions<Variables, IsLocal>) {
+		super(options?.variables);
 	}
 }
 
-export function boolean<V extends NodeVariables = {}, IsLocal extends boolean = false>(
-	options?: PrimitiveNodeOptions<V>
-): BooleanNode<V, IsLocal> {
-	return new BooleanNode<V, IsLocal>(options);
+export function boolean<Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
+	options?: PrimitiveNodeOptions<Variables, IsLocal>
+): BooleanNode<Variables, IsLocal> {
+	return new BooleanNode<Variables, IsLocal>(options);
 }
 
 export const staticBoolean = /*#__PURE__*/ boolean();

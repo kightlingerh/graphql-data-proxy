@@ -17,7 +17,9 @@ import {
 	boolean,
 	string,
 	nullable,
-	tuple
+	tuple,
+	id,
+	intersect
 } from 'io-ts/lib/Guard'
 
 export {
@@ -35,7 +37,9 @@ export {
 	boolean,
 	string,
 	nullable,
-	tuple
+	tuple,
+	id,
+	intersect
 }
 
 export type Int = number

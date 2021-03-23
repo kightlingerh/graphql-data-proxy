@@ -4,9 +4,9 @@ import * as N from '../node'
 import { showNode, showTypeNode } from '../node/show'
 import { isMapNode, isScalarNode, isSumNode, isTypeNode, isWrappedNode, WrappedNode } from './shared'
 
-const VALIDATIONS: WeakMap<N.SchemaNode<any, any>, WeakMap<N.SchemaNode<any, any>, Array<Tree<string>>>> = new WeakMap()
+const VALIDATIONS: WeakMap<N.TypeNode<any, any>, WeakMap<N.TypeNode<any, any>, Array<Tree<string>>>> = new WeakMap()
 
-export function validate(schema: N.SchemaNode<any, any>, request: N.SchemaNode<any, any>, allowMutations = true) {
+export function validate(schema: N.TypeNode<any, any>, request: N.TypeNode<any, any>, allowMutations = true) {
 	const schemaValidations = VALIDATIONS.get(schema)
 	if (schemaValidations) {
 		const requestValidation = schemaValidations.get(request)

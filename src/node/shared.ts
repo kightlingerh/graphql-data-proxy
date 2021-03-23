@@ -28,29 +28,21 @@ export const _Ref = '_R';
 
 export const _CacheEntry = '_CE';
 
-export const _HasDecodingTransformations = '_DT';
-
-export const _HasEncodingTransformations = '_ET';
-
-export const _Print = '_P';
-
-export const _IsLocal = '_IL';
-
-export const _IsEntity = '_IE';
-
-export const _ToId = '_TI';
-
-export interface PrimitiveNodeOptions<V extends NodeVariables> {
+export interface PrimitiveNodeOptions<
+	V extends NodeVariables,
+	IsLocal extends boolean = boolean,
+	IsEntity extends boolean = boolean
+> {
 	readonly print?: Lazy<string>;
-	readonly isLocal?: boolean;
-	readonly isEntity?: boolean;
+	readonly isLocal?: IsLocal;
+	readonly isEntity?: IsEntity;
 	readonly variables?: V;
 }
 
-export interface NodeOptions<PD, V extends NodeVariables = {}> extends PrimitiveNodeOptions<V> {
-	readonly toId?: ToId<PD, V>
+export interface NodeOptions<PD, V extends NodeVariables, IsLocal extends boolean = false, IsEntity extends boolean = false>
+	extends PrimitiveNodeOptions<V, IsLocal, IsEntity> {
+	readonly toId?: ToId<PD, V>;
 }
-
 
 export interface INode<
 	SDI,
@@ -64,12 +56,10 @@ export interface INode<
 	SV extends NodeVariables = {},
 	R = CE
 > {
-	readonly options: PrimitiveNodeOptions<V>;
+	readonly [_Variables]: V;
 	readonly [_SubVariables]: SV;
 
 	// for internal use
-	readonly [_HasDecodingTransformations]: boolean;
-	readonly [_HasEncodingTransformations]: boolean;
 	readonly [_StrictDataInput]: SDI;
 	readonly [_StrictDataOutput]: SDO;
 	readonly [_StrictData]: SD;
@@ -91,10 +81,8 @@ export abstract class BaseNode<
 	SV extends NodeVariables = {},
 	R = CE
 > implements INode<SDI, SDO, SD, PDI, PDO, PD, CE, V, SV, R> {
-	readonly [_Variables]: V;
+	readonly [_Variables]!: V
 	readonly [_SubVariables]!: SV;
-	readonly [_HasDecodingTransformations]: boolean;
-	readonly [_HasEncodingTransformations]: boolean;
 	readonly [_StrictDataInput]!: SDI;
 	readonly [_StrictDataOutput]!: SDO;
 	readonly [_StrictData]!: SD;
@@ -103,8 +91,10 @@ export abstract class BaseNode<
 	readonly [_PartialData]!: PD;
 	readonly [_Ref]!: R;
 
-	constructor(readonly options: PrimitiveNodeOptions<V> = {} as PrimitiveNodeOptions<V>) {
-		this[_Variables] = options.variables ?? EMPTY_VARIABLES;
+	constructor(
+		vars: V = EMPTY_VARIABLES
+	) {
+		this[_Variables] = vars;
 	}
 }
 
@@ -178,13 +168,13 @@ export type Intersection<T> = (T extends unknown ? (x: T) => 0 : never) extends 
 
 export type NodeVariables = Record<string, AnyNode>;
 
-export type ExtractIsLocal<T> = [T] extends [{ options: PrimitiveNodeOptions<any> }]
+export type ExtractIsLocal<T> = [T] extends [{ options: PrimitiveNodeOptions<any, boolean, boolean> }]
 	? [T['options']['isLocal']] extends [boolean]
 		? T['options']['isLocal']
 		: false
 	: never;
 
-export type ExtractIsEntity<T> = [T] extends [{ options: PrimitiveNodeOptions<any> }]
+export type ExtractIsEntity<T> = [T] extends [{ options: PrimitiveNodeOptions<any, boolean, boolean> }]
 	? [T['options']['isEntity']] extends [boolean]
 		? T['options']['isEntity']
 		: false
@@ -207,46 +197,4 @@ export function useLocalModel<I, O, A>(model: M.Model<I, O, A>): M.Model<I, unde
 		...model,
 		encode: constUndefined
 	};
-}
-
-export function useAdjustedModel(
-	model: M.Model<any, any, any>,
-	isLocal: boolean,
-	useIdEncoder: boolean,
-	useIdDecoder: boolean
-) {
-	if (isLocal) {
-		return useLocalModel(model);
-	}
-	if (__DEV__ || !__DISABLE_VALIDATION__) {
-		return model;
-	}
-	if (useIdEncoder && useIdDecoder) {
-		return M.useIdentityDecoder(M.useIdentityEncoder(model));
-	}
-	if (useIdEncoder) {
-		return M.useIdentityEncoder(model);
-	}
-	if (useIdDecoder) {
-		return M.useIdentityDecoder(model);
-	}
-	return model as any;
-}
-
-export function hasEncodingTransformations(ms: Record<string, AnyNode>): boolean {
-	for (const k in ms) {
-		if (ms[k]?.[_HasEncodingTransformations]) {
-			return true;
-		}
-	}
-	return false;
-}
-
-export function hasDecodingTransformations(ms: Record<string, AnyNode>): boolean {
-	for (const k in ms) {
-		if (ms[k]?.[_HasDecodingTransformations]) {
-			return true;
-		}
-	}
-	return false;
 }

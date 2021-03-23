@@ -5,9 +5,7 @@ import {
 	ModifyOutputIfLocal,
 	NodeVariables,
 	Ref,
-	PrimitiveNodeOptions,
-	_HasEncodingTransformations,
-	_HasDecodingTransformations
+	PrimitiveNodeOptions
 } from './shared';
 
 export class IntNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<
@@ -21,17 +19,15 @@ export class IntNode<Variables extends NodeVariables = {}, IsLocal extends boole
 	Variables
 > {
 	readonly tag = 'Int';
-	readonly [_HasEncodingTransformations] = false;
-	readonly [_HasDecodingTransformations] = false;
-	constructor(options?: PrimitiveNodeOptions<Variables>) {
-		super(options);
+	constructor(readonly options?: PrimitiveNodeOptions<Variables, IsLocal>) {
+		super(options?.variables);
 	}
 }
 
-export function int<V extends NodeVariables = {}, IsLocal extends boolean = false>(
-	options?: PrimitiveNodeOptions<V>
-): IntNode<V, IsLocal> {
-	return new IntNode<V, IsLocal>(options);
+export function int<Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
+	options?: PrimitiveNodeOptions<Variables, IsLocal>
+): IntNode<Variables, IsLocal> {
+	return new IntNode<Variables, IsLocal>(options);
 }
 
 export const staticInt = /*#__PURE__*/ int();

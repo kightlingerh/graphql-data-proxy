@@ -1,7 +1,6 @@
 import { isEmptyObject, isEmptyString } from '../shared/index';
 import { Node } from './Node';
 import { OptionNode } from './Option';
-import { SchemaNode } from './Schema';
 import { NodeVariables } from './shared';
 import { TypeNode } from './Type';
 import { useNodeMergedVariables } from './Variables';
@@ -21,7 +20,7 @@ const ON = 'on';
 function printTypeNodeMembers(members: { [K: string]: Node }): string {
 	const tokens: string[] = [OPEN_BRACKET, OPEN_SPACE];
 	for (const [key, value] of Object.entries(members)) {
-		if (!value?.__isLocal) {
+		if (!value?.options?.isLocal) {
 			tokens.push(key);
 			if (!isEmptyObject(value.variables)) {
 				tokens.push(printVariables(value.variables));
@@ -104,7 +103,10 @@ function printSumNodeMembers(members: ReadonlyArray<TypeNode<any, any>>): string
 }
 
 function printNode(node: Node): string {
-	if (node?.__isLocal) {
+	if (node?.options?.print) {
+		return node.options.print();
+	}
+	if (node?.options?.isLocal) {
 		return '';
 	}
 	switch (node.tag) {
@@ -117,7 +119,7 @@ function printNode(node: Node): string {
 		case 'Type':
 			return printTypeNodeMembers(node.members);
 		case 'Sum':
-			return printSumNodeMembers(node.members);
+			return printSumNodeMembers(node.members as any);
 		case 'Map':
 		case 'Option':
 		case 'NonEmptyArray':
@@ -129,7 +131,7 @@ function printNode(node: Node): string {
 }
 
 export function print<N extends string, T extends { [K in keyof T]: Node }>(
-	schema: SchemaNode<N, T>,
+	schema: TypeNode<N, T>,
 	operation: string,
 	operationName: string
 ): string {

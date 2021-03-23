@@ -11,9 +11,6 @@ export function usePartialNodeDecoder<N extends Node>(node: N): D.Decoder<TypeOf
 }
 
 function useNodeDecoder(node: Node, isStrict: boolean): any {
-	if (!node.__hasEncodingTransformations) {
-		return D.id();
-	}
 	switch (node.tag) {
 		case 'String':
 			return D.string;

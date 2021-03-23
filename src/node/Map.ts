@@ -10,26 +10,24 @@ import {
 	TypeOfCacheEntry,
 	ModifyIfEntity,
 	TypeOfRefs,
-	_HasDecodingTransformations,
-	_HasEncodingTransformations,
-	NodeOptions
+	NodeOptions, TypeOfStrictInput, TypeOfStrictOutput, TypeOfPartialInput, TypeOfPartialOutput
 } from './shared';
 
-export interface MapNodeOptions<Key extends AnyNode, Item extends AnyNode, Variables extends NodeVariables = {}>
-	extends NodeOptions<Map<TypeOf<Key>, TypeOfPartial<Item>>, Variables> {
+export interface MapNodeOptions<Key extends AnyNode, Item extends AnyNode, Variables extends NodeVariables, IsLocal extends boolean, IsEntity extends boolean>
+	extends NodeOptions<Map<TypeOf<Key>, TypeOfPartial<Item>>, Variables, IsLocal, IsEntity> {
 	readonly __typename?: string;
 }
 
 export class MapNode<
-	StrictInput,
-	StrictOutput,
-	PartialInput,
-	PartialOutput,
 	Key extends AnyNode,
 	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
+	IsEntity extends boolean = false,
+	StrictInput = Record<string, TypeOfStrictInput<Item>>,
+	StrictOutput = Record<string, TypeOfStrictOutput<Item>>,
+	PartialInput = Record<string, TypeOfPartialInput<Item>>,
+	PartialOutput = Record<string, TypeOfPartialOutput<Item>>
 > extends BaseNode<
 	StrictInput,
 	ModifyOutputIfLocal<IsLocal, StrictOutput>,
@@ -45,21 +43,13 @@ export class MapNode<
 	readonly tag = 'Map';
 	// for array of object encodings
 	readonly __typename?: string;
-	readonly [_HasDecodingTransformations]: boolean;
-	readonly [_HasEncodingTransformations]: boolean;
-	constructor(readonly key: Key, readonly item: Item, options?: MapNodeOptions<Key, Item, Variables>) {
-		super(options);
-		this.__typename = options?.__typename;
-		this[_HasDecodingTransformations] = key[_HasDecodingTransformations] || item[_HasDecodingTransformations];
-		this[_HasDecodingTransformations] = key[_HasDecodingTransformations] || item[_HasEncodingTransformations];
+	constructor(readonly key: Key, readonly item: Item, readonly options?: MapNodeOptions<Key, Item, Variables, IsLocal, IsEntity>) {
+		super(options?.variables);
+		this.__typename = options?.__typename
 	}
 }
 
 export function map<
-	StrictInput,
-	StrictOutput,
-	PartialInput,
-	PartialOutput,
 	Key extends AnyNode,
 	Item extends AnyNode,
 	Variables extends NodeVariables = {},
@@ -68,7 +58,7 @@ export function map<
 >(
 	key: Key,
 	item: Item,
-	options?: MapNodeOptions<Key, Item, Variables>
-): MapNode<StrictInput, StrictOutput, PartialInput, PartialOutput, Key, Item, Variables, IsLocal, IsEntity> {
+	options?: MapNodeOptions<Key, Item, Variables, IsLocal, IsEntity>
+): MapNode<Key, Item, Variables, IsLocal, IsEntity> {
 	return new MapNode(key, item, options);
 }

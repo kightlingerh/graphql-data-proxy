@@ -1,11 +1,8 @@
 import * as E from '../model/Encoder';
 import { Node } from './Node';
-import { _HasEncodingTransformations, TypeOf, TypeOfStrictOutput } from './shared';
+import { TypeOf, TypeOfStrictOutput } from './shared';
 
 export function useNodeEncoder<N extends Node>(node: N): E.Encoder<TypeOfStrictOutput<N>, TypeOf<N>> {
-	if (!node[_HasEncodingTransformations]) {
-		return E.id() as E.Encoder<TypeOfStrictOutput<N>, TypeOf<N>>;
-	}
 	switch (node.tag) {
 		case 'String':
 			return E.string as any;

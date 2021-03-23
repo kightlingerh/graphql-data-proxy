@@ -16,10 +16,8 @@ const PersonNode = N.type(
 		lastName: N.staticString
 	},
 	{
-		useCustomCache: {
-			toId: (_1, _2, data) => {
-				return data && data.id
-			}
+		toId: (_1, _2, data) => {
+			return data && data.id
 		}
 	}
 )

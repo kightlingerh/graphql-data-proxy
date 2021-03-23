@@ -31,9 +31,6 @@ function useNodeEq(node: Node, isStrict: boolean): any {
 		case 'Map':
 			return EQ.map(useNodeEq(node.key, isStrict), useNodeEq(node.item, isStrict));
 		case 'Type':
-			if (node.equals) {
-				return node;
-			}
 			const typeEncoders: any = {};
 			for (const [key, value] of Object.entries(node.members)) {
 				typeEncoders[key] = useNodeEq(value as Node, isStrict);

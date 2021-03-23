@@ -5,11 +5,8 @@ import {
 	NodeVariables,
 	Ref,
 	PrimitiveNodeOptions,
-	BaseNode,
-	_HasDecodingTransformations,
-	_HasEncodingTransformations
+	BaseNode
 } from './shared';
-
 
 export class FloatNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<
 	number,
@@ -22,17 +19,15 @@ export class FloatNode<Variables extends NodeVariables = {}, IsLocal extends boo
 	Variables
 > {
 	readonly tag = 'Float';
-	readonly [_HasDecodingTransformations] = false;
-	readonly [_HasEncodingTransformations] = false;
-	constructor(options?: PrimitiveNodeOptions<Variables>) {
-		super(options);
+	constructor(readonly options?: PrimitiveNodeOptions<Variables, IsLocal>) {
+		super(options?.variables);
 	}
 }
 
-export function float<V extends NodeVariables = {}, IsLocal extends boolean = false>(
-	options?: PrimitiveNodeOptions<V>
-): FloatNode<V, IsLocal> {
-	return new FloatNode<V, IsLocal>(options);
+export function float<Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
+	options?: PrimitiveNodeOptions<Variables, IsLocal>
+): FloatNode<Variables, IsLocal> {
+	return new FloatNode<Variables, IsLocal>(options);
 }
 
 export const staticFloat = /*#__PURE__*/ float();

@@ -16,20 +16,25 @@ import {
 	Ref,
 	ModifyIfEntity,
 	TypeOfRefs,
-	PrimitiveNodeOptions, ExtractIsLocal, ExtractIsEntity
+	PrimitiveNodeOptions,
+	ExtractIsLocal,
+	ExtractIsEntity
 } from './shared';
-import { ExtractTypeName, ExtractTypeNodeMembers, type, TypeNode } from './Type';
+import { ExtractIncludeTypename, ExtractTypeName, ExtractTypeNodeMembers, type, TypeNode } from './Type';
 
 type SumTypeNode = TypeNode<any, any, any, any, any, any>;
 
 type ExtractSumNodeMembers<MS extends ReadonlyArray<SumTypeNode>> = {
-	[K in keyof MS]: TypeNode<
-		ExtractTypeName<MS[K]>,
-		ExtractTypeNodeMembers<MS[K]>,
-		ExtractVariablesDefinition<MS[K]>,
-		ExtractIsLocal<MS[K]>,
-		ExtractIsEntity<MS[K]>
-	>;
+	[K in keyof MS]: [ExtractIncludeTypename<MS[K]>] extends [true]
+		? MS[K]
+		: TypeNode<
+				ExtractTypeName<MS[K]>,
+				ExtractTypeNodeMembers<MS[K]>,
+				ExtractVariablesDefinition<MS[K]>,
+				ExtractIsLocal<MS[K]>,
+				ExtractIsEntity<MS[K]>,
+				ExtractIncludeTypename<MS[K]>
+		  >;
 };
 
 type ExtractTypeOfSumNodeStrictInput<MS extends ReadonlyArray<SumTypeNode>> = {
@@ -70,11 +75,6 @@ export type ExtractSumNodeRefs<MS extends ReadonlyArray<SumTypeNode>> = {
 	[K in keyof MS]: Ref<Option<TypeOfRefs<MS[K]>>>;
 }[number];
 
-export type SumNodeOptions<MS extends ReadonlyArray<SumTypeNode>, Variables extends NodeVariables = {}> = PrimitiveNodeOptions<
-	ExtractTypeOfPartialSumNode<MS>,
-	Variables
->;
-
 function useSumMemberRecord(members: ReadonlyArray<SumTypeNode>) {
 	const x: any = {};
 	members.forEach((member) => {
@@ -113,9 +113,12 @@ export class SumNode<
 > {
 	readonly tag = 'Sum';
 	readonly members: ExtractSumNodeMembers<MS>;
-	readonly membersRecord: Record<ExtractTypeName<{ [K in keyof ExtractSumNodeMembers<MS>]: ExtractSumNodeMembers<MS>[K] }[number]>, ExtractSumNodeMembers<MS>[number]>;
-	constructor(members: MS, options?: SumNodeOptions<MS, Variables>) {
-		super(options);
+	readonly membersRecord: Record<
+		ExtractTypeName<{ [K in keyof ExtractSumNodeMembers<MS>]: ExtractSumNodeMembers<MS>[K] }[number]>,
+		ExtractSumNodeMembers<MS>[number]
+	>;
+	constructor(members: MS, readonly options?: PrimitiveNodeOptions<Variables, IsLocal, IsEntity>) {
+		super(options?.variables);
 		this.members = addTypenameToMembers(members);
 		this.membersRecord = useSumMemberRecord(this.members);
 	}
@@ -126,15 +129,15 @@ export function sum<
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(members: MS, options?: SumNodeOptions<MS, Variables>): SumNode<MS, Variables, IsLocal, IsEntity> {
-	return new SumNode(members, options)
+>(members: MS, options?: PrimitiveNodeOptions<Variables, IsLocal, IsEntity>): SumNode<MS, Variables, IsLocal, IsEntity> {
+	return new SumNode(members, options);
 }
 
-export function markSumAsEntity<MS extends ReadonlyArray<SumTypeNode>,
+export function markSumAsEntity<
+	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
-	IsEntity extends boolean = false>(
-	node: SumNode<MS, Variables, IsLocal, IsEntity>
-): SumNode<MS, Variables, IsLocal, true> {
-	return new SumNode<MS, Variables, IsLocal, true>(node.members as MS, {...node.options, isEntity: true})
+	IsEntity extends boolean = false
+>(node: SumNode<MS, Variables, IsLocal, IsEntity>): SumNode<MS, Variables, IsLocal, true> {
+	return new SumNode<MS, Variables, IsLocal, true>(node.members as MS, { ...node.options, isEntity: true });
 }

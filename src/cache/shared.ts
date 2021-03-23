@@ -46,7 +46,7 @@ export function isPrimitiveNode(node: N.Node): node is PrimitiveNode {
 }
 
 export function isNonPrimitiveEntityNode(node: N.Node): boolean {
-	return !PrimitiveTags.has(node.tag) && !!node?.__isEntity
+	return !PrimitiveTags.has(node.tag) && !!node?.options?.isEntity
 }
 
 export type WrappedNode =
@@ -60,7 +60,6 @@ export type CacheGraphqlNode =
 	| WrappedNode
 	| N.TypeNode<any, any, any, any>
 	| N.SumNode<any, any, any, any>
-	| N.SchemaNode<any, any>
 	| N.ScalarNode<any, any, any, any, any, any>
 
 const WrappedNodeTags = new Set<N.NodeTag>(['Array', 'Map', 'NonEmptyArray', 'Option'])

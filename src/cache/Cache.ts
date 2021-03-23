@@ -1,19 +1,18 @@
-import { isNonEmpty, snoc } from 'fp-ts/lib/Array'
-import { left, right } from 'fp-ts/lib/Either'
-import { absurd, constVoid, Endomorphism, pipe } from 'fp-ts/lib/function'
-import { IO, sequenceArray as sequenceArrayIO } from 'fp-ts/lib/IO'
-import { NonEmptyArray, of } from 'fp-ts/lib/NonEmptyArray'
-import { isNone, isSome, none, Option, some, map as mapO, Some, chain } from 'fp-ts/lib/Option'
-import { Reader } from 'fp-ts/lib/Reader'
-import { TaskEither } from 'fp-ts/lib/TaskEither'
-import { Tree } from 'fp-ts/lib/Tree'
-import { computed, shallowReactive, shallowRef } from 'vue'
+import { isNonEmpty, snoc } from 'fp-ts/lib/Array';
+import { left, right } from 'fp-ts/lib/Either';
+import { absurd, constVoid, Endomorphism, pipe } from 'fp-ts/lib/function';
+import { IO, sequenceArray as sequenceArrayIO } from 'fp-ts/lib/IO';
+import { NonEmptyArray, of } from 'fp-ts/lib/NonEmptyArray';
+import { isNone, isSome, none, Option, some, map as mapO, Some, chain } from 'fp-ts/lib/Option';
+import { Reader } from 'fp-ts/lib/Reader';
+import { TaskEither } from 'fp-ts/lib/TaskEither';
+import { Tree } from 'fp-ts/lib/Tree';
+import { computed, shallowReactive, shallowRef } from 'vue';
 import {
 	Node,
 	TypeOf,
 	TypeOfMergedVariables,
 	TypeOfPartial,
-	SchemaNode,
 	TypeOfRefs,
 	Path,
 	TypeNode,
@@ -23,56 +22,56 @@ import {
 	MapNode,
 	SumNode,
 	TypeOfCacheEntry
-} from '../node'
-import { Ref } from '../node'
-import { useNodeMergedVariablesEncoder } from '../node/Variables'
-import { isEmptyObject } from '../shared'
-import { isPrimitiveNode, traverseMapWithKey } from './shared'
-import { validate } from './validate'
+} from '../node';
+import { Ref } from '../node';
+import { useNodeMergedVariablesEncoder } from '../node/Variables';
+import { isEmptyObject } from '../shared';
+import { isPrimitiveNode, traverseMapWithKey } from './shared';
+import { validate } from './validate';
 
 export interface CacheError extends NonEmptyArray<Tree<string>> {}
 
 export interface Persist {
-	store(key: string, value: unknown): TaskEither<CacheError, void>
+	store(key: string, value: unknown): TaskEither<CacheError, void>;
 
-	restore<T>(key: string): TaskEither<CacheError, T>
+	restore<T>(key: string): TaskEither<CacheError, T>;
 
-	delete(key: string): TaskEither<CacheError, void>
+	delete(key: string): TaskEither<CacheError, void>;
 
-	update<T>(key: string, f: Endomorphism<T>): TaskEither<CacheError, void>
+	update<T>(key: string, f: Endomorphism<T>): TaskEither<CacheError, void>;
 }
 
 export interface CacheDependencies {
-	id?: string
-	persist?: Persist
-	useImmutableArrays?: boolean
+	id?: string;
+	persist?: Persist;
+	useImmutableArrays?: boolean;
 }
 
 export interface CacheWriteResult extends IO<Evict> {}
 
 export interface Evict extends IO<void> {}
 
-export interface Cache<R extends SchemaNode<any, any>> {
-	read: Reader<TypeOfMergedVariables<R>, IO<Option<TypeOf<R>>>>
-	write: Reader<TypeOfMergedVariables<R>, Reader<TypeOfPartial<R>, CacheWriteResult>>
-	toEntries: Reader<TypeOfMergedVariables<R>, IO<TypeOfRefs<R>>>
+export interface Cache<R extends TypeNode<any, any>> {
+	read: Reader<TypeOfMergedVariables<R>, IO<Option<TypeOf<R>>>>;
+	write: Reader<TypeOfMergedVariables<R>, Reader<TypeOfPartial<R>, CacheWriteResult>>;
+	toEntries: Reader<TypeOfMergedVariables<R>, IO<TypeOfRefs<R>>>;
 }
 
 export function make(deps: CacheDependencies) {
-	return <S extends SchemaNode<any, any>>(schema: S) => {
-		const rootPath = of(deps.id ?? 'root')
-		const uniqueNodes = new Map<string, any>()
-		const cache: object = useTypeNodeCacheEntry(schema, rootPath, uniqueNodes, {})
+	return <S extends TypeNode<any, any>>(schema: S) => {
+		const rootPath = of(deps.id ?? 'root');
+		const uniqueNodes = new Map<string, any>();
+		const cache: TypeOfCacheEntry<S> = useTypeNodeCacheEntry(schema, rootPath, uniqueNodes, {});
 
-		if (__DEV__) {
-			console.log('cache', cache)
-		}
+		// if (__DEV__) {
+		// 	console.log('cache', cache);
+		// }
 
-		return <R extends SchemaNode<any, any>>(request: R) => {
+		return <R extends TypeNode<any, any>>(request: R) => {
 			if (__DEV__) {
-				const errors = validate(schema, request)
+				const errors = validate(schema, request);
 				if (isNonEmpty(errors)) {
-					return left<CacheError, Cache<R>>(errors)
+					return left<CacheError, Cache<R>>(errors);
 				}
 			}
 			return right<CacheError, Cache<R>>({
@@ -81,9 +80,9 @@ export function make(deps: CacheDependencies) {
 					write(data, schema, request, rootPath, uniqueNodes, deps, variables, cache),
 				toEntries: (variables) => () =>
 					toEntries(schema, request, rootPath, uniqueNodes, deps, variables, cache)
-			})
-		}
-	}
+			});
+		};
+	};
 }
 
 function toEntries(
@@ -95,17 +94,17 @@ function toEntries(
 	variables: Record<string, unknown>,
 	cache: any
 ): any {
-	if (isPrimitiveNode(schema) || !!schema.__isEntity) {
-		return cache
+	if (isPrimitiveNode(schema) || !!schema?.options?.isEntity) {
+		return cache;
 	}
-	if (!!request.__isEntity) {
-		return computed(() => read(schema, request, path, uniqueNodes, deps, variables, cache))
+	if (!!request?.options?.isEntity) {
+		return computed(() => read(schema, request, path, uniqueNodes, deps, variables, cache));
 	}
 	switch (request.tag) {
 		case 'Type':
-			return toEntriesTypeNode(schema as TypeNode<any, any>, request, path, uniqueNodes, deps, variables, cache)
+			return toEntriesTypeNode(schema as TypeNode<any, any>, request, path, uniqueNodes, deps, variables, cache);
 		case 'Array':
-			return toEntriesArrayNode(schema as ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return toEntriesArrayNode(schema as ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache);
 		case 'NonEmptyArray':
 			return toEntriesNonEmptyArrayNode(
 				schema as NonEmptyArrayNode<any>,
@@ -115,9 +114,9 @@ function toEntries(
 				deps,
 				variables,
 				cache
-			)
+			);
 		case 'Option':
-			return toEntriesOptionNode(schema as OptionNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return toEntriesOptionNode(schema as OptionNode<any>, request, path, uniqueNodes, deps, variables, cache);
 		case 'Map':
 			return toEntriesMapNode(
 				schema as MapNode<any, any, any, any, any, any>,
@@ -127,11 +126,11 @@ function toEntries(
 				deps,
 				variables,
 				cache
-			)
+			);
 		case 'Sum':
-			return toEntriesSumNode(schema as SumNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return toEntriesSumNode(schema as SumNode<any>, request, path, uniqueNodes, deps, variables, cache);
 		default:
-			return cache
+			return cache;
 	}
 }
 
@@ -144,9 +143,9 @@ function toEntriesTypeNode(
 	variables: Record<string, unknown>,
 	entry: any
 ) {
-	const x: any = {}
+	const x: any = {};
 	for (const k in request.members) {
-		const memberPath = snoc(path, k)
+		const memberPath = snoc(path, k);
 		x[k] = toEntries(
 			schema.members[k],
 			request.members[k],
@@ -155,9 +154,9 @@ function toEntriesTypeNode(
 			deps,
 			variables,
 			useTypeNodeMemberCacheEntry(k, schema, memberPath, uniqueNodes, variables, entry)
-		)
+		);
 	}
-	return x
+	return x;
 }
 
 function toEntriesArrayNode(
@@ -169,7 +168,9 @@ function toEntriesArrayNode(
 	variables: Record<string, unknown>,
 	cache: any[]
 ) {
-	return cache.map((val, i) => toEntries(schema.item, request.item, snoc(path, i), uniqueNodes, deps, variables, val))
+	return cache.map((val, i) =>
+		toEntries(schema.item, request.item, snoc(path, i), uniqueNodes, deps, variables, val)
+	);
 }
 
 function toEntriesNonEmptyArrayNode(
@@ -195,7 +196,7 @@ function toEntriesNonEmptyArrayNode(
 				)
 			)
 		)(cache.value)
-	)
+	);
 }
 
 function toEntriesOptionNode(
@@ -211,7 +212,7 @@ function toEntriesOptionNode(
 		mapO((entry) => toEntries(schema.item, request.item, snoc(path, 'some'), uniqueNodes, deps, variables, entry))(
 			cache.value
 		)
-	)
+	);
 }
 
 function toEntriesMapNode(
@@ -225,7 +226,7 @@ function toEntriesMapNode(
 ) {
 	return traverseMapWithKey((key: string, val) =>
 		toEntries(schema.item, request.item, snoc(path, key), uniqueNodes, deps, variables, val)
-	)(cache)
+	)(cache);
 }
 
 function toEntriesSumNode(
@@ -249,7 +250,7 @@ function toEntriesSumNode(
 					variables,
 					cache.value.value[1]
 			  )
-	)
+	);
 }
 
 function read(
@@ -261,14 +262,14 @@ function read(
 	variables: Record<string, unknown>,
 	cache: any
 ): Option<any> {
-	if (isPrimitiveNode(schema) || !!schema?.__isEntity) {
-		return cache.value
+	if (isPrimitiveNode(schema) || !!schema?.options?.isEntity) {
+		return cache.value;
 	}
 	switch (request.tag) {
 		case 'Type':
-			return readTypeNode(schema as TypeNode<any, any>, request, path, uniqueNodes, deps, variables, cache)
+			return readTypeNode(schema as TypeNode<any, any>, request, path, uniqueNodes, deps, variables, cache);
 		case 'Array':
-			return readArrayNode(schema as ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return readArrayNode(schema as ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache);
 		case 'NonEmptyArray':
 			return readNonEmptyArrayNode(
 				schema as NonEmptyArrayNode<any>,
@@ -278,9 +279,9 @@ function read(
 				deps,
 				variables,
 				cache
-			)
+			);
 		case 'Option':
-			return readOptionNode(schema as OptionNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return readOptionNode(schema as OptionNode<any>, request, path, uniqueNodes, deps, variables, cache);
 		case 'Map':
 			return readMapNode(
 				schema as MapNode<any, any, any, any, any, any>,
@@ -290,13 +291,13 @@ function read(
 				deps,
 				variables,
 				cache
-			)
+			);
 		case 'Sum':
-			return readSumNode(schema as SumNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return readSumNode(schema as SumNode<any>, request, path, uniqueNodes, deps, variables, cache);
 		case 'Mutation':
-			return none
+			return none;
 		default:
-			return cache.value
+			return cache.value;
 	}
 }
 
@@ -309,9 +310,9 @@ function readTypeNode(
 	variables: Record<string, unknown>,
 	entry: any
 ): Option<any> {
-	const x: any = {}
+	const x: any = {};
 	for (const k in request.members) {
-		const keyPath = snoc(path, k)
+		const keyPath = snoc(path, k);
 		const result = read(
 			schema.members[k],
 			request.members[k],
@@ -320,13 +321,13 @@ function readTypeNode(
 			deps,
 			variables,
 			useTypeNodeMemberCacheEntry(k, schema, keyPath, uniqueNodes, variables, entry)
-		)
+		);
 		if (isNone(result)) {
-			return none
+			return none;
 		}
-		x[k] = result.value
+		x[k] = result.value;
 	}
-	return some(x)
+	return some(x);
 }
 
 function readArrayNode(
@@ -338,18 +339,18 @@ function readArrayNode(
 	variables: Record<string, unknown>,
 	cache: any[]
 ) {
-	const length = cache.length
-	const sw = schema.item
-	const rw = request.item
-	const result = new Array(length)
+	const length = cache.length;
+	const sw = schema.item;
+	const rw = request.item;
+	const result = new Array(length);
 	for (let i = 0; i < length; i++) {
-		const r = read(sw, rw, snoc(path, i), uniqueNodes, deps, variables, cache[i])
+		const r = read(sw, rw, snoc(path, i), uniqueNodes, deps, variables, cache[i]);
 		if (isNone(r)) {
-			return none
+			return none;
 		}
-		result[i] = r.value
+		result[i] = r.value;
 	}
-	return some(result)
+	return some(result);
 }
 
 function readNonEmptyArrayNode(
@@ -370,9 +371,9 @@ function readNonEmptyArrayNode(
 			deps,
 			variables,
 			cache.value.value as any
-		)
+		);
 	} else {
-		return none
+		return none;
 	}
 }
 
@@ -390,7 +391,7 @@ function readOptionNode(
 			cache.value,
 			chain((entry) => read(schema.item, request.item, snoc(path, 'some'), uniqueNodes, deps, variables, entry))
 		)
-	)
+	);
 }
 
 function readMapNode(
@@ -403,19 +404,19 @@ function readMapNode(
 	cache: Map<any, any>
 ) {
 	if (cache.size === 0) {
-		return some(new Map())
+		return some(new Map());
 	} else {
-		const result = new Map()
-		const sw = schema.item
-		const rw = request.item
+		const result = new Map();
+		const sw = schema.item;
+		const rw = request.item;
 		for (const [key, value] of cache.entries()) {
-			const r = read(sw, rw, snoc(path, key), uniqueNodes, deps, variables, value)
+			const r = read(sw, rw, snoc(path, key), uniqueNodes, deps, variables, value);
 			if (isNone(r)) {
-				return none
+				return none;
 			}
-			result.set(key, r.value)
+			result.set(key, r.value);
 		}
-		return some(result)
+		return some(result);
 	}
 }
 
@@ -438,7 +439,7 @@ function readSumNode(
 				deps,
 				variables,
 				cache.value.value[1]
-		  )
+		  );
 }
 
 function write(
@@ -451,8 +452,8 @@ function write(
 	variables: Record<string, unknown>,
 	cache: any
 ): Evict {
-	if (!!schema?.__isEntity) {
-		return writeToEntity(data, cache)
+	if (!!schema?.options?.isEntity) {
+		return writeToEntity(data, cache);
 	}
 	switch (request.tag) {
 		case 'Scalar':
@@ -460,7 +461,7 @@ function write(
 		case 'Float':
 		case 'Boolean':
 		case 'Int':
-			return writeToEntity(data, cache)
+			return writeToEntity(data, cache);
 		case 'Type':
 			return writeToTypeNode(
 				data,
@@ -471,9 +472,9 @@ function write(
 				deps,
 				variables,
 				cache
-			)
+			);
 		case 'Array':
-			return writeToArrayNode(data, schema as ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return writeToArrayNode(data, schema as ArrayNode<any>, request, path, uniqueNodes, deps, variables, cache);
 		case 'NonEmptyArray':
 			return writeToNonEmptyArrayNode(
 				data,
@@ -484,7 +485,7 @@ function write(
 				deps,
 				variables,
 				cache
-			)
+			);
 		case 'Option':
 			return writeToOptionNode(
 				data,
@@ -495,7 +496,7 @@ function write(
 				deps,
 				variables,
 				cache
-			)
+			);
 		case 'Map':
 			return writeToMapNode(
 				data,
@@ -506,24 +507,24 @@ function write(
 				deps,
 				variables,
 				cache
-			)
+			);
 		case 'Sum':
-			return writeToSumNode(data, schema as SumNode<any>, request, path, uniqueNodes, deps, variables, cache)
+			return writeToSumNode(data, schema as SumNode<any>, request, path, uniqueNodes, deps, variables, cache);
 		case 'Mutation':
-			return constVoid
+			return constVoid;
 	}
 }
 
 function writeToEntity(data: any, cache: Ref<Option<any>>) {
-	const currentValue = cache.value
-	const newValue = some(data)
-	cache.value = newValue
+	const currentValue = cache.value;
+	const newValue = some(data);
+	cache.value = newValue;
 
 	return () => {
 		if (cache.value === newValue) {
-			cache.value = currentValue
+			cache.value = currentValue;
 		}
-	}
+	};
 }
 
 function writeToTypeNode(
@@ -536,9 +537,9 @@ function writeToTypeNode(
 	variables: Record<string, unknown>,
 	entry: any
 ) {
-	const evictions: Evict[] = []
+	const evictions: Evict[] = [];
 	for (const k in data) {
-		const keyPath = snoc(path, k)
+		const keyPath = snoc(path, k);
 		evictions.push(
 			write(
 				data[k],
@@ -550,9 +551,9 @@ function writeToTypeNode(
 				variables,
 				useTypeNodeMemberCacheEntry(k, schema, keyPath, uniqueNodes, variables, entry, data[k])
 			)
-		)
+		);
 	}
-	return sequenceArrayIO(evictions)
+	return sequenceArrayIO(evictions);
 }
 
 function writeToArrayNode(
@@ -565,37 +566,37 @@ function writeToArrayNode(
 	variables: Record<string, unknown>,
 	entry: any[]
 ) {
-	const evictions: Evict[] = []
-	const newLength = data.length
-	const oldLength = entry.length
+	const evictions: Evict[] = [];
+	const newLength = data.length;
+	const oldLength = entry.length;
 	if (newLength > oldLength) {
 		evictions.push(() => {
 			if (entry.length === newLength) {
-				entry.splice(oldLength, newLength - oldLength)
+				entry.splice(oldLength, newLength - oldLength);
 			}
-		})
+		});
 	} else {
-		const deletedValues = entry.splice(newLength, oldLength - newLength)
+		const deletedValues = entry.splice(newLength, oldLength - newLength);
 		evictions.push(() => {
 			if (entry.length === newLength) {
 				for (let i = newLength; i < oldLength; i++) {
-					entry[i] = deletedValues[i - newLength]
+					entry[i] = deletedValues[i - newLength];
 				}
 			}
-		})
+		});
 	}
 
 	data.forEach((val, index) => {
-		let indexEntry = entry[index]
+		let indexEntry = entry[index];
 		if (!indexEntry) {
-			indexEntry = useCacheEntry(schema.item, snoc(path, index), uniqueNodes, variables, data[index])
-			entry[index] = indexEntry
+			indexEntry = useCacheEntry(schema.item, snoc(path, index), uniqueNodes, variables, data[index]);
+			entry[index] = indexEntry;
 		}
 		evictions.push(
 			write(val, schema.item, request.item, snoc(path, index), uniqueNodes, deps, variables, indexEntry)
-		)
-	})
-	return sequenceArrayIO(evictions)
+		);
+	});
+	return sequenceArrayIO(evictions);
 }
 
 function writeToNonEmptyArrayNode(
@@ -608,7 +609,7 @@ function writeToNonEmptyArrayNode(
 	variables: Record<string, unknown>,
 	entry: Ref<Option<NonEmptyArray<any>>>
 ) {
-	const currentValue = entry.value
+	const currentValue = entry.value;
 	if (isSome(currentValue)) {
 		return writeToArrayNode(
 			data,
@@ -619,16 +620,16 @@ function writeToNonEmptyArrayNode(
 			deps,
 			variables,
 			currentValue.value
-		)
+		);
 	}
-	const newValue = (some(shallowReactive([])) as unknown) as Some<NonEmptyArray<any>>
-	writeToArrayNode(data, schema as any, request as any, path, uniqueNodes, deps, variables, newValue.value)
-	entry.value = newValue
+	const newValue = (some(shallowReactive([])) as unknown) as Some<NonEmptyArray<any>>;
+	writeToArrayNode(data, schema as any, request as any, path, uniqueNodes, deps, variables, newValue.value);
+	entry.value = newValue;
 	return () => {
 		if (entry.value === newValue) {
-			entry.value = currentValue
+			entry.value = currentValue;
 		}
-	}
+	};
 }
 
 function writeToOptionNode(
@@ -641,10 +642,10 @@ function writeToOptionNode(
 	variables: Record<string, unknown>,
 	cache: Ref<Option<any>>
 ) {
-	const currentValue = cache.value
+	const currentValue = cache.value;
 	if (isSome(data)) {
 		if (isNone(currentValue)) {
-			cache.value = some(useCacheEntry(schema.item, path, uniqueNodes, variables, data))
+			cache.value = some(useCacheEntry(schema.item, path, uniqueNodes, variables, data));
 			write(
 				data.value,
 				schema.item,
@@ -654,10 +655,10 @@ function writeToOptionNode(
 				deps,
 				variables,
 				(cache as any).value.value
-			)
+			);
 			return () => {
-				cache.value = currentValue
-			}
+				cache.value = currentValue;
+			};
 		}
 		return write(
 			data.value,
@@ -668,12 +669,12 @@ function writeToOptionNode(
 			deps,
 			variables,
 			(cache as any).value.value
-		)
+		);
 	} else {
-		cache.value = none
+		cache.value = none;
 		return () => {
-			cache.value = currentValue
-		}
+			cache.value = currentValue;
+		};
 	}
 }
 
@@ -687,9 +688,9 @@ function writeToMapNode(
 	variables: Record<string, unknown>,
 	cache: Map<any, any>
 ) {
-	const evictions: Evict[] = []
+	const evictions: Evict[] = [];
 	for (const [k, v] of data.entries()) {
-		const keyPath = snoc(path, k)
+		const keyPath = snoc(path, k);
 		if (cache.has(k)) {
 			if (v === null || v === undefined) {
 				const currentValue = useMapNodeKeyCacheEntry(
@@ -700,13 +701,13 @@ function writeToMapNode(
 					variables,
 					cache,
 					data.get(k)
-				)
-				cache.delete(k)
+				);
+				cache.delete(k);
 				evictions.push(() => {
 					if (!cache.has(k)) {
-						cache.set(k, currentValue)
+						cache.set(k, currentValue);
 					}
-				})
+				});
 			} else {
 				evictions.push(
 					write(
@@ -719,7 +720,7 @@ function writeToMapNode(
 						variables,
 						useMapNodeKeyCacheEntry(k, schema, keyPath, uniqueNodes, variables, cache, data.get(k))
 					)
-				)
+				);
 			}
 		} else {
 			const newCacheEntry = useMapNodeKeyCacheEntry(
@@ -730,13 +731,13 @@ function writeToMapNode(
 				variables,
 				cache,
 				data.get(k)
-			)
-			cache.set(k, newCacheEntry)
-			write(v, schema.item, request.item, keyPath, uniqueNodes, deps, variables, newCacheEntry)
-			evictions.push(() => cache.delete(k))
+			);
+			cache.set(k, newCacheEntry);
+			write(v, schema.item, request.item, keyPath, uniqueNodes, deps, variables, newCacheEntry);
+			evictions.push(() => cache.delete(k));
 		}
 	}
-	return sequenceArrayIO(evictions)
+	return sequenceArrayIO(evictions);
 }
 
 function writeToSumNode(
@@ -753,16 +754,16 @@ function writeToSumNode(
 		(isNone(cache.value) && data.__typename) ||
 		(isSome(cache.value) && data.__typename && cache.value.value[0] !== data.__typename)
 	) {
-		const currentValue = cache.value
-		const __typename = data.__typename as string
+		const currentValue = cache.value;
+		const __typename = data.__typename as string;
 		const newNode = useTypeNodeCacheEntry(
 			(schema.membersRecord as any)[__typename],
 			path,
 			uniqueNodes,
 			variables,
 			data
-		)
-		cache.value = some([__typename, newNode])
+		);
+		cache.value = some([__typename, newNode]);
 		writeToTypeNode(
 			data,
 			(schema.membersRecord as any)[__typename],
@@ -772,15 +773,15 @@ function writeToSumNode(
 			deps,
 			variables,
 			newNode
-		)
+		);
 		return () => {
 			if (isSome(cache.value) && cache.value.value[0] === __typename && cache.value.value[1] === newNode) {
-				cache.value = currentValue
+				cache.value = currentValue;
 			}
-		}
+		};
 	}
 	if (isSome(cache.value) && (data.__typename === undefined || data.__typename === cache.value.value[0])) {
-		const __typename = cache.value.value[0]
+		const __typename = cache.value.value[0];
 		return writeToTypeNode(
 			data,
 			(schema.membersRecord as any)[__typename],
@@ -790,9 +791,9 @@ function writeToSumNode(
 			deps,
 			variables,
 			cache.value.value[1]
-		)
+		);
 	}
-	return absurd as Evict
+	return absurd as Evict;
 }
 
 function useMapNodeKeyCacheEntry(
@@ -804,24 +805,24 @@ function useMapNodeKeyCacheEntry(
 	entry: Map<any, any>,
 	data?: any
 ) {
-	const itemNode: Node = schema.item
-	if ((itemNode.tag === 'Map' || itemNode.tag === 'Type') && itemNode.__customCache !== undefined) {
+	const itemNode: Node = schema.item;
+	if ((itemNode.tag === 'Map' || itemNode.tag === 'Type') && itemNode?.options?.toId !== undefined) {
 		// @ts-ignore
-		const id = itemNode.__customCache.toId(path, variables, data)
+		const id = itemNode.options.toId(path, variables, data);
 		if (id) {
-			const memberCustomCache = useCustomCache(uniqueNodes, itemNode, path, id, variables, data)
+			const memberCustomCache = useCustomCache(uniqueNodes, itemNode, path, id, variables, data);
 			if (memberCustomCache !== entry.get(key)) {
-				entry.set(key, memberCustomCache)
+				entry.set(key, memberCustomCache);
 			}
-			return memberCustomCache
+			return memberCustomCache;
 		}
 	}
-	let keyEntry = entry.get(key)
+	let keyEntry = entry.get(key);
 	if (!keyEntry) {
-		keyEntry = useCacheEntry(itemNode, path, uniqueNodes, variables, data)
-		entry.set(key, keyEntry)
+		keyEntry = useCacheEntry(itemNode, path, uniqueNodes, variables, data);
+		entry.set(key, keyEntry);
 	}
-	return keyEntry
+	return keyEntry;
 }
 
 function useTypeNodeMemberCacheEntry(
@@ -833,28 +834,28 @@ function useTypeNodeMemberCacheEntry(
 	entry: any,
 	data?: any
 ) {
-	const memberNode: Node = schema.members[member]
-	if ((memberNode.tag === 'Map' || memberNode.tag === 'Type') && memberNode.__customCache !== undefined) {
+	const memberNode: Node = schema.members[member];
+	if ((memberNode.tag === 'Map' || memberNode.tag === 'Type') && memberNode?.options?.toId !== undefined) {
 		// @ts-ignore
-		const id = memberNode.__customCache.toId(path, variables, data)
+		const id = memberNode.options.toId(path, variables, data);
 		if (id) {
-			const memberCustomCache = useCustomCache(uniqueNodes, memberNode, path, id, variables, data)
+			const memberCustomCache = useCustomCache(uniqueNodes, memberNode, path, id, variables, data);
 			if (memberCustomCache !== entry[member]) {
-				entry[member] = memberCustomCache
+				entry[member] = memberCustomCache;
 			}
 		}
-		return entry[member]
+		return entry[member];
 	}
 	if (isEmptyObject(memberNode.variables)) {
-		return entry[member]
+		return entry[member];
 	}
-	const encodedVariables = encode(schema.members[member], variables)
-	let memberCache = entry[member].get(encodedVariables)
+	const encodedVariables = encode(schema.members[member], variables);
+	let memberCache = entry[member].get(encodedVariables);
 	if (!memberCache) {
-		memberCache = useCacheEntry(schema.members[member], path, uniqueNodes, variables)
-		entry[member].set(encodedVariables, memberCache)
+		memberCache = useCacheEntry(schema.members[member], path, uniqueNodes, variables);
+		entry[member].set(encodedVariables, memberCache);
 	}
-	return memberCache
+	return memberCache;
 }
 
 function useCustomCache(
@@ -865,13 +866,13 @@ function useCustomCache(
 	variables: Record<string, unknown>,
 	data?: any
 ) {
-	const entry = uniqueNodes.get(id)
+	const entry = uniqueNodes.get(id);
 	if (entry) {
-		return entry
+		return entry;
 	} else {
-		const newEntry = useCacheEntry(member, path, uniqueNodes, variables, data)
-		uniqueNodes.set(id, newEntry)
-		return newEntry
+		const newEntry = useCacheEntry(member, path, uniqueNodes, variables, data);
+		uniqueNodes.set(id, newEntry);
+		return newEntry;
 	}
 }
 
@@ -882,25 +883,27 @@ function useTypeNodeCacheEntry(
 	variables: Record<string, unknown>,
 	data?: any
 ) {
-	const x: any = {}
+	const x: any = {};
 	for (const k in schema.members) {
-		const member: Node = schema.members[k]
-		const newPath = snoc(path, k)
-		if ((member.tag === 'Map' || member.tag === 'Type') && member.__customCache !== undefined) {
-			// @ts-ignore
-			const id = member.__customCache.toId(newPath, variables, data)
-			if (id) {
-				x[k] = useCustomCache(uniqueNodes, member, newPath, id, variables, data)
+		if (schema.members[k].tag !== 'Mutation') {
+			const member: Node = schema.members[k];
+			const newPath = snoc(path, k);
+			if ((member.tag === 'Map' || member.tag === 'Type') && member?.options?.toId !== undefined) {
+				// @ts-ignore
+				const id = member.options.toId(newPath, variables, data);
+				if (id) {
+					x[k] = useCustomCache(uniqueNodes, member, newPath, id, variables, data);
+				} else {
+					x[k] = useCacheEntry(member, newPath, uniqueNodes, variables, data);
+				}
+			} else if (!isEmptyObject(member.variables)) {
+				x[k] = new Map();
 			} else {
-				x[k] = useCacheEntry(member, newPath, uniqueNodes, variables, data)
+				x[k] = useCacheEntry(member, newPath, uniqueNodes, variables, data);
 			}
-		} else if (!isEmptyObject(member.variables)) {
-			x[k] = new Map()
-		} else {
-			x[k] = useCacheEntry(member, newPath, uniqueNodes, variables, data)
 		}
 	}
-	return shallowReactive(x)
+	return shallowReactive(x);
 }
 
 function useMapNodeCacheEntry(
@@ -910,39 +913,39 @@ function useMapNodeCacheEntry(
 	variables: Record<string, unknown>,
 	data?: any
 ) {
-	if (schema.__customCache) {
-		const id = schema.__customCache.toId(path, variables, data) as string
+	if (schema?.options?.toId) {
+		const id = schema.options.toId(path, variables, data) as string;
 		if (id) {
-			const entry = uniqueNodes.get(id)
+			const entry = uniqueNodes.get(id);
 			if (entry) {
-				return entry
+				return entry;
 			} else {
-				const newEntry = shallowReactive(new Map())
-				uniqueNodes.set(id, newEntry)
-				return newEntry
+				const newEntry = shallowReactive(new Map());
+				uniqueNodes.set(id, newEntry);
+				return newEntry;
 			}
 		}
 	}
-	return shallowReactive(new Map())
+	return shallowReactive(new Map());
 }
 
-const ENCODERS = new WeakMap<Node, any>()
+const ENCODERS = new WeakMap<Node, any>();
 
 function useEncoder(node: Node) {
-	let encoder = ENCODERS.get(node)
+	let encoder = ENCODERS.get(node);
 	if (encoder) {
-		return encoder
+		return encoder;
 	}
-	encoder = useNodeMergedVariablesEncoder(node)
-	ENCODERS.set(node, encoder)
-	return encoder
+	encoder = useNodeMergedVariablesEncoder(node);
+	ENCODERS.set(node, encoder);
+	return encoder;
 }
 
 function encode(node: Node, data: any): string {
 	try {
-		return JSON.stringify(useEncoder(node).encode(data))
+		return JSON.stringify(useEncoder(node).encode(data));
 	} catch {
-		return 'unknown'
+		return 'unknown';
 	}
 }
 
@@ -953,19 +956,19 @@ function useCacheEntry<T extends Node>(
 	variables: Record<string, unknown>,
 	data?: any
 ): TypeOfCacheEntry<T> {
-	if (isPrimitiveNode(node) || !!node.__isEntity) {
-		return shallowRef<Option<TypeOf<T>>>(none) as TypeOfCacheEntry<T>
+	if (isPrimitiveNode(node) || !!node?.options?.isEntity) {
+		return shallowRef<Option<TypeOf<T>>>(none) as TypeOfCacheEntry<T>;
 	}
 	switch (node.tag) {
 		case 'Type':
-			return useTypeNodeCacheEntry(node as any, path, uniqueNodes, variables, data) as TypeOfCacheEntry<T>
+			return useTypeNodeCacheEntry(node as any, path, uniqueNodes, variables, data) as TypeOfCacheEntry<T>;
 		case 'Array':
-			return shallowReactive([]) as TypeOfCacheEntry<T>
+			return shallowReactive([]) as TypeOfCacheEntry<T>;
 		case 'Map':
-			return useMapNodeCacheEntry(node as any, path, uniqueNodes, variables, data)
+			return useMapNodeCacheEntry(node as any, path, uniqueNodes, variables, data);
 		case 'Mutation':
-			return useCacheEntry((node as any).result, path, uniqueNodes, variables, data) as TypeOfCacheEntry<T>
+			return useCacheEntry((node as any).result, path, uniqueNodes, variables, data) as TypeOfCacheEntry<T>;
 		default:
-			return shallowRef<Option<TypeOf<T>>>(none) as TypeOfCacheEntry<T>
+			return shallowRef<Option<TypeOf<T>>>(none) as TypeOfCacheEntry<T>;
 	}
 }

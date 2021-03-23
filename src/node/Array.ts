@@ -14,8 +14,7 @@ import {
 	ModifyIfEntity,
 	TypeOfRefs,
 	BaseNode,
-	_HasDecodingTransformations,
-	_HasEncodingTransformations, PrimitiveNodeOptions
+	PrimitiveNodeOptions
 } from './shared';
 
 export class ArrayNode<
@@ -36,12 +35,8 @@ export class ArrayNode<
 	ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfRefs<Item>>>
 > {
 	readonly tag = 'Array';
-	readonly [_HasDecodingTransformations]: boolean;
-	readonly [_HasEncodingTransformations]: boolean;
-	constructor(readonly item: Item, options?: PrimitiveNodeOptions<Variables>) {
-		super(options);
-		this[_HasDecodingTransformations] = item[_HasDecodingTransformations];
-		this[_HasDecodingTransformations] = item[_HasEncodingTransformations];
+	constructor(readonly item: Item, readonly options?: PrimitiveNodeOptions<Variables, IsLocal, IsEntity>) {
+		super(options?.variables);
 	}
 }
 
@@ -50,7 +45,7 @@ export function array<
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(item: Item, options?: PrimitiveNodeOptions<Variables>): ArrayNode<Item, Variables, IsLocal, IsEntity> {
+>(item: Item, options?: PrimitiveNodeOptions<Variables, IsLocal, IsEntity>): ArrayNode<Item, Variables, IsLocal, IsEntity> {
 	return new ArrayNode<Item, Variables, IsLocal, IsEntity>(item, options);
 }
 

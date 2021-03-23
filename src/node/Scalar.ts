@@ -7,14 +7,7 @@ import {
 	useLocalModel,
 	PrimitiveNodeOptions,
 	BaseNode,
-	_HasDecodingTransformations,
-	_HasEncodingTransformations
 } from './shared';
-
-export interface ScalarNodeOptions<Variables extends NodeVariables = {}> extends PrimitiveNodeOptions<Variables> {
-	readonly hasDecodingTransformations?: boolean;
-	readonly hasEncodingTransformations?: boolean;
-}
 
 export class ScalarNode<
 	Name extends string,
@@ -40,17 +33,13 @@ export class ScalarNode<
 	readonly decode: Model<Input, IsLocal extends true ? undefined : Input, Data>['decode'];
 	readonly equals: Model<Input, IsLocal extends true ? undefined : Input, Data>['equals'];
 	readonly is: Model<Input, IsLocal extends true ? undefined : Input, Data>['is'];
-	readonly [_HasDecodingTransformations]: boolean;
-	readonly [_HasEncodingTransformations]: boolean;
-	constructor(readonly name: Name, model: Model<Input, Output, Data>, options?: ScalarNodeOptions<Variables>) {
-		super(options);
+	constructor(readonly name: Name, model: Model<Input, Output, Data>, readonly options?: PrimitiveNodeOptions<Variables, IsLocal>) {
+		super(options?.variables);
 		const m = options?.isLocal ? useLocalModel(model) : model;
 		this.encode = m.encode as any;
 		this.decode = m.decode;
 		this.equals = m.equals;
 		this.is = m.is;
-		this[_HasDecodingTransformations] = options?.hasDecodingTransformations ?? false;
-		this[_HasEncodingTransformations] = options?.hasEncodingTransformations ?? false;
 	}
 }
 
@@ -64,7 +53,7 @@ export function scalar<
 >(
 	name: Name,
 	model: Model<Input, Output, Data>,
-	options?: ScalarNodeOptions<Variables>
+	options?: PrimitiveNodeOptions<Variables, IsLocal>
 ): ScalarNode<Name, Input, Output, Data, Variables, IsLocal> {
 	return new ScalarNode(name, model, options);
 }
