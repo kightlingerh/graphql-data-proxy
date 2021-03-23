@@ -16,8 +16,7 @@ import {
 	BaseNode,
 	NodeOptions,
 	_HasDecodingTransformations,
-	_HasEncodingTransformations,
-	ExtractIsLocal
+	_HasEncodingTransformations
 } from './shared';
 
 export type ArrayNodeOptions<Item extends AnyNode, Variables extends NodeVariables = {}> = NodeOptions<
@@ -61,8 +60,11 @@ export function array<
 	return new ArrayNode<Item, Variables, IsLocal, IsEntity>(item, options);
 }
 
-export function markArrayAsEntity<T extends ArrayNode<any, any, any, any>>(
-	node: T
-): ArrayNode<T['item'], ExtractVariablesDefinition<T>, ExtractIsLocal<T>, true> {
-	return new ArrayNode(node.item, { ...node.options, isEntity: true }) as any;
+export function markArrayAsEntity<
+	Item extends AnyNode,
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(node: ArrayNode<Item, Variables, IsLocal, IsEntity>): ArrayNode<Item, Variables, IsLocal, true> {
+	return new ArrayNode(node.item, { ...node.options, isEntity: true });
 }

@@ -136,7 +136,9 @@ export type CacheNode<T> = IsNonEmptyObject<ExtractVariablesDefinition<T>> exten
 	? Map<EncodedVariables, TypeOfCacheEntry<T>>
 	: TypeOfCacheEntry<T>;
 
-export type ExtractNodeDefinitionType<T> = [T] extends [Record<string, AnyNode>] ? { [K in keyof T]: TypeOf<T[K]> } : never;
+export type ExtractNodeDefinitionType<T> = [T] extends [Record<string, AnyNode>]
+	? { [K in keyof T]: TypeOf<T[K]> }
+	: never;
 
 export type ExtractNodeDefinitionOutput<T> = [T] extends [Record<string, AnyNode>]
 	? { [K in keyof T]: TypeOfStrictOutput<T[K]> }
@@ -187,7 +189,6 @@ export type ExtractIsEntity<T> = [T] extends [{ options: NodeOptions<any, any> }
 		? T['options']['isEntity']
 		: false
 	: never;
-
 
 export type Path = NonEmptyArray<string | number>;
 

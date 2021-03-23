@@ -1,15 +1,13 @@
-import { Option } from 'fp-ts/lib/Option'
-import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
+import { Option } from 'fp-ts/lib/Option';
+import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray';
 import {
-	INode,
-	DynamicNodeConfig,
-	EMPTY_VARIABLES,
+	NodeOptions,
+	BaseNode,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	ModifyOutputIfLocal,
 	AnyNode,
 	NodeVariables,
-	StaticNodeConfig,
 	TypeOf,
 	TypeOfPartial,
 	TypeOfPartialInput,
@@ -20,82 +18,53 @@ import {
 	TypeOfCacheEntry,
 	ModifyIfEntity,
 	TypeOfRefs
-} from './shared'
+} from './shared';
 
-export interface NonEmptyArrayNode<
+export type NonEmptyArrayNodeOptions<Item extends AnyNode, Variables extends NodeVariables = {}> = NodeOptions<
+	NonEmptyArray<TypeOfPartial<Item>>,
+	Variables
+>;
+
+export class NonEmptyArrayNode<
 	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->
-	extends INode<
-		Array<TypeOfStrictInput<Item>>,
-		ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfStrictOutput<Item>>>,
-		NonEmptyArray<TypeOf<Item>>,
-		Array<TypeOfPartialInput<Item>>,
-		ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfPartialOutput<Item>>>,
-		NonEmptyArray<TypeOfPartial<Item>>,
-		ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>>,
-		Variables,
-		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
-		ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfRefs<Item>>>>>
-	> {
-	readonly tag: 'NonEmptyArray'
-	readonly item: Item
-}
-
-export interface StaticNonEmptyArrayNodeConfig<IsLocal extends boolean, IsEntity extends boolean>
-	extends StaticNodeConfig<IsLocal, IsEntity> {}
-
-export interface DynamicNonEmptyArrayNodeConfig<
-	Variables extends NodeVariables,
-	IsLocal extends boolean,
-	IsEntity extends boolean
-> extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {}
-
-const NON_EMPTY_ARRAY_TAG = 'NonEmptyArray'
-
-export function nonEmptyArray<
-	Item extends AnyNode,
-	Variables extends NodeVariables,
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(
-	item: Item,
-	config: DynamicNonEmptyArrayNodeConfig<Variables, IsLocal, IsEntity>
-): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity>
-export function nonEmptyArray<
-	Item extends AnyNode,
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(item: Item, config?: StaticNonEmptyArrayNodeConfig<IsLocal, IsEntity>): NonEmptyArrayNode<Item, {}, IsLocal, IsEntity>
-export function nonEmptyArray<
-	Item extends AnyNode,
-	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(
-	item: Item,
-	config?:
-		| StaticNonEmptyArrayNodeConfig<IsLocal, IsEntity>
-		| DynamicNonEmptyArrayNodeConfig<Variables, IsLocal, IsEntity>
-): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity> {
-	return {
-		tag: NON_EMPTY_ARRAY_TAG,
-		item,
-		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasEncodingTransformations: true,
-		__hasDecodingTransformations: true,
-		__isEntity: config?.isEntity,
-		__isLocal: config?.isLocal
+> extends BaseNode<
+	Array<TypeOfStrictInput<Item>>,
+	ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfStrictOutput<Item>>>,
+	NonEmptyArray<TypeOf<Item>>,
+	NonEmptyArray<TypeOfPartialInput<Item>>,
+	ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfPartialOutput<Item>>>,
+	NonEmptyArray<TypeOfPartial<Item>>,
+	ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfCacheEntry<Item>>>>>,
+	Variables,
+	ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
+	ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfRefs<Item>>>>>
+> {
+	readonly tag = 'NonEmptyArray';
+	constructor(readonly item: Item, options?: NonEmptyArrayNodeOptions<Item, Variables>) {
+		super(options);
 	}
 }
 
-export function markNonEmptyArrayAsEntity<T extends NonEmptyArrayNode<any, any, any, any>>(
-	node: T
-): NonEmptyArrayNode<T['item'], T['variables'], Exclude<T['__isLocal'], undefined>, true> {
-	return {
-		...node,
-		__isEntity: true
-	} as any
+export function nonEmptyArray<
+	Item extends AnyNode,
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
+	item: Item,
+	options?: NonEmptyArrayNodeOptions<Item, Variables>
+): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity> {
+	return new NonEmptyArrayNode(item, options);
+}
+
+export function markNonEmptyArrayAsEntity<
+	Item extends AnyNode,
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(node: NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity>): NonEmptyArrayNode<Item, Variables, IsLocal, true> {
+	return new NonEmptyArrayNode(node.item, { ...node.options, isEntity: true });
 }

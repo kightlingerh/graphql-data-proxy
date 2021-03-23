@@ -1,7 +1,6 @@
 import { Option } from 'fp-ts/lib/Option'
 import {
-	INode,
-	DynamicNodeConfig,
+	BaseNode,
 	EMPTY_VARIABLES,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
@@ -10,7 +9,6 @@ import {
 	Intersection,
 	ModifyOutputIfLocal,
 	NodeVariables,
-	StaticNodeConfig,
 	TypeOf,
 	TypeOfCacheEntry,
 	TypeOfPartial,
@@ -20,11 +18,15 @@ import {
 	TypeOfStrictOutput,
 	Ref,
 	ModifyIfEntity,
-	TypeOfRefs
-} from './shared'
-import { BaseTypeNode, ExtractTypeName, type } from './Type'
+	TypeOfRefs, AnyNode, NodeOptions
+} from './shared';
+import { ExtractTypeName, type, TypeNode } from './Type';
 
-type SumTypeNode = BaseTypeNode<any, any, any, any, any>
+type SumTypeNode = TypeNode<any, any, any, any, any, any>
+
+type ExtractSumNodeMembers<MS extends [SumTypeNode, ...SumTypeNode[]]> = {
+	[K in keyof MS]: TypeNode<ExtractTypeName<MS[K]>, any, any, any, any, any>
+}[number]
 
 type ExtractTypeOfSumNodeStrictInput<MS extends ReadonlyArray<SumTypeNode>> = {
 	[K in keyof MS]: TypeOfStrictInput<MS[K]> & { __typename: ExtractTypeName<MS[K]> }
@@ -64,39 +66,10 @@ export type ExtractSumNodeRefs<MS extends ReadonlyArray<SumTypeNode>> = {
 	[K in keyof MS]: Ref<Option<TypeOfRefs<MS[K]>>>
 }[number]
 
-export interface SumNode<
-	MS extends ReadonlyArray<SumTypeNode>,
-	Variables extends NodeVariables = {},
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->
-	extends INode<
-		ExtractTypeOfSumNodeStrictInput<MS>,
-		ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodeStrictOutput<MS>>,
-		ExtractTypeOfSumNode<MS>,
-		ExtractTypeOfSumNodePartialInput<MS>,
-		ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodePartialOutput<MS>>,
-		ExtractTypeOfPartialSumNode<MS>,
-		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
-		Variables,
-		ExtractSumNodeSubVariablesDefinition<MS>,
-		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeRefs<MS>>
-	> {
-	readonly tag: 'Sum'
-	readonly members: MS
-	readonly membersRecord: Record<ExtractTypeName<{ [K in keyof MS]: MS[K] }[number]>, MS[number]>
-}
-
-export interface StaticSumNodeConfig<IsLocal extends boolean, IsEntity extends boolean>
-	extends StaticNodeConfig<IsLocal, IsEntity> {}
-
-export interface DynamicSumNodeConfig<
-	Variables extends NodeVariables,
-	IsLocal extends boolean,
-	IsEntity extends boolean
-> extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {}
-
-const SUM_TAG = 'Sum'
+export type SumNodeOptions<MS extends ReadonlyArray<SumTypeNode>, Variables extends NodeVariables = {}> = NodeOptions<
+	ExtractTypeOfPartialSumNode<MS>,
+	Variables
+	>;
 
 function useSumMemberRecord(members: ReadonlyArray<SumTypeNode>) {
 	const x: any = {}
@@ -111,11 +84,42 @@ function addTypenameToMembers<MS extends ReadonlyArray<SumTypeNode>>(members: MS
 		member.members.hasOwnProperty('__typename')
 			? member
 			: type(member.__typename, member.members, {
-					variables: member.variables,
-					includeTypename: true
-			  })
+				variables: member.variables,
+				includeTypename: true
+			})
 	)
 }
+
+export class SumNode<
+	MS extends ReadonlyArray<SumTypeNode>,
+	Variables extends NodeVariables = {},
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>
+	extends BaseNode<
+		ExtractTypeOfSumNodeStrictInput<MS>,
+		ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodeStrictOutput<MS>>,
+		ExtractTypeOfSumNode<MS>,
+		ExtractTypeOfSumNodePartialInput<MS>,
+		ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodePartialOutput<MS>>,
+		ExtractTypeOfPartialSumNode<MS>,
+		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeCacheEntry<MS>>,
+		Variables,
+		ExtractSumNodeSubVariablesDefinition<MS>,
+		ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeRefs<MS>>
+	> {
+	readonly tag = 'Sum'
+	readonly membersRecord: Record<ExtractTypeName<{ [K in keyof MS]: MS[K] }[number]>, MS[number]> &
+	constructor(members: MS, options?: SumNodeOptions<MS,  Variables>) {
+		super(options)
+		const newMembers = addTypenameToMembers(ms)
+		const membersRecord = useSumMemberRecord(newMembers)
+	}
+}
+
+
+
+
 
 export function sum<
 	MS extends ReadonlyArray<SumTypeNode>,

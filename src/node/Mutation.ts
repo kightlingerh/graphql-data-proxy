@@ -1,13 +1,11 @@
 import {
-	INode,
-	DynamicNodeConfig,
-	EMPTY_VARIABLES,
+	BaseNode,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	ModifyOutputIfLocal,
 	AnyNode,
 	NodeVariables,
-	StaticNodeConfig,
+	NodeOptions,
 	TypeOf,
 	TypeOfPartial,
 	TypeOfPartialInput,
@@ -16,71 +14,48 @@ import {
 	TypeOfStrictOutput,
 	TypeOfCacheEntry,
 	ModifyIfEntity,
-	TypeOfRefs
-} from './shared'
+	TypeOfRefs,
+	_HasEncodingTransformations,
+	_HasDecodingTransformations
+} from './shared';
 
-export interface MutationNode<
+export type MutationNodeOptions<Result extends AnyNode, Variables extends NodeVariables = {}> = NodeOptions<
+	TypeOfPartial<Result>,
+	Variables
+>;
+
+export class MutationNode<
 	Result extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->
-	extends INode<
-		TypeOfStrictInput<Result>,
-		ModifyOutputIfLocal<IsLocal, TypeOfStrictOutput<Result>>,
-		TypeOf<Result>,
-		TypeOfPartialInput<Result>,
-		ModifyOutputIfLocal<IsLocal, TypeOfPartialOutput<Result>>,
-		TypeOfPartial<Result>,
-		ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
-		Variables,
-		ExtractSubVariablesDefinition<Result> & ExtractVariablesDefinition<Result>,
-		ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfRefs<Result>>
-	> {
-	readonly tag: 'Mutation'
-	readonly result: Result
+> extends BaseNode<
+	TypeOfStrictInput<Result>,
+	ModifyOutputIfLocal<IsLocal, TypeOfStrictOutput<Result>>,
+	TypeOf<Result>,
+	TypeOfPartialInput<Result>,
+	ModifyOutputIfLocal<IsLocal, TypeOfPartialOutput<Result>>,
+	TypeOfPartial<Result>,
+	ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfCacheEntry<Result>>,
+	Variables,
+	ExtractSubVariablesDefinition<Result> & ExtractVariablesDefinition<Result>,
+	ModifyIfEntity<IsEntity, TypeOf<Result>, TypeOfRefs<Result>>
+> {
+	readonly tag = 'Mutation';
+	readonly [_HasDecodingTransformations]: boolean;
+	readonly [_HasEncodingTransformations]: boolean;
+	constructor(readonly result: Result, options?: MutationNodeOptions<Result, Variables>) {
+		super(options);
+		this[_HasDecodingTransformations] = result[_HasDecodingTransformations];
+		this[_HasEncodingTransformations] = result[_HasEncodingTransformations];
+	}
 }
 
-export interface StaticMutationNodeConfig<IsLocal extends boolean, IsEntity extends boolean>
-	extends StaticNodeConfig<IsLocal, IsEntity> {}
-
-export interface DynamicMutationNodeConfig<
-	Variables extends NodeVariables,
-	IsLocal extends boolean,
-	IsEntity extends boolean
-> extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {}
-
-const MUTATION_TAG = 'Mutation'
-
-export function mutation<
-	Item extends AnyNode,
-	Variables extends NodeVariables,
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(
-	result: Item,
-	config: DynamicMutationNodeConfig<Variables, IsLocal, IsEntity>
-): MutationNode<Item, Variables, IsLocal, IsEntity>
-export function mutation<Result extends AnyNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
-	result: Result,
-	config?: StaticMutationNodeConfig<IsLocal, IsEntity>
-): MutationNode<Result, {}, IsLocal, IsEntity>
 export function mutation<
 	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(
-	result: Item,
-	config?: StaticMutationNodeConfig<IsLocal, IsEntity> | DynamicMutationNodeConfig<Variables, IsLocal, IsEntity>
-): MutationNode<Item, Variables, IsLocal, IsEntity> {
-	return {
-		tag: MUTATION_TAG,
-		result,
-		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasEncodingTransformations: result.__hasEncodingTransformations,
-		__hasDecodingTransformations: result.__hasDecodingTransformations,
-		__isEntity: config?.isEntity,
-		__isLocal: config?.isLocal
-	}
+>(result: Item, options?: MutationNodeOptions<Item, Variables>): MutationNode<Item, Variables, IsLocal, IsEntity> {
+	return new MutationNode(result, options);
 }
