@@ -1,4 +1,4 @@
-import { constUndefined } from 'fp-ts/lib/function'
+import { constUndefined, Lazy } from 'fp-ts/lib/function'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import { Option } from 'fp-ts/lib/Option'
 import { Ref as R } from 'vue'
@@ -39,6 +39,7 @@ export interface BaseNode<
 	readonly __isLocal?: boolean
 	readonly __isEntity?: boolean
 	readonly __cacheEntry?: CacheEntry
+	readonly __print?: Lazy<string>;
 }
 
 export type TypeOf<T> = T extends { readonly __strictData?: infer A } ? Exclude<A, undefined> : never
@@ -118,11 +119,11 @@ export type NodeVariables = Record<string, AnyBaseNode>
 export type Path = NonEmptyArray<string | number>
 
 export interface CustomCache<PartialData, Variables> {
-	toId: <V extends Record<string, unknown> = Record<string, unknown>>(
+	<V extends Record<string, unknown> = Record<string, unknown>>(
 		path: Path,
 		variables?: Variables & V,
 		data?: PartialData
-	) => unknown
+	): unknown
 }
 
 export const EMPTY_VARIABLES: any = {}

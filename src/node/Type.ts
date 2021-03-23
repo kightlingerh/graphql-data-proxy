@@ -1,3 +1,4 @@
+import { Lazy } from 'fp-ts/lib/function';
 import { literal } from '../model/Model'
 import { Encoder } from '../model/Encoder'
 import { Eq } from '../model/Eq'
@@ -101,10 +102,13 @@ export interface BaseTypeNode<
 	readonly __typename: Typename
 	readonly tag: 'Type'
 	readonly members: MS
-	readonly __customCache?: CustomCache<
-		ExtractTypeNodePartialDataFromMembers<MS>,
-		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS> & Variables>
-	>
+	readonly __print?: Lazy<string>
+	readonly __customCache?: {
+		readonly toId: CustomCache<
+			ExtractTypeNodePartialDataFromMembers<MS>,
+			ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS> & Variables>
+			>
+	}
 }
 
 export type TypeNode<
@@ -125,7 +129,8 @@ export interface StaticTypeNodeConfig<
 	IsEntity extends boolean
 > extends StaticNodeConfig<IsLocal, IsEntity> {
 	includeTypename?: IncludeTypename
-	useCustomCache?: CustomCache<
+	print?: Lazy<string>
+	toId?: CustomCache<
 		ExtractTypeNodePartialDataFromMembers<MS>,
 		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS>>
 	>
@@ -139,7 +144,8 @@ export interface DynamicTypeNodeConfig<
 	IsEntity extends boolean
 > extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {
 	includeTypename?: IncludeTypename
-	useCustomCache?: CustomCache<
+	print?: Lazy<string>
+	toId?: CustomCache<
 		ExtractTypeNodePartialDataFromMembers<MS>,
 		ExtractNodeDefinitionType<ExtractTypeNodeSubVariablesFromMembers<MS>>
 	>
@@ -192,7 +198,8 @@ export function type<
 		variables: config?.variables ?? EMPTY_VARIABLES,
 		__hasEncodingTransformations: hasEncodingTransformations(members),
 		__hasDecodingTransformations: hasDecodingTransformations(members),
-		__customCache: config?.useCustomCache,
+		__print: config?.print,
+		__customCache: config?.toId ? { toId: config.toId } : undefined,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	} as any

@@ -44,10 +44,13 @@ export interface MapNode<
 	readonly key: Key
 	readonly item: Item
 	readonly name?: string
-	readonly __customCache?: CustomCache<
-		Map<TypeOf<Key>, TypeOfPartial<Item>>,
-		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>
-	>
+	readonly __customCache?: {
+		toId: CustomCache<
+			Map<TypeOf<Key>, TypeOfPartial<Item>>,
+			ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>
+			>
+
+	}
 }
 
 export interface StaticMapNodeConfig<
@@ -57,7 +60,7 @@ export interface StaticMapNodeConfig<
 	IsEntity extends boolean
 > extends StaticNodeConfig<IsLocal, IsEntity> {
 	readonly name?: string
-	readonly useCustomCache?: CustomCache<
+	readonly toId?: CustomCache<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>>
 	>
@@ -71,7 +74,7 @@ export interface DynamicMapNodeConfig<
 	IsEntity extends boolean
 > extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {
 	readonly name?: string
-	readonly useCustomCache?: CustomCache<
+	readonly toId?: CustomCache<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>
 	>
@@ -133,7 +136,7 @@ export function map<
 		name: config?.name,
 		__hasDecodingTransformations: true,
 		__hasEncodingTransformations: true,
-		__customCache: config?.useCustomCache,
+		__customCache: config?.toId ? { toId: config.toId } : undefined,
 		__isEntity: config?.isEntity,
 		__isLocal: config?.isLocal
 	}

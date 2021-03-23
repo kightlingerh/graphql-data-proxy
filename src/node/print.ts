@@ -104,6 +104,9 @@ function printSumNodeMembers(members: ReadonlyArray<TypeNode<any, any>>): string
 }
 
 function printNode(node: Node): string {
+	if (node?.__print) {
+		return node?.__print()
+	}
 	if (node?.__isLocal) {
 		return ''
 	}
