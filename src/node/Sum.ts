@@ -1,6 +1,6 @@
 import { Option } from 'fp-ts/lib/Option'
 import {
-	BaseNode,
+	INode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ExtractSubVariablesDefinition,
@@ -70,7 +70,7 @@ export interface SumNode<
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >
-	extends BaseNode<
+	extends INode<
 		ExtractTypeOfSumNodeStrictInput<MS>,
 		ModifyOutputIfLocal<IsLocal, ExtractTypeOfSumNodeStrictOutput<MS>>,
 		ExtractTypeOfSumNode<MS>,

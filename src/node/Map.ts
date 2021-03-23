@@ -1,11 +1,11 @@
 import {
-	BaseNode,
+	INode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	ModifyOutputIfLocal,
-	AnyBaseNode,
+	AnyNode,
 	NodeVariables,
 	StaticNodeConfig,
 	TypeOf,
@@ -13,7 +13,7 @@ import {
 	TypeOfCacheEntry,
 	ModifyIfEntity,
 	TypeOfRefs,
-	CustomCache,
+	ToId,
 	ExtractNodeDefinitionType
 } from './shared'
 
@@ -22,13 +22,13 @@ export interface MapNode<
 	StrictOutput,
 	PartialInput,
 	PartialOutput,
-	Key extends AnyBaseNode,
-	Item extends AnyBaseNode,
+	Key extends AnyNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >
-	extends BaseNode<
+	extends INode<
 		StrictInput,
 		ModifyOutputIfLocal<IsLocal, StrictOutput>,
 		Map<TypeOf<Key>, TypeOf<Item>>,
@@ -44,34 +44,34 @@ export interface MapNode<
 	readonly key: Key
 	readonly item: Item
 	readonly name?: string
-	readonly __customCache?: CustomCache<
+	readonly __customCache?: ToId<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>
 	>
 }
 
 export interface StaticMapNodeConfig<
-	Key extends AnyBaseNode,
-	Item extends AnyBaseNode,
+	Key extends AnyNode,
+	Item extends AnyNode,
 	IsLocal extends boolean,
 	IsEntity extends boolean
 > extends StaticNodeConfig<IsLocal, IsEntity> {
 	readonly name?: string
-	readonly useCustomCache?: CustomCache<
+	readonly useCustomCache?: ToId<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>>
 	>
 }
 
 export interface DynamicMapNodeConfig<
-	Key extends AnyBaseNode,
-	Item extends AnyBaseNode,
+	Key extends AnyNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean,
 	IsEntity extends boolean
 > extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {
 	readonly name?: string
-	readonly useCustomCache?: CustomCache<
+	readonly useCustomCache?: ToId<
 		Map<TypeOf<Key>, TypeOfPartial<Item>>,
 		ExtractNodeDefinitionType<ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item> & Variables>
 	>
@@ -84,8 +84,8 @@ export function map<
 	StrictOutput,
 	PartialInput,
 	PartialOutput,
-	Key extends AnyBaseNode,
-	Item extends AnyBaseNode,
+	Key extends AnyNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
@@ -99,8 +99,8 @@ export function map<
 	StrictOutput,
 	PartialInput,
 	PartialOutput,
-	Key extends AnyBaseNode,
-	Item extends AnyBaseNode,
+	Key extends AnyNode,
+	Item extends AnyNode,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >(
@@ -113,8 +113,8 @@ export function map<
 	StrictOutput,
 	PartialInput,
 	PartialOutput,
-	Key extends AnyBaseNode,
-	Item extends AnyBaseNode,
+	Key extends AnyNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false

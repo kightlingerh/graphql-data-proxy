@@ -1,12 +1,12 @@
 import { Option } from 'fp-ts/lib/Option'
 import {
-	BaseNode,
+	INode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	ModifyOutputIfLocal,
-	AnyBaseNode,
+	AnyNode,
 	NodeVariables,
 	StaticNodeConfig,
 	TypeOf,
@@ -22,12 +22,12 @@ import {
 } from './shared'
 
 export interface OptionNode<
-	Item extends AnyBaseNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >
-	extends BaseNode<
+	extends INode<
 		TypeOfStrictInput<Item> | null | undefined,
 		ModifyOutputIfLocal<IsLocal, TypeOfStrictOutput<Item> | null>,
 		Option<TypeOf<Item>>,
@@ -55,17 +55,17 @@ export interface DynamicOptionNodeConfig<
 const OPTION_TAG = 'Option'
 
 export function option<
-	Item extends AnyBaseNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >(item: Item, config: DynamicOptionNodeConfig<Variables, IsLocal, IsEntity>): OptionNode<Item, Variables, IsLocal>
-export function option<Item extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
+export function option<Item extends AnyNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
 	item: Item,
 	config?: StaticOptionNodeConfig<IsLocal, IsEntity>
 ): OptionNode<Item, {}, IsLocal, IsEntity>
 export function option<
-	Item extends AnyBaseNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false

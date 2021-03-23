@@ -1,13 +1,13 @@
 import { Option } from 'fp-ts/lib/Option'
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray'
 import {
-	BaseNode,
+	INode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	ModifyOutputIfLocal,
-	AnyBaseNode,
+	AnyNode,
 	NodeVariables,
 	StaticNodeConfig,
 	TypeOf,
@@ -23,12 +23,12 @@ import {
 } from './shared'
 
 export interface NonEmptyArrayNode<
-	Item extends AnyBaseNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >
-	extends BaseNode<
+	extends INode<
 		Array<TypeOfStrictInput<Item>>,
 		ModifyOutputIfLocal<IsLocal, NonEmptyArray<TypeOfStrictOutput<Item>>>,
 		NonEmptyArray<TypeOf<Item>>,
@@ -56,7 +56,7 @@ export interface DynamicNonEmptyArrayNodeConfig<
 const NON_EMPTY_ARRAY_TAG = 'NonEmptyArray'
 
 export function nonEmptyArray<
-	Item extends AnyBaseNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
@@ -65,12 +65,12 @@ export function nonEmptyArray<
 	config: DynamicNonEmptyArrayNodeConfig<Variables, IsLocal, IsEntity>
 ): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity>
 export function nonEmptyArray<
-	Item extends AnyBaseNode,
+	Item extends AnyNode,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >(item: Item, config?: StaticNonEmptyArrayNodeConfig<IsLocal, IsEntity>): NonEmptyArrayNode<Item, {}, IsLocal, IsEntity>
 export function nonEmptyArray<
-	Item extends AnyBaseNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false

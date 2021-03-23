@@ -1,6 +1,6 @@
 import { Option } from 'fp-ts/lib/Option'
 import {
-	BaseNode,
+	INode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ModifyOutputIfLocal,
@@ -12,7 +12,7 @@ import {
 const STRING_TAG = 'String'
 
 export interface StringNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false>
-	extends BaseNode<
+	extends INode<
 		string,
 		ModifyOutputIfLocal<IsLocal, string>,
 		string,

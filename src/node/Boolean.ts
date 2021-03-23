@@ -1,51 +1,38 @@
-import { Option } from 'fp-ts/lib/Option'
+import { Option } from 'fp-ts/lib/Option';
 import {
-	BaseNode,
-	DynamicNodeConfig,
-	EMPTY_VARIABLES,
 	ModifyOutputIfLocal,
 	NodeVariables,
 	Ref,
-	StaticNodeConfig
-} from './shared'
+	BaseNode,
+	NodeOptions,
+	_HasEncodingTransformations,
+	_HasDecodingTransformations
+} from './shared';
 
-export interface BooleanNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false>
-	extends BaseNode<
-		boolean,
-		ModifyOutputIfLocal<IsLocal, boolean>,
-		boolean,
-		boolean,
-		ModifyOutputIfLocal<IsLocal, boolean>,
-		boolean,
-		Ref<Option<boolean>>,
-		Variables
-	> {
-	readonly tag: 'Boolean'
-}
+export type BooleanNodeOptions<Variables extends NodeVariables = {}> = NodeOptions<boolean, Variables>;
 
-export interface StaticBooleanNodeConfig<IsLocal extends boolean> extends StaticNodeConfig<IsLocal> {}
-
-export interface DynamicBooleanNodeConfig<Variables extends NodeVariables, IsLocal extends boolean>
-	extends DynamicNodeConfig<Variables, IsLocal> {}
-
-const BOOLEAN_TAG = 'Boolean'
-
-export function boolean<V extends NodeVariables, IsLocal extends boolean = false>(
-	config: DynamicBooleanNodeConfig<V, IsLocal>
-): BooleanNode<V, IsLocal>
-export function boolean<IsLocal extends boolean = false>(
-	config?: StaticBooleanNodeConfig<IsLocal>
-): BooleanNode<{}, IsLocal>
-export function boolean<V extends NodeVariables = {}, IsLocal extends boolean = false>(
-	config?: StaticBooleanNodeConfig<IsLocal> | DynamicBooleanNodeConfig<V, IsLocal>
-): BooleanNode<V, IsLocal> {
-	return {
-		tag: BOOLEAN_TAG,
-		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasEncodingTransformations: false,
-		__hasDecodingTransformations: false,
-		__isLocal: config?.isLocal
+export class BooleanNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<
+	boolean,
+	ModifyOutputIfLocal<IsLocal, boolean>,
+	boolean,
+	boolean,
+	ModifyOutputIfLocal<IsLocal, boolean>,
+	boolean,
+	Ref<Option<boolean>>,
+	Variables
+> {
+	readonly tag = 'Boolean';
+	readonly [_HasEncodingTransformations] = false;
+	readonly [_HasDecodingTransformations] = false;
+	constructor(options?: BooleanNodeOptions<Variables>) {
+		super(options);
 	}
 }
 
-export const staticBoolean = /*#__PURE__*/ boolean()
+export function boolean<V extends NodeVariables = {}, IsLocal extends boolean = false>(
+	options?: BooleanNodeOptions<V>
+): BooleanNode<V, IsLocal> {
+	return new BooleanNode<V, IsLocal>(options);
+}
+
+export const staticBoolean = /*#__PURE__*/ boolean();

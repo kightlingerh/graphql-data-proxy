@@ -1,11 +1,11 @@
 import {
-	BaseNode,
+	INode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	ModifyOutputIfLocal,
-	AnyBaseNode,
+	AnyNode,
 	NodeVariables,
 	StaticNodeConfig,
 	TypeOf,
@@ -20,12 +20,12 @@ import {
 } from './shared'
 
 export interface MutationNode<
-	Result extends AnyBaseNode,
+	Result extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
 >
-	extends BaseNode<
+	extends INode<
 		TypeOfStrictInput<Result>,
 		ModifyOutputIfLocal<IsLocal, TypeOfStrictOutput<Result>>,
 		TypeOf<Result>,
@@ -53,7 +53,7 @@ export interface DynamicMutationNodeConfig<
 const MUTATION_TAG = 'Mutation'
 
 export function mutation<
-	Item extends AnyBaseNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
@@ -61,12 +61,12 @@ export function mutation<
 	result: Item,
 	config: DynamicMutationNodeConfig<Variables, IsLocal, IsEntity>
 ): MutationNode<Item, Variables, IsLocal, IsEntity>
-export function mutation<Result extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
+export function mutation<Result extends AnyNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
 	result: Result,
 	config?: StaticMutationNodeConfig<IsLocal, IsEntity>
 ): MutationNode<Result, {}, IsLocal, IsEntity>
 export function mutation<
-	Item extends AnyBaseNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false

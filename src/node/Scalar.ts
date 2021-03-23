@@ -1,7 +1,7 @@
 import { Option } from 'fp-ts/lib/Option'
 import { Model } from '../model/Model'
 import {
-	BaseNode,
+	INode,
 	DynamicNodeConfig,
 	EMPTY_VARIABLES,
 	ModifyOutputIfLocal,
@@ -19,7 +19,7 @@ export interface ScalarNode<
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false
 >
-	extends BaseNode<
+	extends INode<
 			Input,
 			ModifyOutputIfLocal<IsLocal, Output>,
 			Data,

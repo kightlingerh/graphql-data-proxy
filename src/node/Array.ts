@@ -1,13 +1,9 @@
 import {
-	BaseNode,
-	DynamicNodeConfig,
-	EMPTY_VARIABLES,
 	ExtractSubVariablesDefinition,
 	ExtractVariablesDefinition,
 	ModifyOutputIfLocal,
-	AnyBaseNode,
+	AnyNode,
 	NodeVariables,
-	StaticNodeConfig,
 	TypeOf,
 	TypeOfPartial,
 	TypeOfPartialInput,
@@ -16,80 +12,57 @@ import {
 	TypeOfStrictOutput,
 	TypeOfCacheEntry,
 	ModifyIfEntity,
-	TypeOfRefs
-} from './shared'
+	TypeOfRefs,
+	BaseNode,
+	NodeOptions,
+	_HasDecodingTransformations,
+	_HasEncodingTransformations,
+	ExtractIsLocal
+} from './shared';
 
-export interface ArrayNode<
-	Item extends AnyBaseNode,
+export type ArrayNodeOptions<Item extends AnyNode, Variables extends NodeVariables = {}> = NodeOptions<
+	Array<TypeOfPartial<Item>>,
+	Variables
+>;
+
+export class ArrayNode<
+	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->
-	extends BaseNode<
-		Array<TypeOfStrictInput<Item>>,
-		ModifyOutputIfLocal<IsLocal, Array<TypeOfStrictOutput<Item>>>,
-		Array<TypeOf<Item>>,
-		Array<TypeOfPartialInput<Item>>,
-		ModifyOutputIfLocal<IsLocal, Array<TypeOfPartialOutput<Item>>>,
-		Array<TypeOfPartial<Item>>,
-		ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
-		Variables,
-		ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
-		ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfRefs<Item>>>
-	> {
-	readonly tag: 'Array'
-	readonly item: Item
+> extends BaseNode<
+	Array<TypeOfStrictInput<Item>>,
+	ModifyOutputIfLocal<IsLocal, Array<TypeOfStrictOutput<Item>>>,
+	Array<TypeOf<Item>>,
+	Array<TypeOfPartialInput<Item>>,
+	ModifyOutputIfLocal<IsLocal, Array<TypeOfPartialOutput<Item>>>,
+	Array<TypeOfPartial<Item>>,
+	ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfCacheEntry<Item>>>,
+	Variables,
+	ExtractSubVariablesDefinition<Item> & ExtractVariablesDefinition<Item>,
+	ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfRefs<Item>>>
+> {
+	readonly tag = 'Array';
+	readonly [_HasDecodingTransformations]: boolean;
+	readonly [_HasEncodingTransformations]: boolean;
+	constructor(readonly item: Item, options?: ArrayNodeOptions<Item, Variables>) {
+		super(options);
+		this[_HasDecodingTransformations] = item[_HasDecodingTransformations];
+		this[_HasDecodingTransformations] = item[_HasEncodingTransformations];
+	}
 }
 
-export interface StaticArrayNodeConfig<IsLocal extends boolean, IsEntity extends boolean>
-	extends StaticNodeConfig<IsLocal, IsEntity> {}
-
-export interface DynamicArrayNodeConfig<
-	Variables extends NodeVariables,
-	IsLocal extends boolean,
-	IsEntity extends boolean
-> extends DynamicNodeConfig<Variables, IsLocal, IsEntity> {}
-
-const ARRAY_TAG = 'Array'
-
 export function array<
-	Item extends AnyBaseNode,
-	Variables extends NodeVariables,
-	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
->(
-	item: Item,
-	config: DynamicArrayNodeConfig<Variables, IsLocal, IsEntity>
-): ArrayNode<Item, Variables, IsLocal, IsEntity>
-export function array<Item extends AnyBaseNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
-	item: Item,
-	config?: StaticArrayNodeConfig<IsLocal, IsEntity>
-): ArrayNode<Item, {}, IsLocal, IsEntity>
-export function array<
-	Item extends AnyBaseNode,
+	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(
-	item: Item,
-	config?: StaticArrayNodeConfig<IsLocal, IsEntity> | DynamicArrayNodeConfig<Variables, IsLocal, IsEntity>
-): ArrayNode<Item, Variables, IsLocal, IsEntity> {
-	return {
-		tag: ARRAY_TAG,
-		item,
-		variables: config?.variables ?? EMPTY_VARIABLES,
-		__hasDecodingTransformations: item.__hasDecodingTransformations,
-		__hasEncodingTransformations: item.__hasEncodingTransformations,
-		__isEntity: config?.isEntity,
-		__isLocal: config?.isLocal
-	}
+>(item: Item, options?: ArrayNodeOptions<Item, Variables>): ArrayNode<Item, Variables, IsLocal, IsEntity> {
+	return new ArrayNode<Item, Variables, IsLocal, IsEntity>(item, options);
 }
 
 export function markArrayAsEntity<T extends ArrayNode<any, any, any, any>>(
 	node: T
-): ArrayNode<T['item'], T['variables'], Exclude<T['__isLocal'], undefined>, true> {
-	return {
-		...node,
-		__isEntity: true
-	} as any
+): ArrayNode<T['item'], ExtractVariablesDefinition<T>, ExtractIsLocal<T>, true> {
+	return new ArrayNode(node.item, { ...node.options, isEntity: true }) as any;
 }
