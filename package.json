@@ -19,7 +19,8 @@
     "build": "yarn run clean && tsc --p tsconfig.json && tsc --p tsconfig.es6.json",
     "prettier": "prettier --no-semi --single-quote --print-width 120 --parser typescript --list-different \"{src,__tests__}/**/*.ts\"",
     "prettier-write": "prettier --no-semi --single-quote --print-width 120 --parser typescript --write \"{src,__tests__}/**/*.ts\"",
-    "test": "yarn jest"
+    "test": "yarn jest",
+    "perf": "yarn ts-node --transpile-only './perf/cache.ts'"
   },
   "peerDependencies": {
     "fp-ts": "^2.9.3",
@@ -27,7 +28,9 @@
     "vue": "^3.0.5"
   },
   "devDependencies": {
+    "@types/benchmark": "^2.1.0",
     "@types/jest": "^26.0.4",
+    "benchmark": "^2.1.4",
     "dtslint": "github:gcanti/dtslint",
     "fast-check": "^2.11.0",
     "fp-ts": "^2.9.3",
