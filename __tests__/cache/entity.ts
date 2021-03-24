@@ -39,7 +39,7 @@ const newPeople = [
 ]
 
 function useCache() {
-	const cache = make({})(SchemaNode)(SchemaNode)
+	const cache = make({})(SchemaNode).select(SchemaNode)
 	const write = (data: N.TypeOfPartial<typeof SchemaNode>) =>
 		pipe(
 			IOE.fromEither(cache),

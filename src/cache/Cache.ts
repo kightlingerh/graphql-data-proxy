@@ -63,24 +63,27 @@ export function make(deps: CacheDependencies) {
 		const uniqueNodes = new Map<string, any>();
 		const cache: TypeOfCacheEntry<S> = useTypeNodeCacheEntry(schema, rootPath, uniqueNodes, {});
 
-		// if (__DEV__) {
-		// 	console.log('cache', cache);
-		// }
+		if (__DEV__) {
+			console.log('cache', cache);
+		}
 
-		return <R extends TypeNode<any, any>>(request: R) => {
-			if (__DEV__) {
-				const errors = validate(schema, request);
-				if (isNonEmpty(errors)) {
-					return left<CacheError, Cache<R>>(errors);
+		return {
+			cache,
+			select: <R extends TypeNode<any, any>>(request: R) => {
+				if (__DEV__) {
+					const errors = validate(schema, request);
+					if (isNonEmpty(errors)) {
+						return left<CacheError, Cache<R>>(errors);
+					}
 				}
+				return right<CacheError, Cache<R>>({
+					read: (variables) => () => read(schema, request, rootPath, uniqueNodes, deps, variables, cache),
+					write: (variables) => (data) => () =>
+						write(data, schema, request, rootPath, uniqueNodes, deps, variables, cache),
+					toEntries: (variables) => () =>
+						toEntries(schema, request, rootPath, uniqueNodes, deps, variables, cache)
+				});
 			}
-			return right<CacheError, Cache<R>>({
-				read: (variables) => () => read(schema, request, rootPath, uniqueNodes, deps, variables, cache),
-				write: (variables) => (data) => () =>
-					write(data, schema, request, rootPath, uniqueNodes, deps, variables, cache),
-				toEntries: (variables) => () =>
-					toEntries(schema, request, rootPath, uniqueNodes, deps, variables, cache)
-			});
 		};
 	};
 }

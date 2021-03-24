@@ -56,7 +56,7 @@ const readData: SchemaData = {
 
 describe('type with custom cache', () => {
 	it('properly creates entries based on toId function', () => {
-		const cache = make({})(SchemaNode)(SchemaNode)
+		const cache = make({})(SchemaNode).select(SchemaNode)
 		const write = (data: N.TypeOfPartial<typeof SchemaNode>) =>
 			pipe(
 				IOE.fromEither(cache),

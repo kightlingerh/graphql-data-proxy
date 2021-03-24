@@ -11,7 +11,7 @@ import { make } from '../../src/cache/Cache'
 const NonEmptyArray = N.schema('NonEmptyArray', { a: N.nonEmptyArray(N.staticString) })
 
 function useCache(useImmutableArrays = false) {
-	const cache = make({ useImmutableArrays })(NonEmptyArray)(NonEmptyArray)
+	const cache = make({ useImmutableArrays })(NonEmptyArray).select(NonEmptyArray)
 	const write = (data: N.TypeOf<typeof NonEmptyArray>) =>
 		pipe(
 			IOE.fromEither(cache),

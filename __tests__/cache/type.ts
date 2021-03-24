@@ -17,7 +17,7 @@ const schema = N.type('Type', {
 interface Person extends N.TypeOf<typeof schema> {}
 
 function useCache() {
-	const cache = make({})(schema)(schema)
+	const cache = make({})(schema).select(schema)
 	const write = (data: N.TypeOfPartial<typeof schema>) =>
 		pipe(
 			IOE.fromEither(cache),

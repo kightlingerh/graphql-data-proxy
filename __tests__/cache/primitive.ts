@@ -10,7 +10,7 @@ import * as N from '../../src/node'
 import { make } from '../../src/cache/Cache'
 
 const schema = N.schema('Primitive', { a: N.staticString })
-const cache = make({})(schema)(schema)
+const cache = make({})(schema).select(schema)
 const write = (data: N.TypeOf<typeof schema>) =>
 	pipe(
 		IOE.fromEither(cache),

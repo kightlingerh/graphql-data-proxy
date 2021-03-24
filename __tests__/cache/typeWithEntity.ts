@@ -39,7 +39,7 @@ const variables = {
 }
 
 function useCache() {
-	const cache = make({})(TypeWithEntityNode)(TypeWithEntityRequestNode)
+	const cache = make({})(TypeWithEntityNode).select(TypeWithEntityRequestNode)
 	const write = (data: N.TypeOfPartial<typeof TypeWithEntityNode>) =>
 		pipe(
 			IOE.fromEither(cache),

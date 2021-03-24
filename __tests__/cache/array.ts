@@ -12,7 +12,7 @@ const Array = N.schema('Array', {
 });
 
 function useCache(useImmutableArrays = false) {
-	const cache = make({ useImmutableArrays })(Array)(Array);
+	const cache = make({ useImmutableArrays })(Array).select(Array);
 	const write = (data: N.TypeOf<typeof Array>) =>
 		pipe(
 			IOE.fromEither(cache),

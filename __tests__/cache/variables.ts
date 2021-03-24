@@ -55,7 +55,7 @@ const person2Variables: SchemaVariables = {
 
 describe('type', () => {
 	it('has reactive reads', () => {
-		const cache = make({})(SchemaNode)(SchemaNode)
+		const cache = make({})(SchemaNode).select(SchemaNode)
 		const writePerson1 = pipe(
 			IOE.fromEither(cache),
 			IOE.chain((c) =>

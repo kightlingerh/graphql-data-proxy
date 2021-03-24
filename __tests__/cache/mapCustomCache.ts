@@ -102,7 +102,7 @@ const readData: SchemaData = {
 
 describe('map with custom cache', () => {
 	it('properly extracts entries by id', () => {
-		const cache = make({})(SchemaNode)(SchemaNode)
+		const cache = make({})(SchemaNode).select(SchemaNode)
 		pipe(
 			IOE.fromEither(cache),
 			IOE.chain((c) => IOE.fromIO(c.write(variables)(writeData))),

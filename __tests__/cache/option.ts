@@ -11,7 +11,7 @@ import { make } from '../../src/cache/Cache'
 const schema = N.schema('Option', { a: N.option(N.staticString) })
 
 function useCache() {
-	const cache = make({})(schema)(schema)
+	const cache = make({})(schema).select(schema)
 
 	const write = (data: N.TypeOf<typeof schema>) =>
 		pipe(

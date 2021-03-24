@@ -56,7 +56,7 @@ const college: N.TypeOf<typeof CollegeEducation> = {
 }
 
 function useCache() {
-	const cache = make({})(Schema)(Schema)
+	const cache = make({})(Schema).select(Schema)
 	const write = (data: N.TypeOfPartial<typeof Schema>) =>
 		pipe(
 			IOE.fromEither(cache),
