@@ -92,7 +92,7 @@ function toEntries(
 	schema: Node,
 	request: Node,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: any
@@ -141,7 +141,7 @@ function toEntriesTypeNode(
 	schema: TypeNode<any, any>,
 	request: TypeNode<any, any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	entry: any
@@ -166,7 +166,7 @@ function toEntriesArrayNode(
 	schema: ArrayNode<any>,
 	request: ArrayNode<any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: any[]
@@ -180,7 +180,7 @@ function toEntriesNonEmptyArrayNode(
 	schema: NonEmptyArrayNode<any>,
 	request: NonEmptyArrayNode<any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: Ref<Option<NonEmptyArray<any>>>
@@ -206,7 +206,7 @@ function toEntriesOptionNode(
 	schema: OptionNode<any>,
 	request: OptionNode<any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: Ref<Option<any>>
@@ -222,7 +222,7 @@ function toEntriesMapNode(
 	schema: MapNode<any, any, any, any, any, any>,
 	request: MapNode<any, any, any, any, any, any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: Map<any, any>
@@ -236,7 +236,7 @@ function toEntriesSumNode(
 	schema: SumNode<any>,
 	request: SumNode<any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: Ref<Option<[string, any]>>
@@ -260,7 +260,7 @@ function read(
 	schema: Node,
 	request: Node,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: any
@@ -308,7 +308,7 @@ function readTypeNode(
 	schema: TypeNode<any, any>,
 	request: TypeNode<any, any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	entry: any
@@ -337,7 +337,7 @@ function readArrayNode(
 	schema: ArrayNode<any>,
 	request: ArrayNode<any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: any[]
@@ -360,7 +360,7 @@ function readNonEmptyArrayNode(
 	schema: NonEmptyArrayNode<any>,
 	request: NonEmptyArrayNode<any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: Ref<Option<NonEmptyArray<any>>>
@@ -384,7 +384,7 @@ function readOptionNode(
 	schema: OptionNode<any>,
 	request: OptionNode<any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: Ref<Option<any>>
@@ -401,7 +401,7 @@ function readMapNode(
 	schema: MapNode<any, any, any, any, any, any>,
 	request: MapNode<any, any, any, any, any, any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: Map<any, any>
@@ -427,7 +427,7 @@ function readSumNode(
 	schema: SumNode<any>,
 	request: SumNode<any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: Ref<Option<[string, any]>>
@@ -450,7 +450,7 @@ function write(
 	schema: Node,
 	request: Node,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: any
@@ -535,7 +535,7 @@ function writeToTypeNode(
 	schema: TypeNode<any, any>,
 	request: TypeNode<any, any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	entry: any
@@ -564,7 +564,7 @@ function writeToArrayNode(
 	schema: ArrayNode<any>,
 	request: ArrayNode<any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	entry: any[]
@@ -607,7 +607,7 @@ function writeToNonEmptyArrayNode(
 	schema: NonEmptyArrayNode<any>,
 	request: NonEmptyArrayNode<any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	entry: Ref<Option<NonEmptyArray<any>>>
@@ -640,7 +640,7 @@ function writeToOptionNode(
 	schema: OptionNode<any>,
 	request: OptionNode<any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: Ref<Option<any>>
@@ -686,7 +686,7 @@ function writeToMapNode(
 	schema: MapNode<any, any, any, any, any, any>,
 	request: MapNode<any, any, any, any, any, any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: Map<any, any>
@@ -748,7 +748,7 @@ function writeToSumNode(
 	schema: SumNode<any>,
 	request: SumNode<any, any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	deps: CacheDependencies,
 	variables: Record<string, unknown>,
 	cache: Ref<Option<[string, any]>>
@@ -803,7 +803,7 @@ function useMapNodeKeyCacheEntry(
 	key: string,
 	schema: MapNode<any, any, any, any, any, any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	variables: Record<string, unknown>,
 	entry: Map<any, any>,
 	data?: any
@@ -832,7 +832,7 @@ function useTypeNodeMemberCacheEntry(
 	member: string,
 	schema: TypeNode<any, any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	variables: Record<string, unknown>,
 	entry: any,
 	data?: any
@@ -862,10 +862,10 @@ function useTypeNodeMemberCacheEntry(
 }
 
 function useCustomCache(
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	member: Node,
 	path: Path,
-	id: string,
+	id: string | number,
 	variables: Record<string, unknown>,
 	data?: any
 ) {
@@ -882,7 +882,7 @@ function useCustomCache(
 function useTypeNodeCacheEntry(
 	schema: TypeNode<any, any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	variables: Record<string, unknown>,
 	data?: any
 ) {
@@ -912,7 +912,7 @@ function useTypeNodeCacheEntry(
 function useMapNodeCacheEntry(
 	schema: MapNode<any, any, any, any, any, any>,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	variables: Record<string, unknown>,
 	data?: any
 ) {
@@ -955,7 +955,7 @@ function encode(node: Node, data: any): string {
 function useCacheEntry<T extends Node>(
 	node: T,
 	path: Path,
-	uniqueNodes: Map<string, any>,
+	uniqueNodes: Map<string | number, any>,
 	variables: Record<string, unknown>,
 	data?: any
 ): TypeOfCacheEntry<T> {
