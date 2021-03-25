@@ -76,9 +76,9 @@ export interface INode<
 	R = CE
 > {
 	readonly [_Variables]: V;
-	readonly [_SubVariables]: SV;
 
 	// for internal use
+	readonly [_SubVariables]: SV;
 	readonly [_StrictDataInput]: SDI;
 	readonly [_StrictDataOutput]: SDO;
 	readonly [_StrictData]: SD;
@@ -86,6 +86,7 @@ export interface INode<
 	readonly [_PartialDataOutput]: PDO;
 	readonly [_PartialData]: PD;
 	readonly [_Ref]: R;
+	readonly [_CacheEntry]: CE;
 }
 
 export abstract class BaseNode<
@@ -109,6 +110,7 @@ export abstract class BaseNode<
 	readonly [_PartialDataOutput]!: PDO;
 	readonly [_PartialData]!: PD;
 	readonly [_Ref]!: R;
+	readonly [_CacheEntry]!: CE
 
 	protected constructor(
 		vars?: V
