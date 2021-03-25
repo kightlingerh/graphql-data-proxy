@@ -14,7 +14,7 @@ import {
 	ModifyIfEntity,
 	TypeOfRefs,
 	BaseNode,
-	BaseNodeOptions
+	BaseNodeOptions, DynamicNodeOptions
 
 } from './shared';
 
@@ -41,17 +41,17 @@ export class ArrayNode<
 	}
 }
 
-// export function array<
-// 	Item extends AnyNode,
-// 	IsLocal extends boolean = false,
-// 	IsEntity extends boolean = false
-// 	>(item: Item, options?: BaseNodeOptions<IsLocal, IsEntity>): ArrayNode<Item, {}, IsLocal, IsEntity>
-// export function array<
-// 	Item extends AnyNode,
-// 	Variables extends NodeVariables,
-// 	IsLocal extends boolean = false,
-// 	IsEntity extends boolean = false
-// 	>(item: Item, options: DynamicNodeOptions<Variables, IsLocal, IsEntity>): ArrayNode<Item, Variables, IsLocal, IsEntity>
+export function array<
+	Item extends AnyNode,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+	>(item: Item, options?: BaseNodeOptions<IsLocal, IsEntity>): ArrayNode<Item, {}, IsLocal, IsEntity>
+export function array<
+	Item extends AnyNode,
+	Variables extends NodeVariables,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+	>(item: Item, options: DynamicNodeOptions<Variables, IsLocal, IsEntity>): ArrayNode<Item, Variables, IsLocal, IsEntity>
 export function array<
 	Item extends AnyNode,
 	Variables extends NodeVariables = {},

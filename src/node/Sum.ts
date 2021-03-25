@@ -18,7 +18,8 @@ import {
 	TypeOfRefs,
 	BaseNodeOptions,
 	ExtractIsLocal,
-	ExtractIsEntity
+	ExtractIsEntity,
+	DynamicNodeOptions
 } from './shared';
 import { ExtractTypeName, ExtractTypeNodeMembers, type, TypenameNode, TypeNode } from './Type';
 
@@ -80,7 +81,7 @@ function useSumMemberRecord(members: ReadonlyArray<SumTypeNode>) {
 	return x;
 }
 
-function addTypenameToMembers<MS extends ReadonlyArray<SumTypeNode>>(members: MS): MS {
+function addTypenameToMembers<MS extends ReadonlyArray<SumTypeNode>>(members: MS): ExtractSumNodeMembers<MS> {
 	return members.map((member) =>
 		member.members.hasOwnProperty('__typename')
 			? member
@@ -109,25 +110,34 @@ export class SumNode<
 	ModifyIfEntity<IsEntity, ExtractTypeOfSumNode<MS>, ExtractSumNodeRefs<MS>>
 > {
 	readonly tag = 'Sum';
-	readonly members: MS;
 	readonly membersRecord: Record<
 		ExtractTypeName<{ [K in keyof ExtractSumNodeMembers<MS>]: ExtractSumNodeMembers<MS>[K] }[number]>,
 		ExtractSumNodeMembers<MS>[number]
 	>;
-	constructor(members: MS, readonly options?: BaseNodeOptions<IsLocal, IsEntity, Variables>) {
+	constructor(readonly members: MS, readonly options?: BaseNodeOptions<IsLocal, IsEntity, Variables>) {
 		super(options?.variables);
-		this.members = addTypenameToMembers(members);
-		this.membersRecord = useSumMemberRecord(this.members);
+		this.membersRecord = useSumMemberRecord(members);
 	}
 }
 
 export function sum<
 	MS extends ReadonlyArray<SumTypeNode>,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(members: MS, options?: BaseNodeOptions<IsLocal, IsEntity>): SumNode<ExtractSumNodeMembers<MS>, {}, IsLocal, IsEntity>;
+export function sum<
+	MS extends ReadonlyArray<SumTypeNode>,
+	Variables extends NodeVariables,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(members: MS, options?: DynamicNodeOptions<Variables, IsLocal, IsEntity>): SumNode<ExtractSumNodeMembers<MS>, Variables, IsLocal, IsEntity>;
+export function sum<
+	MS extends ReadonlyArray<SumTypeNode>,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(members: MS, options?: BaseNodeOptions<IsLocal, IsEntity, Variables>): SumNode<MS, Variables, IsLocal, IsEntity> {
-	return new SumNode(members, options);
+>(members: MS, options?: BaseNodeOptions<IsLocal, IsEntity, Variables>): SumNode<ExtractSumNodeMembers<MS>, Variables, IsLocal, IsEntity> {
+	return new SumNode(addTypenameToMembers(members), options);
 }
 
 export function markSumAsEntity<

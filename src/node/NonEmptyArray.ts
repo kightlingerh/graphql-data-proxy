@@ -17,7 +17,8 @@ import {
 	TypeOfCacheEntry,
 	ModifyIfEntity,
 	TypeOfRefs,
-	BaseNodeOptions
+	BaseNodeOptions,
+	DynamicNodeOptions
 } from './shared';
 
 export class NonEmptyArrayNode<
@@ -43,12 +44,28 @@ export class NonEmptyArrayNode<
 	}
 }
 
+export function nonEmptyArray<Item extends AnyNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
+	item: Item,
+	options?: BaseNodeOptions<IsLocal, IsEntity>
+): NonEmptyArrayNode<Item, {}, IsLocal, IsEntity>;
+export function nonEmptyArray<
+	Item extends AnyNode,
+	Variables extends NodeVariables,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
+	item: Item,
+	options: DynamicNodeOptions<Variables, IsLocal, IsEntity>
+): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity>;
 export function nonEmptyArray<
 	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(item: Item, options?: BaseNodeOptions<IsLocal, IsEntity, Variables>): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity> {
+>(
+	item: Item,
+	options?: BaseNodeOptions<IsLocal, IsEntity, Variables>
+): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity> {
 	return new NonEmptyArrayNode(item, options);
 }
 
