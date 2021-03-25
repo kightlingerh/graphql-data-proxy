@@ -206,7 +206,7 @@ export interface ToId<PartialData, Variables> {
 		path: Path,
 		variables?: Variables & V,
 		data?: PartialData
-	): string | undefined;
+	): string | number | undefined;
 }
 
 export const EMPTY_VARIABLES: any = {};

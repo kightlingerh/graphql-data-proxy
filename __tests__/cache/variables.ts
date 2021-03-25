@@ -13,7 +13,7 @@ const PersonNode = N.option(
 		id: N.staticString,
 		age: N.staticInt,
 		weight: N.staticInt,
-		name: N.staticString
+		name: N.staticString,
 	}),
 	{
 		variables: {

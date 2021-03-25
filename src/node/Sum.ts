@@ -1,6 +1,4 @@
 import { Option } from 'fp-ts/lib/Option';
-import { literal } from '../model';
-import { scalar } from './Scalar';
 import {
 	BaseNode,
 	ExtractSubVariablesDefinition,
@@ -24,7 +22,7 @@ import {
 } from './shared';
 import { ExtractTypeName, ExtractTypeNodeMembers, type, TypenameNode, TypeNode } from './Type';
 
-type SumTypeNode = TypeNode<any, any, any, any, any>;
+type SumTypeNode = TypeNode<any, any, any, any, any, any>;
 
 type ExtractSumNodeMembers<MS extends ReadonlyArray<SumTypeNode>> = {
 	[K in keyof MS]: TypeNode<
@@ -86,8 +84,9 @@ function addTypenameToMembers<MS extends ReadonlyArray<SumTypeNode>>(members: MS
 	return members.map((member) =>
 		member.members.hasOwnProperty('__typename')
 			? member
-			: type(member.__typename, { ...member.members, __typename: scalar(member.__typename, literal(member.__typename)) }, {
-					variables: member.variables,
+			: type(member.__typename, member.members, {
+					includeTypename: true,
+					variables: member.variables
 			  })
 	) as any;
 }
@@ -127,10 +126,7 @@ export function sum<
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(
-	members: MS,
-	options?: BaseNodeOptions<IsLocal, IsEntity, Variables>
-): SumNode<MS, Variables, IsLocal, IsEntity> {
+>(members: MS, options?: BaseNodeOptions<IsLocal, IsEntity, Variables>): SumNode<MS, Variables, IsLocal, IsEntity> {
 	return new SumNode(members, options);
 }
 

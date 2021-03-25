@@ -1,4 +1,5 @@
-import { ScalarNode } from './Scalar';
+import { literal } from '../model';
+import { scalar, ScalarNode } from './Scalar';
 import {
 	BaseNode,
 	ExtractSubVariablesDefinition,
@@ -75,18 +76,22 @@ export interface StaticTypeNodeOptions<
 	MS extends Record<string, AnyNode>,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false,
+	IncludeTypename extends boolean = false,
 	Variables extends Record<string, AnyNode> = {}
 > extends BaseNodeOptions<IsLocal, IsEntity, Variables> {
 	toId?: ToId<ExtractTypeNodePartialDataFromMembers<MS>, Variables>;
+	includeTypename?: IncludeTypename;
 }
 
 export interface DynamicTypeNodeOptions<
 	MS extends Record<string, AnyNode>,
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
+	IsEntity extends boolean = false,
+	IncludeTypename extends boolean = false
 > extends DynamicNodeOptions<Variables, IsLocal, IsEntity> {
 	toId?: ToId<ExtractTypeNodePartialDataFromMembers<MS>, Variables>;
+	includeTypename?: IncludeTypename;
 }
 
 export class TypeNode<
@@ -94,7 +99,8 @@ export class TypeNode<
 	MS extends Record<string, AnyNode>,
 	Variables extends Record<string, AnyNode> = {},
 	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
+	IsEntity extends boolean = false,
+	IncludeTypename extends boolean = false
 > extends BaseNode<
 	ExtractTypeNodeStrictInputFromMembers<MS>,
 	ModifyOutputIfLocal<IsLocal, ExtractTypeNodeStrictOutputFromMembers<MS>>,
@@ -111,45 +117,71 @@ export class TypeNode<
 	constructor(
 		readonly __typename: Typename,
 		readonly members: MS,
-		readonly options?: DynamicTypeNodeOptions<MS, Variables, IsLocal, IsEntity> | StaticTypeNodeOptions<MS, IsLocal, IsEntity, Variables>
+		readonly options?:
+			| DynamicTypeNodeOptions<MS, Variables, IsLocal, IsEntity, IncludeTypename>
+			| StaticTypeNodeOptions<MS, IsLocal, IsEntity, IncludeTypename, Variables>
 	) {
 		super(options?.variables);
 	}
 }
 
+export type IncludeTypenameMembers<
+	Typename extends string,
+	MS extends Record<string, AnyNode>,
+	IncludeTypename extends boolean
+> = [IncludeTypename] extends [true] ? MS & { readonly __typename: TypenameNode<Typename> } : MS;
+
 export function type<
 	Typename extends string,
 	MS extends Record<string, AnyNode>,
 	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
+	IsEntity extends boolean = false,
+	IncludeTypename extends boolean = false
 >(
 	__typename: Typename,
 	members: MS,
-	options?: StaticTypeNodeOptions<MS, IsLocal, IsEntity>
-): TypeNode<Typename, MS, {}, IsLocal, IsEntity>;
+	options?: StaticTypeNodeOptions<MS, IsLocal, IsEntity, IncludeTypename>
+): TypeNode<Typename, IncludeTypenameMembers<Typename, MS, IncludeTypename>, {}, IsLocal, IsEntity, IncludeTypename>;
 export function type<
 	Typename extends string,
 	MS extends Record<string, AnyNode>,
 	Variables extends Record<string, AnyNode> = Record<string, AnyNode>,
 	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
+	IsEntity extends boolean = false,
+	IncludeTypename extends boolean = false
 >(
 	__typename: Typename,
 	members: MS,
-	options: DynamicTypeNodeOptions<MS, Variables, IsLocal, IsEntity>
-): TypeNode<Typename, MS, Variables, IsLocal, IsEntity>;
+	options: DynamicTypeNodeOptions<MS, Variables, IsLocal, IsEntity, IncludeTypename>
+): TypeNode<Typename, IncludeTypenameMembers<Typename, MS, IncludeTypename>, Variables, IsLocal, IsEntity, IncludeTypename>;
 export function type<
 	Typename extends string,
 	MS extends Record<string, AnyNode> = {},
 	Variables extends Record<string, AnyNode> = Record<string, AnyNode>,
 	IsLocal extends boolean = false,
-	IsEntity extends boolean = false
+	IsEntity extends boolean = false,
+	IncludeTypename extends boolean = false
 >(
 	__typename: Typename,
 	members: MS,
-	options?: DynamicTypeNodeOptions<MS, Variables, IsLocal, IsEntity> | StaticTypeNodeOptions<MS, IsLocal, IsEntity, Variables>
-): TypeNode<Typename, MS, Variables, IsLocal, IsEntity> {
-	return new TypeNode(__typename, members, options);
+	options?:
+		| DynamicTypeNodeOptions<MS, Variables, IsLocal, IsEntity, IncludeTypename>
+		| StaticTypeNodeOptions<MS, IsLocal, IsEntity, IncludeTypename, Variables>
+): TypeNode<
+	Typename,
+	IncludeTypenameMembers<Typename, MS, IncludeTypename>,
+	Variables,
+	IsLocal,
+	IsEntity,
+	IncludeTypename
+> {
+	return new TypeNode(
+		__typename,
+		(options?.includeTypename && !members.hasOwnProperty('__typename')
+			? { ...members, __typename: scalar(__typename, literal(__typename)) }
+			: members) as IncludeTypenameMembers<Typename, MS, IncludeTypename>,
+		options
+	);
 }
 
 export function pickFromType<
@@ -164,11 +196,7 @@ export function pickFromType<
 	keys.forEach((k) => {
 		n[k] = node.members[k];
 	});
-	return new TypeNode(
-		node.__typename,
-		n,
-		node.options
-	) as any;
+	return new TypeNode(node.__typename, n, node.options) as any;
 }
 
 export function omitFromType<
@@ -188,11 +216,7 @@ export function omitFromType<
 			n[k] = node.members[k];
 		}
 	});
-	return new TypeNode(
-		node.__typename,
-		n,
-		node.variables
-	) as any;
+	return new TypeNode(node.__typename, n, node.variables) as any;
 }
 
 export function markTypeAsEntity<
