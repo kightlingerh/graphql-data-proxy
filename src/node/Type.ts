@@ -1,5 +1,4 @@
 import { literal } from '../model';
-import { mutation } from './Mutation';
 import { scalar, ScalarNode } from './Scalar';
 import {
 	BaseNode,
@@ -22,9 +21,8 @@ import {
 	BaseNodeOptions,
 	ToId,
 	DynamicNodeOptions,
-	ExtractTag, TypeOfCacheEntry
+	ExtractTag
 } from './shared';
-import { staticString } from './String';
 
 export type ExtractTypeName<T> = [T] extends [{ __typename: string }] ? T['__typename'] : never;
 
