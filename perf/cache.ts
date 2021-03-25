@@ -86,7 +86,7 @@ const SchemaNodeDecoder = N.useStrictNodeDecoder(QueryNode);
 
 const DecodedData = SchemaNodeDecoder.decode(data)
 
-const cache = C.make({})(QueryNode)(QueryNode)
+const cache = C.make({})(QueryNode).select(QueryNode)
 
 /*
 function implementation x 840,120,089 ops/sec ±1.23% (81 runs sampled)

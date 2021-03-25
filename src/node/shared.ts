@@ -187,6 +187,8 @@ export type Values<T> = T[keyof T];
 
 export type Intersection<T> = (T extends unknown ? (x: T) => 0 : never) extends (x: infer R) => 0 ? R : never;
 
+export type ExtractTag<T> = [T] extends [{ tag: infer A }] ? A : never
+
 export type NodeVariables = Record<string, AnyNode>;
 
 export type ExtractIsLocal<T> = [T] extends [{ options: BaseNodeOptions<boolean, boolean, any> }]
