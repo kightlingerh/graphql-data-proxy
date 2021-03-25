@@ -10,13 +10,35 @@ import {
 	TypeOfCacheEntry,
 	ModifyIfEntity,
 	TypeOfRefs,
-	TypeOfStrictInput, TypeOfStrictOutput, TypeOfPartialInput, TypeOfPartialOutput, BaseNodeOptions, ToId
+	TypeOfStrictInput,
+	TypeOfStrictOutput,
+	TypeOfPartialInput,
+	TypeOfPartialOutput,
+	BaseNodeOptions,
+	ToId,
+	DynamicNodeOptions
 } from './shared';
 
-export interface MapNodeOptions<Key extends AnyNode, Item extends AnyNode, Variables extends NodeVariables, IsLocal extends boolean, IsEntity extends boolean>
-	extends BaseNodeOptions<IsLocal, IsEntity, Variables> {
+export interface StaticMapNodeOptions<
+	Key extends AnyNode,
+	Item extends AnyNode,
+	IsLocal extends boolean,
+	IsEntity extends boolean,
+	Variables extends NodeVariables = {}
+> extends BaseNodeOptions<IsLocal, IsEntity, Variables> {
 	readonly __typename?: string;
-	readonly toId?: ToId<Map<TypeOf<Key>, TypeOfPartial<Item>>, Variables>
+	readonly toId?: ToId<Map<TypeOf<Key>, TypeOfPartial<Item>>, Variables>;
+}
+
+export interface DynamicMapNodeOptions<
+	Key extends AnyNode,
+	Item extends AnyNode,
+	Variables extends NodeVariables,
+	IsLocal extends boolean,
+	IsEntity extends boolean
+> extends DynamicNodeOptions<Variables, IsLocal, IsEntity> {
+	readonly __typename?: string;
+	readonly toId?: ToId<Map<TypeOf<Key>, TypeOfPartial<Item>>, Variables>;
 }
 
 export class MapNode<
@@ -44,12 +66,39 @@ export class MapNode<
 	readonly tag = 'Map';
 	// for array of object encodings
 	readonly __typename?: string;
-	constructor(readonly key: Key, readonly item: Item, readonly options?: MapNodeOptions<Key, Item, Variables, IsLocal, IsEntity>) {
+	constructor(
+		readonly key: Key,
+		readonly item: Item,
+		readonly options?:
+			| StaticMapNodeOptions<Key, Item, IsLocal, IsEntity, Variables>
+			| DynamicMapNodeOptions<Key, Item, Variables, IsLocal, IsEntity>
+	) {
 		super(options?.variables);
-		this.__typename = options?.__typename
+		this.__typename = options?.__typename;
 	}
 }
 
+export function map<
+	Key extends AnyNode,
+	Item extends AnyNode,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
+	key: Key,
+	item: Item,
+	options?: StaticMapNodeOptions<Key, Item, IsLocal, IsEntity>
+): MapNode<Key, Item, {}, IsLocal, IsEntity>;
+export function map<
+	Key extends AnyNode,
+	Item extends AnyNode,
+	Variables extends NodeVariables,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
+	key: Key,
+	item: Item,
+	options: DynamicMapNodeOptions<Key, Item, Variables, IsLocal, IsEntity>
+): MapNode<Key, Item, Variables, IsLocal, IsEntity>;
 export function map<
 	Key extends AnyNode,
 	Item extends AnyNode,
@@ -59,7 +108,9 @@ export function map<
 >(
 	key: Key,
 	item: Item,
-	options?: MapNodeOptions<Key, Item, Variables, IsLocal, IsEntity>
+	options?:
+		| StaticMapNodeOptions<Key, Item, IsLocal, IsEntity, Variables>
+		| DynamicMapNodeOptions<Key, Item, Variables, IsLocal, IsEntity>
 ): MapNode<Key, Item, Variables, IsLocal, IsEntity> {
 	return new MapNode(key, item, options);
 }
