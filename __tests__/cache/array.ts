@@ -11,6 +11,7 @@ const Array = N.schema('Array', {
 	a: N.array(N.staticString)
 });
 
+
 function useCache(useImmutableArrays = false) {
 	const cache = make({ useImmutableArrays })(Array).select(Array);
 	const write = (data: N.TypeOf<typeof Array>) =>

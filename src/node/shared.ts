@@ -144,8 +144,8 @@ type IsNonEmptyObject<T> = [keyof T] extends [never] ? true : false;
 export type EncodedVariables = string;
 
 export type CacheNode<T> = [IsNonEmptyObject<ExtractVariablesDefinition<T>>] extends [true]
-	? Map<EncodedVariables, TypeOfCacheEntry<T>>
-	: TypeOfCacheEntry<T>;
+	? TypeOfCacheEntry<T>
+	: Map<EncodedVariables, TypeOfCacheEntry<T>>;
 
 export type ExtractNodeDefinitionType<T> = [T] extends [Record<string, AnyNode>]
 	? { [K in keyof T]: TypeOf<T[K]> }

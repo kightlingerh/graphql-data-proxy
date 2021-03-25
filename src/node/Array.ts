@@ -69,3 +69,4 @@ export function markArrayAsEntity<
 >(node: ArrayNode<Item, Variables, IsLocal, IsEntity>): ArrayNode<Item, Variables, IsLocal, true> {
 	return new ArrayNode(node.item, { ...node.options, isEntity: true });
 }
+
