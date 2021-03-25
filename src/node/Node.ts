@@ -23,6 +23,6 @@ export type Node =
 	| ScalarNode<any, any, any, any, any, any>
 	| StringNode<any, any>
 	| SumNode<any, any, any>
-	| TypeNode<any, any, any, any, any, any>;
+	| TypeNode<any, any, any, any, any>;
 
 export type NodeTag = Node['tag'];

@@ -4,7 +4,7 @@ import {
 	NodeVariables,
 	Ref,
 	BaseNode,
-	PrimitiveNodeOptions,
+	BaseNodeOptions,
 } from './shared';
 
 export class BooleanNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<
@@ -18,13 +18,13 @@ export class BooleanNode<Variables extends NodeVariables = {}, IsLocal extends b
 	Variables
 > {
 	readonly tag = 'Boolean';
-	constructor(readonly options?: PrimitiveNodeOptions<Variables, IsLocal>) {
+	constructor(readonly options?: BaseNodeOptions<IsLocal, true, Variables>) {
 		super(options?.variables);
 	}
 }
 
 export function boolean<Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
-	options?: PrimitiveNodeOptions<Variables, IsLocal>
+	options?: BaseNodeOptions<IsLocal, true, Variables>
 ): BooleanNode<Variables, IsLocal> {
 	return new BooleanNode<Variables, IsLocal>(options);
 }

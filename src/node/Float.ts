@@ -4,7 +4,7 @@ import {
 	ModifyOutputIfLocal,
 	NodeVariables,
 	Ref,
-	PrimitiveNodeOptions,
+	BaseNodeOptions,
 	BaseNode
 } from './shared';
 
@@ -19,13 +19,13 @@ export class FloatNode<Variables extends NodeVariables = {}, IsLocal extends boo
 	Variables
 > {
 	readonly tag = 'Float';
-	constructor(readonly options?: PrimitiveNodeOptions<Variables, IsLocal>) {
+	constructor(readonly options?: BaseNodeOptions<IsLocal, true, Variables>) {
 		super(options?.variables);
 	}
 }
 
 export function float<Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
-	options?: PrimitiveNodeOptions<Variables, IsLocal>
+	options?: BaseNodeOptions<IsLocal, true, Variables>
 ): FloatNode<Variables, IsLocal> {
 	return new FloatNode<Variables, IsLocal>(options);
 }

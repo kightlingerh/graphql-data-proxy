@@ -5,7 +5,7 @@ import {
 	NodeVariables,
 	Ref,
 	useLocalModel,
-	PrimitiveNodeOptions,
+	BaseNodeOptions,
 	BaseNode,
 } from './shared';
 
@@ -33,7 +33,7 @@ export class ScalarNode<
 	readonly decode: Model<Input, IsLocal extends true ? undefined : Input, Data>['decode'];
 	readonly equals: Model<Input, IsLocal extends true ? undefined : Input, Data>['equals'];
 	readonly is: Model<Input, IsLocal extends true ? undefined : Input, Data>['is'];
-	constructor(readonly name: Name, model: Model<Input, Output, Data>, readonly options?: PrimitiveNodeOptions<Variables, IsLocal>) {
+	constructor(readonly name: Name, model: Model<Input, Output, Data>, readonly options?: BaseNodeOptions<IsLocal, false, Variables>) {
 		super(options?.variables);
 		const m = options?.isLocal ? useLocalModel(model) : model;
 		this.encode = m.encode as any;
@@ -53,7 +53,7 @@ export function scalar<
 >(
 	name: Name,
 	model: Model<Input, Output, Data>,
-	options?: PrimitiveNodeOptions<Variables, IsLocal>
+	options?: BaseNodeOptions<IsLocal, false, Variables>
 ): ScalarNode<Name, Input, Output, Data, Variables, IsLocal> {
 	return new ScalarNode(name, model, options);
 }

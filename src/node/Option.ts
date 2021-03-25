@@ -16,7 +16,7 @@ import {
 	ModifyIfEntity,
 	TypeOfRefs,
 	BaseNode,
-	PrimitiveNodeOptions,
+	BaseNodeOptions,
 } from './shared';
 
 export class OptionNode<
@@ -37,7 +37,7 @@ export class OptionNode<
 	ModifyIfEntity<IsEntity, Option<TypeOf<Item>>, Ref<Option<TypeOfRefs<Item>>>>
 > {
 	readonly tag = 'Option';
-	constructor(readonly item: Item, readonly options?: PrimitiveNodeOptions<Variables, IsLocal, IsEntity>) {
+	constructor(readonly item: Item, readonly options?: BaseNodeOptions<IsLocal, IsEntity, Variables>) {
 		super(options?.variables);
 	}
 }
@@ -47,7 +47,7 @@ export function option<
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(item: Item, options?: PrimitiveNodeOptions<Variables, IsLocal, IsEntity>): OptionNode<Item, Variables, IsLocal, IsEntity> {
+>(item: Item, options?: BaseNodeOptions<IsLocal, IsEntity, Variables>): OptionNode<Item, Variables, IsLocal, IsEntity> {
 	return new OptionNode(item, options);
 }
 

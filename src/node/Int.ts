@@ -5,7 +5,7 @@ import {
 	ModifyOutputIfLocal,
 	NodeVariables,
 	Ref,
-	PrimitiveNodeOptions
+	BaseNodeOptions
 } from './shared';
 
 export class IntNode<Variables extends NodeVariables = {}, IsLocal extends boolean = false> extends BaseNode<
@@ -19,13 +19,13 @@ export class IntNode<Variables extends NodeVariables = {}, IsLocal extends boole
 	Variables
 > {
 	readonly tag = 'Int';
-	constructor(readonly options?: PrimitiveNodeOptions<Variables, IsLocal>) {
+	constructor(readonly options?: BaseNodeOptions<IsLocal, true, Variables>) {
 		super(options?.variables);
 	}
 }
 
 export function int<Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
-	options?: PrimitiveNodeOptions<Variables, IsLocal>
+	options?: BaseNodeOptions<IsLocal, true, Variables>
 ): IntNode<Variables, IsLocal> {
 	return new IntNode<Variables, IsLocal>(options);
 }

@@ -14,7 +14,8 @@ import {
 	ModifyIfEntity,
 	TypeOfRefs,
 	BaseNode,
-	PrimitiveNodeOptions
+	BaseNodeOptions
+
 } from './shared';
 
 export class ArrayNode<
@@ -35,17 +36,28 @@ export class ArrayNode<
 	ModifyIfEntity<IsEntity, Array<TypeOf<Item>>, Array<TypeOfRefs<Item>>>
 > {
 	readonly tag = 'Array';
-	constructor(readonly item: Item, readonly options?: PrimitiveNodeOptions<Variables, IsLocal, IsEntity>) {
+	constructor(readonly item: Item, readonly options?: BaseNodeOptions<IsLocal, IsEntity, Variables>) {
 		super(options?.variables);
 	}
 }
 
+// export function array<
+// 	Item extends AnyNode,
+// 	IsLocal extends boolean = false,
+// 	IsEntity extends boolean = false
+// 	>(item: Item, options?: BaseNodeOptions<IsLocal, IsEntity>): ArrayNode<Item, {}, IsLocal, IsEntity>
+// export function array<
+// 	Item extends AnyNode,
+// 	Variables extends NodeVariables,
+// 	IsLocal extends boolean = false,
+// 	IsEntity extends boolean = false
+// 	>(item: Item, options: DynamicNodeOptions<Variables, IsLocal, IsEntity>): ArrayNode<Item, Variables, IsLocal, IsEntity>
 export function array<
 	Item extends AnyNode,
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(item: Item, options?: PrimitiveNodeOptions<Variables, IsLocal, IsEntity>): ArrayNode<Item, Variables, IsLocal, IsEntity> {
+>(item: Item, options?: BaseNodeOptions<IsLocal, IsEntity, Variables>): ArrayNode<Item, Variables, IsLocal, IsEntity> {
 	return new ArrayNode<Item, Variables, IsLocal, IsEntity>(item, options);
 }
 

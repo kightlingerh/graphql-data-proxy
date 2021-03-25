@@ -17,7 +17,7 @@ import {
 	TypeOfCacheEntry,
 	ModifyIfEntity,
 	TypeOfRefs,
-	PrimitiveNodeOptions
+	BaseNodeOptions
 } from './shared';
 
 export class NonEmptyArrayNode<
@@ -38,7 +38,7 @@ export class NonEmptyArrayNode<
 	ModifyIfEntity<IsEntity, NonEmptyArray<TypeOf<Item>>, Ref<Option<NonEmptyArray<TypeOfRefs<Item>>>>>
 > {
 	readonly tag = 'NonEmptyArray';
-	constructor(readonly item: Item, readonly options?: PrimitiveNodeOptions<Variables, IsLocal, IsEntity>) {
+	constructor(readonly item: Item, readonly options?: BaseNodeOptions<IsLocal, IsEntity, Variables>) {
 		super(options?.variables);
 	}
 }
@@ -48,7 +48,7 @@ export function nonEmptyArray<
 	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
->(item: Item, options?: PrimitiveNodeOptions<Variables, IsLocal, IsEntity>): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity> {
+>(item: Item, options?: BaseNodeOptions<IsLocal, IsEntity, Variables>): NonEmptyArrayNode<Item, Variables, IsLocal, IsEntity> {
 	return new NonEmptyArrayNode(item, options);
 }
 

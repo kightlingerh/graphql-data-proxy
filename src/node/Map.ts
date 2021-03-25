@@ -10,12 +10,13 @@ import {
 	TypeOfCacheEntry,
 	ModifyIfEntity,
 	TypeOfRefs,
-	NodeOptions, TypeOfStrictInput, TypeOfStrictOutput, TypeOfPartialInput, TypeOfPartialOutput
+	TypeOfStrictInput, TypeOfStrictOutput, TypeOfPartialInput, TypeOfPartialOutput, BaseNodeOptions, ToId
 } from './shared';
 
 export interface MapNodeOptions<Key extends AnyNode, Item extends AnyNode, Variables extends NodeVariables, IsLocal extends boolean, IsEntity extends boolean>
-	extends NodeOptions<Map<TypeOf<Key>, TypeOfPartial<Item>>, Variables, IsLocal, IsEntity> {
+	extends BaseNodeOptions<IsLocal, IsEntity, Variables> {
 	readonly __typename?: string;
+	readonly toId?: ToId<Map<TypeOf<Key>, TypeOfPartial<Item>>, Variables>
 }
 
 export class MapNode<

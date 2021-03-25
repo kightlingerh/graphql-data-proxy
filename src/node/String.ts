@@ -3,7 +3,7 @@ import {
 	ModifyOutputIfLocal,
 	NodeVariables,
 	Ref,
-	PrimitiveNodeOptions,
+	BaseNodeOptions,
 	BaseNode,
 } from './shared';
 
@@ -18,13 +18,13 @@ export class StringNode<Variables extends NodeVariables = {}, IsLocal extends bo
 	Variables
 > {
 	readonly tag = 'String';
-	constructor(readonly options?: PrimitiveNodeOptions<Variables, IsLocal>) {
+	constructor(readonly options?: BaseNodeOptions<IsLocal, true, Variables>) {
 		super(options?.variables);
 	}
 }
 
 export function string<Variables extends NodeVariables = {}, IsLocal extends boolean = false>(
-	options?: PrimitiveNodeOptions<Variables, IsLocal>
+	options?: BaseNodeOptions<IsLocal, true, Variables>
 ): StringNode<Variables, IsLocal> {
 	return new StringNode(options);
 }

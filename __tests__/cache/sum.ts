@@ -13,8 +13,7 @@ const HighSchoolEducation = N.type(
 	{
 		city: N.staticString,
 		graduated: N.staticBoolean
-	},
-	{ includeTypename: true }
+	}
 )
 
 const CollegeEducation = N.type(
@@ -23,8 +22,7 @@ const CollegeEducation = N.type(
 		city: N.staticString,
 		graduated: N.staticInt,
 		major: N.staticString
-	},
-	{ includeTypename: true }
+	}
 )
 
 const Schema = N.schema('Sum', {
