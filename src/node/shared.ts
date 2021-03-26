@@ -163,7 +163,15 @@ export type ExtractSubVariablesDefinition<T> = [T] extends [{ [_SubVariables]: R
 
 export type TypeOfSubVariables<T> = ExtractNodeDefinitionType<ExtractSubVariablesDefinition<T>>;
 
+export type TypeOfSubVariablesInput<T> = ExtractNodeDefinitionInput<ExtractSubVariablesDefinition<T>>
+
+export type TypeOfSubVariablesOutput<T> = ExtractNodeDefinitionOutput<ExtractSubVariablesDefinition<T>>
+
 export type TypeOfMergedVariables<T> = TypeOfSubVariables<T> & TypeOfVariables<T>;
+
+export type TypeOfMergedVariablesInput<T> = TypeOfSubVariablesInput<T> & TypeOfVariablesInput<T>;
+
+export type TypeOfMergedVariablesOutput<T> = TypeOfSubVariablesOutput<T> & TypeOfVariablesOutput<T>
 
 export type ExtractMergedVariablesDefinition<T> = ExtractSubVariablesDefinition<T> & ExtractVariablesDefinition<T>;
 
