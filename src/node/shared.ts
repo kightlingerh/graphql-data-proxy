@@ -32,7 +32,7 @@ export const _PartialData = '_PD';
 
 export type _PartialData = typeof _PartialData
 
-export const _Variables = 'variables';
+export const _Variables = '_V';
 
 export type _Variables = typeof _Variables
 
@@ -116,6 +116,10 @@ export abstract class BaseNode<
 		vars?: V
 	) {
 		this[_Variables] = vars ?? EMPTY_VARIABLES;
+	}
+
+	get variables(): V {
+		return this[_Variables]
 	}
 }
 

@@ -27,17 +27,13 @@ const CollegeEducation = N.type(
 	{ includeTypename: true }
 )
 
-const Education = N.sum([HighSchoolEducation, CollegeEducation])
-
-type Education = N.TypeOf<typeof Education>;
-
-const Query = N.schema('Sum', {
-	education: Education
+const Schema = N.schema('Sum', {
+	education: N.sum([HighSchoolEducation, CollegeEducation])
 })
 
-interface Query extends N.TypeOf<typeof Query> {}
+interface Education extends N.TypeOf<typeof Schema> {}
 
-const highSchool: Education = {
+const highSchool: N.TypeOf<typeof HighSchoolEducation> = {
 	__typename: 'HighSchoolEducation',
 	city: 'La Canada',
 	graduated: true
@@ -60,8 +56,8 @@ const college: N.TypeOf<typeof CollegeEducation> = {
 }
 
 function useCache() {
-	const cache = make({})(Query).select(Query)
-	const write = (data: N.TypeOfPartial<typeof Query>) =>
+	const cache = make({})(Schema).select(Schema)
+	const write = (data: N.TypeOfPartial<typeof Schema>) =>
 		pipe(
 			IOE.fromEither(cache),
 			IOE.chain((c) => IOE.fromIO(c.write({})(data))),
@@ -71,7 +67,7 @@ function useCache() {
 	const read = pipe(
 		fromEither(cache),
 		chain((c) => rightIO(c.read({}))),
-		getOrElse(() => constant(none as Option<Query>)),
+		getOrElse(() => constant(none as Option<Education>)),
 		IO.map(map((s: any) => s.education))
 	)
 	const city = computed(() =>
@@ -85,8 +81,8 @@ function useCache() {
 			IO.map((e) =>
 				pipe(
 					e.value,
+					chainO(ed => ed.value),
 					map((ed) => ed.city),
-					chainO((edc) => edc.value)
 				)
 			)
 		)()
