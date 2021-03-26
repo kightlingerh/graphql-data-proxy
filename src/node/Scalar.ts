@@ -48,7 +48,7 @@ export function scalar<
 	Input,
 	Output,
 	Data,
-	Variables extends NodeVariables,
+	Variables extends NodeVariables = {},
 	IsLocal extends boolean = false
 >(
 	name: Name,
