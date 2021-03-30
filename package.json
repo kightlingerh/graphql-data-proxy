@@ -7,9 +7,8 @@
     "lib",
     "es5"
   ],
-  "main": "es6/index.js",
-  "module": "lib/index.js",
-  "typings": "lib/index.d.ts",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
   "author": "Harry Kightlinger <kightlingerh@gmail.com>",
   "license": "MIT",
   "private": false,
