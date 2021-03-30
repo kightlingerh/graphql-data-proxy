@@ -5,15 +5,14 @@ import { useStrictNodeEq } from './Eq';
 import { useStrictNodeGuard } from './Guard';
 import { Node } from './Node';
 import {
-	_Variables,
 	ExtractMergedVariablesDefinition,
-	ExtractNodeDefinitionInput,
-	ExtractNodeDefinitionOutput,
-	ExtractNodeDefinitionType,
-	ExtractVariablesDefinition,
 	NodeVariables,
 	TypeOfMergedVariables,
-	TypeOfVariables
+	TypeOfMergedVariablesInput,
+	TypeOfMergedVariablesOutput,
+	TypeOfVariables,
+	TypeOfVariablesInput,
+	TypeOfVariablesOutput
 } from './shared';
 import { Encoder, type } from '../model/Encoder';
 import { Decoder, fromType } from '../model/Decoder';
@@ -21,8 +20,8 @@ import { Eq, type as eqType } from '../model/Eq';
 import { Guard, type as guardType } from '../model/Guard';
 
 function mergeVariables(node: Node, variables: Record<string, Node>[]) {
-	if (!isEmptyObject(node[_Variables])) {
-		variables.push(node[_Variables]);
+	if (!isEmptyObject(node.variables)) {
+		variables.push(node.variables);
 	}
 	switch (node.tag) {
 		case 'Type':
@@ -61,10 +60,7 @@ function useFromDef(fromDef: (def: Record<string, any>) => any, toItem: (node: N
 	};
 }
 
-export type NodeMergedVariablesEncoder<N> = Encoder<
-	ExtractNodeDefinitionOutput<ExtractMergedVariablesDefinition<N>>,
-	ExtractNodeDefinitionType<ExtractMergedVariablesDefinition<N>>
->;
+export type NodeMergedVariablesEncoder<N> = Encoder<TypeOfMergedVariablesOutput<N>, TypeOfMergedVariables<N>>;
 
 const toDefEncoder = useFromDef(type, useNodeEncoder);
 
@@ -72,19 +68,13 @@ export function useNodeMergedVariablesEncoder<N extends Node>(node: N): NodeMerg
 	return toDefEncoder(useNodeMergedVariables(node));
 }
 
-export type NodeVariablesEncoder<N> = Encoder<
-	ExtractNodeDefinitionOutput<ExtractVariablesDefinition<N>>,
-	ExtractNodeDefinitionType<ExtractVariablesDefinition<N>>
->;
+export type NodeVariablesEncoder<N> = Encoder<TypeOfVariablesOutput<N>, TypeOfVariables<N>>;
 
 export function useNodeVariablesEncoder<N extends Node>(node: N): NodeVariablesEncoder<N> {
 	return toDefEncoder(node.variables);
 }
 
-export type NodeMergedVariablesDecoder<N> = Decoder<
-	ExtractNodeDefinitionInput<ExtractMergedVariablesDefinition<N>>,
-	ExtractNodeDefinitionType<ExtractMergedVariablesDefinition<N>>
->;
+export type NodeMergedVariablesDecoder<N> = Decoder<TypeOfMergedVariablesInput<N>, TypeOfMergedVariables<N>>;
 
 const toDefDecoder = useFromDef(fromType, useStrictNodeDecoder);
 
@@ -92,10 +82,7 @@ export function useNodeMergedVariablesDecoder<N extends Node>(node: N): NodeMerg
 	return toDefDecoder(useNodeMergedVariables(node));
 }
 
-export type NodeVariablesDecoder<N> = Decoder<
-	ExtractNodeDefinitionInput<ExtractVariablesDefinition<N>>,
-	ExtractNodeDefinitionType<ExtractVariablesDefinition<N>>
->;
+export type NodeVariablesDecoder<N> = Decoder<TypeOfVariablesInput<N>, TypeOfVariables<N>>;
 
 export function useNodeVariablesDecoder<N extends Node>(node: N): NodeVariablesDecoder<N> {
 	return toDefDecoder(node.variables);
@@ -103,13 +90,13 @@ export function useNodeVariablesDecoder<N extends Node>(node: N): NodeVariablesD
 
 const toDefEq = useFromDef(eqType, useStrictNodeEq);
 
-export type NodeMergedVariablesEq<N> = Eq<ExtractNodeDefinitionType<ExtractMergedVariablesDefinition<N>>>;
+export type NodeMergedVariablesEq<N> = Eq<TypeOfMergedVariables<N>>;
 
 export function useNodeMergedVariablesEq<N extends Node>(node: N): NodeMergedVariablesEq<N> {
 	return toDefEq(useNodeMergedVariables(node));
 }
 
-export type NodeVariablesEq<N> = Eq<ExtractNodeDefinitionType<ExtractVariablesDefinition<N>>>;
+export type NodeVariablesEq<N> = Eq<TypeOfVariables<N>>;
 
 export function useNodeVariablesEq<N extends Node>(node: N): NodeVariablesEq<N> {
 	return toDefEq(node.variables);

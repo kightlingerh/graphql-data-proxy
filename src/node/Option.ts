@@ -17,6 +17,7 @@ import {
 	TypeOfRefs,
 	BaseNode,
 	BaseNodeOptions,
+	DynamicNodeOptions
 } from './shared';
 
 export class OptionNode<
@@ -42,6 +43,19 @@ export class OptionNode<
 	}
 }
 
+export function option<Item extends AnyNode, IsLocal extends boolean = false, IsEntity extends boolean = false>(
+	item: Item,
+	options?: BaseNodeOptions<IsLocal, IsEntity>
+): OptionNode<Item, {}, IsLocal, IsEntity>;
+export function option<
+	Item extends AnyNode,
+	Variables extends NodeVariables,
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false
+>(
+	item: Item,
+	options: DynamicNodeOptions<Variables, IsLocal, IsEntity>
+): OptionNode<Item, Variables, IsLocal, IsEntity>;
 export function option<
 	Item extends AnyNode,
 	Variables extends NodeVariables = {},

@@ -2,65 +2,53 @@ import { constUndefined, Lazy } from 'fp-ts/lib/function';
 import { NonEmptyArray } from 'fp-ts/lib/NonEmptyArray';
 import { Option } from 'fp-ts/lib/Option';
 import { Ref as R } from 'vue';
-import * as M from '../model/Model';
+import { Model } from '../model/Model';
 
 export type AnyNode = INode<any, any, any, any, any, any, any, any, any, any>;
 
 export type Ref<T> = R<T>;
 
-export const _StrictDataInput = '_SDI';
+const _StrictDataInput = '_SDI';
 
-export type _StrictDataInput = typeof _StrictDataInput;
+const _StrictDataOutput = '_SDO';
 
-export const _StrictDataOutput = '_SDO';
+const _StrictData = '_SD';
 
-export type _StrictDataOutput = typeof _StrictDataOutput
+const _PartialDataInput = '_PDI';
 
-export const _StrictData = '_SD';
+const _PartialDataOutput = '_PDO';
 
-export type _StrictData = typeof _StrictData
+const _PartialData = '_PD';
 
-export const _PartialDataInput = '_PDI';
+const _Variables = '_V';
 
-export type _PartialDataInput = typeof _PartialDataInput
+type _Variables = typeof _Variables;
 
-export const _PartialDataOutput = '_PDO';
+const _SubVariables = '_SV';
 
-export type _PartialDataOutput = typeof _PartialDataOutput;
+type _SubVariables = typeof _SubVariables;
 
-export const _PartialData = '_PD';
+const _Ref = '_R';
 
-export type _PartialData = typeof _PartialData
+const _CacheEntry = '_CE';
 
-export const _Variables = 'variables';
-
-export type _Variables = typeof _Variables
-
-export const _SubVariables = '_SV';
-
-export type _SubVariables = typeof _SubVariables
-
-export const _Ref = '_R';
-
-export type _Ref = typeof _Ref;
-
-export const _CacheEntry = '_CE';
-
-export type _CacheEntry = typeof _CacheEntry
-
-export interface BaseNodeOptions<IsLocal extends boolean = false, IsEntity extends boolean = false, Variables extends NodeVariables = {}> {
-	readonly variables?: Variables
-	readonly isLocal?: IsLocal
-	readonly isEntity?: IsEntity
-	readonly print?: Lazy<string>
+export interface BaseNodeOptions<
+	IsLocal extends boolean = false,
+	IsEntity extends boolean = false,
+	Variables extends NodeVariables = {}
+> {
+	readonly variables?: Variables;
+	readonly isLocal?: IsLocal;
+	readonly isEntity?: IsEntity;
+	readonly print?: Lazy<string>;
 }
 
 export interface DynamicNodeOptions<
 	Variables extends NodeVariables,
 	IsLocal extends boolean = false,
 	IsEntity extends boolean = false
-	> extends BaseNodeOptions<IsLocal, IsEntity> {
-	readonly variables: Variables
+> extends BaseNodeOptions<IsLocal, IsEntity> {
+	readonly variables: Variables;
 }
 
 export interface INode<
@@ -89,6 +77,8 @@ export interface INode<
 	readonly [_CacheEntry]: CE;
 }
 
+const EMPTY_VARIABLES: any = {};
+
 export abstract class BaseNode<
 	SDI,
 	SDO,
@@ -101,7 +91,7 @@ export abstract class BaseNode<
 	SV extends NodeVariables = {},
 	R = CE
 > implements INode<SDI, SDO, SD, PDI, PDO, PD, CE, V, SV, R> {
-	readonly [_Variables]!: V
+	readonly [_Variables]!: V;
 	readonly [_SubVariables]!: SV;
 	readonly [_StrictDataInput]!: SDI;
 	readonly [_StrictDataOutput]!: SDO;
@@ -110,12 +100,14 @@ export abstract class BaseNode<
 	readonly [_PartialDataOutput]!: PDO;
 	readonly [_PartialData]!: PD;
 	readonly [_Ref]!: R;
-	readonly [_CacheEntry]!: CE
+	readonly [_CacheEntry]!: CE;
 
-	protected constructor(
-		vars?: V
-	) {
+	protected constructor(vars?: V) {
 		this[_Variables] = vars ?? EMPTY_VARIABLES;
+	}
+
+	get variables(): V {
+		return this[_Variables];
 	}
 }
 
@@ -171,11 +163,15 @@ export type ExtractSubVariablesDefinition<T> = [T] extends [{ [_SubVariables]: R
 
 export type TypeOfSubVariables<T> = ExtractNodeDefinitionType<ExtractSubVariablesDefinition<T>>;
 
-export type TypeOfSubVariablesInput<T> = ExtractNodeDefinitionInput<ExtractSubVariablesDefinition<T>>;
+export type TypeOfSubVariablesInput<T> = ExtractNodeDefinitionInput<ExtractSubVariablesDefinition<T>>
 
-export type TypeOfSubVariablesOutput<T> = ExtractNodeDefinitionOutput<ExtractSubVariablesDefinition<T>>;
+export type TypeOfSubVariablesOutput<T> = ExtractNodeDefinitionOutput<ExtractSubVariablesDefinition<T>>
 
 export type TypeOfMergedVariables<T> = TypeOfSubVariables<T> & TypeOfVariables<T>;
+
+export type TypeOfMergedVariablesInput<T> = TypeOfSubVariablesInput<T> & TypeOfVariablesInput<T>;
+
+export type TypeOfMergedVariablesOutput<T> = TypeOfSubVariablesOutput<T> & TypeOfVariablesOutput<T>
 
 export type ExtractMergedVariablesDefinition<T> = ExtractSubVariablesDefinition<T> & ExtractVariablesDefinition<T>;
 
@@ -186,6 +182,8 @@ export type ModifyIfEntity<IsEntity, Data, CacheEntry> = [IsEntity] extends [tru
 export type Values<T> = T[keyof T];
 
 export type Intersection<T> = (T extends unknown ? (x: T) => 0 : never) extends (x: infer R) => 0 ? R : never;
+
+export type ExtractTag<T> = [T] extends [{ tag: infer A }] ? A : never;
 
 export type NodeVariables = Record<string, AnyNode>;
 
@@ -211,9 +209,7 @@ export interface ToId<PartialData, Variables> {
 	): string | number | undefined;
 }
 
-export const EMPTY_VARIABLES: any = {};
-
-export function useLocalModel<I, O, A>(model: M.Model<I, O, A>): M.Model<I, undefined, A> {
+export function useLocalModel<I, O, A>(model: Model<I, O, A>): Model<I, undefined, A> {
 	return {
 		...model,
 		encode: constUndefined

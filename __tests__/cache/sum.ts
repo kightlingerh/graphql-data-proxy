@@ -81,8 +81,8 @@ function useCache() {
 			IO.map((e) =>
 				pipe(
 					e.value,
+					chainO(ed => ed.value),
 					map((ed) => ed.city),
-					chainO((edc) => edc.value)
 				)
 			)
 		)()

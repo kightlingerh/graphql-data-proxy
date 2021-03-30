@@ -20,7 +20,8 @@ import {
 	TypeOfRefs,
 	BaseNodeOptions,
 	ToId,
-	DynamicNodeOptions
+	DynamicNodeOptions,
+	ExtractTag
 } from './shared';
 
 export type ExtractTypeName<T> = [T] extends [{ __typename: string }] ? T['__typename'] : never;
@@ -46,12 +47,17 @@ export type ExtractTypeNodePartialInputFromMembers<MS extends Record<string, Any
 export type ExtractTypeNodePartialOutputFromMembers<MS extends Record<string, AnyNode>> = {
 	[K in keyof MS]?: TypeOfPartialOutput<MS[K]>;
 };
+
+type OmitMutationKeys<MS extends Record<string, AnyNode>> = {
+	[K in keyof MS]-?: [ExtractTag<MS[K]>] extends ['Mutation'] ? never : K;
+}[keyof MS];
+
 export type ExtractTypeNodeCacheEntryFromMembers<MS extends Record<string, AnyNode>> = {
-	[K in keyof MS]: CacheNode<MS[K]>;
+	[K in OmitMutationKeys<MS>]: CacheNode<MS[K]>;
 };
 
 export type ExtractTypeNodeRefsFromMembers<MS extends Record<string, AnyNode>> = {
-	[K in keyof MS]: TypeOfRefs<MS[K]>;
+	[K in OmitMutationKeys<MS>]: TypeOfRefs<MS[K]>;
 };
 
 export type ExtractTypeNodeSubVariablesFromMembers<MS extends Record<string, AnyNode>> = {} & Intersection<
@@ -61,14 +67,6 @@ export type ExtractTypeNodeSubVariablesFromMembers<MS extends Record<string, Any
 		}
 	>
 >;
-
-export const _IncludeTypename = '_IT';
-
-export type _IncludeTypename = typeof _IncludeTypename;
-
-export type ExtractIncludeTypename<T> = [T] extends [{ [_IncludeTypename]: boolean }]
-	? T[typeof _IncludeTypename]
-	: never;
 
 export interface TypenameNode<Name extends string> extends ScalarNode<Name, string, string, Name> {}
 
@@ -153,7 +151,14 @@ export function type<
 	__typename: Typename,
 	members: MS,
 	options: DynamicTypeNodeOptions<MS, Variables, IsLocal, IsEntity, IncludeTypename>
-): TypeNode<Typename, IncludeTypenameMembers<Typename, MS, IncludeTypename>, Variables, IsLocal, IsEntity, IncludeTypename>;
+): TypeNode<
+	Typename,
+	IncludeTypenameMembers<Typename, MS, IncludeTypename>,
+	Variables,
+	IsLocal,
+	IsEntity,
+	IncludeTypename
+>;
 export function type<
 	Typename extends string,
 	MS extends Record<string, AnyNode> = {},
